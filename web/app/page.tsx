@@ -18,6 +18,11 @@ export const metadata: Metadata = {
     "Cumperi online, primești QR-ul pe email și intri la ușă cu o singură scanare. Biletele oficiale Interact Sf. Sava.",
 };
 
+// Perf (U5): the landing has no per-request data — only the CTA slug, which is
+// cached (getActiveEvent) and revalidated on event change. ISR serves it as a
+// static page, so visitors never wait on the DB.
+export const revalidate = 300;
+
 // The landing is almost entirely static; only the CTA slug needs the DB. Never let
 // a slow/paused Supabase block the page — fail fast to the in-page anchor fallback.
 async function activeSlug(): Promise<string | null> {

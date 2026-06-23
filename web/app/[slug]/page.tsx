@@ -12,6 +12,10 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// Perf (U5): event details come from the cache (getEventBySlug), but seat
+// availability (getEventStats) must be live — render per request.
+export const dynamic = "force-dynamic";
+
 type ProgramItem = { t: string; l: string };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

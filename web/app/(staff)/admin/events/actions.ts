@@ -5,6 +5,7 @@ import { z } from "zod";
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireStaffRole } from "@/lib/roles";
+import { revalidateEvents } from "@/lib/events";
 import type { Database } from "@/lib/supabase/types";
 
 type EventStatus = Database["public"]["Enums"]["event_status"];
@@ -189,6 +190,7 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
   if (error?.code === "23505") return { errors: { general: "Există deja un eveniment cu acest slug." } };
   if (error) return { errors: { general: "Evenimentul nu a putut fi salvat." } };
 
+  revalidateEvents();
   revalidatePath("/");
   revalidatePath(`/${nextSlug}`);
   revalidatePath("/admin/events");
@@ -226,6 +228,7 @@ export async function setEventStatus(_prev: EventActionState, form: FormData): P
   });
 
   if (error) return { errors: { general: "Statusul nu a putut fi schimbat." } };
+  revalidateEvents();
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/events");
