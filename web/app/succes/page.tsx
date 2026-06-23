@@ -175,7 +175,7 @@ function SuccessContent() {
 
 export default function SuccessPage() {
   return (
-    <div style={{ minHeight: "100vh", background: "var(--im-ink)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32 }}>
+    <div style={{ minHeight: "100dvh", background: "var(--im-ink)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32 }}>
       <div style={{ marginBottom: 48 }}><Logo size={22} /></div>
       <Suspense fallback={
         <div style={{ textAlign: "center" }}>

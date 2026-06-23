@@ -1,6 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ScrollReveal } from "@/components/ui/ScrollReveal";
+
+// Runs before first paint. Two jobs:
+//  1. Force-on motion: shim `matchMedia` so any `prefers-reduced-motion` query
+//     reports `matches:false`. This makes the homepage GSAP engine, the Framer
+//     reveals and ScrollReveal all animate regardless of the visitor's OS "reduce
+//     motion" setting (product decision). CSS `@media reduce` suppressors are
+//     neutralized separately in globals.css + the immersive CSS.
+//  2. Arm the scroll-reveal gate so entrance elements start hidden (no flash);
+//     ScrollReveal then plays them in. If it never boots (JS error), the timer
+//     strips the gate so nothing stays hidden — content always ends up visible.
+const SCROLL_REVEAL_BOOT = `(function(){try{if('scrollRestoration'in history)history.scrollRestoration='manual';}catch(e){}try{window.scrollTo(0,0);}catch(e){}try{var mm=window.matchMedia?window.matchMedia.bind(window):null;if(mm){window.matchMedia=function(q){if(typeof q==='string'&&q.indexOf('prefers-reduced-motion')!==-1){return{media:q,matches:false,onchange:null,addEventListener:function(){},removeEventListener:function(){},addListener:function(){},removeListener:function(){},dispatchEvent:function(){return false;}};}return mm(q);};}}catch(e){}var d=document.documentElement;d.classList.add('sr-on');setTimeout(function(){if(!window.__srReady){d.classList.remove('sr-on');}},4000);})();`;
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -38,6 +50,16 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
+// Mobile foundations (U1): cover the notch/safe areas so env(safe-area-inset-*)
+// resolves for sticky bars + the scanner, and set the dark theme-color to match
+// the immersive ink so the browser chrome blends in.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#070A12",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,6 +69,9 @@ export default function RootLayout({
     <html
       lang="ro"
       className={`${manrope.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} h-full`}
+      // The pre-paint SCROLL_REVEAL_BOOT script adds the `sr-on` class to <html>
+      // before hydration, so server/client classNames differ by design.
+      suppressHydrationWarning
     >
       <body
         className="theme-immersive min-h-full flex flex-col"
@@ -54,7 +79,9 @@ export default function RootLayout({
           fontFamily: "var(--font-manrope), ui-sans-serif, system-ui, sans-serif",
         }}
       >
+        <script dangerouslySetInnerHTML={{ __html: SCROLL_REVEAL_BOOT }} />
         {children}
+        <ScrollReveal />
       </body>
     </html>
   );

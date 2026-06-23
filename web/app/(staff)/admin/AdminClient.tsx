@@ -147,13 +147,13 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
       </div>
 
       {tab === "scans" && (
-        <div style={{ background: "var(--im-ink-2)", borderRadius: 16, border: "1px solid var(--im-line)", overflow: "hidden" }}>
+        <div style={{ background: "var(--im-ink-2)", borderRadius: 16, border: "1px solid var(--im-line)", overflow: "auto", WebkitOverflowScrolling: "touch" }}>
           {scans.length === 0 && (
             <p style={{ textAlign: "center", color: "var(--im-fg-2)", padding: "32px 20px", margin: 0 }}>
               Niciun scan înregistrat încă.
             </p>
           )}
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
             <tbody>
               {scans.map(s => {
                 const isNew = newIds.has(s.id) && !initialIds.has(s.id);

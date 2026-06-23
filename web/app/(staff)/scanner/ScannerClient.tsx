@@ -465,6 +465,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
           main {
             grid-template-columns: 1fr !important;
             padding: 14px !important;
+            padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
           }
 
           aside {

@@ -50,7 +50,7 @@ export default async function TicketPage({ params }: Props) {
   const qrSrc = `${siteUrl}/api/qr/${token}`;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--im-ink)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--im-ink)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
       {/* Ticket card — spring entrance */}
       <div
         className="anim-pop"

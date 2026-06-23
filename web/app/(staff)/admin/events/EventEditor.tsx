@@ -109,7 +109,7 @@ export function EventEditor({ event, hasOrders }: { event: Event | null; hasOrde
         </div>
         <div style={{ display: "grid", gap: 8 }}>
           {program.map((row, index) => (
-            <div key={index} className={newProgramKeys.has(index) ? "anim-rise-fast" : undefined} style={{ display: "grid", gridTemplateColumns: "96px 1fr auto auto auto", gap: 8 }}>
+            <div key={index} className={`ee-prog-row${newProgramKeys.has(index) ? " anim-rise-fast" : ""}`} style={{ display: "grid", gridTemplateColumns: "96px 1fr auto auto auto", gap: 8 }}>
               <input value={row.t} onChange={(e) => setProgram((rows) => rows.map((r, i) => i === index ? { ...r, t: e.target.value } : r))} className="input" style={inputStyle} />
               <input value={row.l} onChange={(e) => setProgram((rows) => rows.map((r, i) => i === index ? { ...r, l: e.target.value } : r))} className="input" style={inputStyle} />
               <IconButton label="Sus" onClick={() => moveProgram(index, -1)}><ArrowUp size={14} strokeWidth={1.75} /></IconButton>

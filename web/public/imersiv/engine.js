@@ -85,8 +85,8 @@ const lw=document.getElementById('ll-wheel');if(lw)lw.appendChild(interactWheel(
 })();
 
 /* ── Lenis smooth scroll ── */
-const lenis = window.Lenis ? new Lenis({lerp:0.1,smoothWheel:true,wheelMultiplier:1.05}) : null;
-if(lenis){function raf(t){lenis.raf(t);requestAnimationFrame(raf);}requestAnimationFrame(raf);}
+const lenis = window.Lenis ? new Lenis({lerp:0.085,smoothWheel:true,wheelMultiplier:1.08,syncTouch:true,touchMultiplier:1.6}) : null;
+if(lenis){if(window.gsap){gsap.ticker.add(t=>lenis.raf(t*1000));gsap.ticker.lagSmoothing(0);}else{function raf(t){lenis.raf(t);requestAnimationFrame(raf);}requestAnimationFrame(raf);}}
 window.__lenis=lenis;
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -98,8 +98,7 @@ if('IntersectionObserver' in window){
   /* replay: reveal on enter, re-hide on exit so the animation plays every time
      an element scrolls into view (not just once per page load) */
   const io=new IntersectionObserver((es)=>{es.forEach(e=>{
-    if(e.isIntersecting)fire(e.target);
-    else e.target.classList.remove('in');
+    if(e.isIntersecting){fire(e.target);io.unobserve(e.target);}
   });},{rootMargin:'0px 0px -12% 0px',threshold:.01});
   rvs.forEach(el=>io.observe(el));
 }else rvs.forEach(fire);
@@ -181,7 +180,7 @@ if(window.gsap && !reduce){
     gsap.registerPlugin(ScrollTrigger);
     if(lenis) lenis.on('scroll',ScrollTrigger.update);
     /* hero headline mask reveal — fires as the hero scrolls up into view (not on load) */
-    gsap.to('.hline>span',{yPercent:0,stagger:.1,duration:1.1,ease:'power4.out',scrollTrigger:{trigger:'#hero',start:'top 78%'}});
+    (function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();
     gsap.to('#tkwrap',{yPercent:-12,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
 
     /* seam connectors: thread + node draw in as each section arrives */
@@ -203,13 +202,18 @@ if(window.gsap && !reduce){
       const row=g.closest('.gen-row'); if(!row) return;
       gsap.fromTo(g,{yPercent:-12},{yPercent:12,ease:'none',scrollTrigger:{trigger:row,start:'top bottom',end:'bottom top',scrub:true}});
     });
+    /* recompute trigger positions once fonts/images/videos settle — otherwise
+       start/end are measured against an unsettled layout and scrub feels off */
+    ScrollTrigger.refresh();
+    addEventListener('load',()=>ScrollTrigger.refresh());
+    setTimeout(()=>ScrollTrigger.refresh(),600);
     /* (stat entrance is now driven by Framer Motion in the module below) */
   }
   /* iPhone: entrance + perpetual float + 3D pointer-tilt (GSAP) */
   const phone=document.getElementById('phone');
   if(phone){
     gsap.set(phone,{rotationX:2,rotationY:-6,transformPerspective:1000,transformOrigin:'50% 50%'});
-    gsap.from(phone,{autoAlpha:0,scale:.9,duration:1,ease:'power3.out',delay:.15});
+    gsap.set(phone,{autoAlpha:0,scale:.9});(function(){var hh=document.getElementById('hero');var pin=function(){gsap.to(phone,{autoAlpha:1,scale:1,duration:1.1,ease:'power3.out'});};if(hh&&'IntersectionObserver'in window){var pio=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){pin();pio.disconnect();return;}}},{threshold:.12});pio.observe(hh);}else{pin();}})();
     gsap.to(phone,{y:-15,duration:3.6,ease:'sine.inOut',repeat:-1,yoyo:true});
     const heroEl=document.getElementById('hero');
     if(heroEl && !matchMedia('(hover:none)').matches){
@@ -300,7 +304,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos
    scrub in reverse, repeat, so the loop boundary is always continuous. The
    footer disintegrate clip reads as "reassemble → dissolve". */
 if(!reduce){document.querySelectorAll('video').forEach(v=>{
-  v.removeAttribute('loop');                 // looping is driven manually below
+  return; /* native loop: skip the per-frame reverse-scrub (jank source) */                 // looping is driven manually below
   let last=0;
   function reverse(now){
     const dt=Math.min(0.05,(now-last)/1000); last=now;

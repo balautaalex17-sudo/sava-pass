@@ -45,8 +45,8 @@ export function TeamClient({ members }: { members: Member[] }) {
         <ActionMessage state={inviteState} />
       </form>
 
-      <div style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, overflow: "hidden", boxShadow: "var(--im-shadow)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, overflow: "auto", WebkitOverflowScrolling: "touch", boxShadow: "var(--im-shadow)" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
           <thead>
             <tr style={{ background: "var(--im-ink-3)", borderBottom: "1px solid var(--im-line)" }}>
               {["Membru", "Rol", "Status", ""].map((h) => (
