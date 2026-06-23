@@ -50,14 +50,15 @@ export default async function TicketPage({ params }: Props) {
   const qrSrc = `${siteUrl}/api/qr/${token}`;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--slate-50)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
+    <div style={{ minHeight: "100vh", background: "var(--im-ink)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
       {/* Ticket card — spring entrance */}
       <div
         className="anim-pop"
         style={{
           width: "100%", maxWidth: 400, borderRadius: 28,
-          overflow: "hidden", boxShadow: "var(--shadow-lg)",
-          background: "white",
+          overflow: "hidden", boxShadow: "var(--im-shadow)",
+          background: "var(--im-ink-2)",
+          border: "1px solid var(--im-line)",
         }}
       >
         {/* Gradient header */}
@@ -90,21 +91,22 @@ export default async function TicketPage({ params }: Props) {
 
         {/* Perforated divider */}
         <div style={{ display: "flex", alignItems: "center", margin: "0 -1px" }}>
-          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--slate-50)", flexShrink: 0 }} />
-          <div style={{ flex: 1, borderTop: "2px dashed var(--slate-200)" }} />
-          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--slate-50)", flexShrink: 0 }} />
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--im-ink)", flexShrink: 0 }} />
+          <div style={{ flex: 1, borderTop: "2px dashed var(--im-line)" }} />
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--im-ink)", flexShrink: 0 }} />
         </div>
 
         {/* QR + code + LiveClock */}
         <div style={{ padding: "24px", textAlign: "center" }}>
-          <div style={{ position: "relative", display: "inline-block" }}>
+          {/* White plate keeps the QR scannable on the dark ticket */}
+          <div style={{ position: "relative", display: "inline-block", background: "#fff", padding: 14, borderRadius: 20, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
             <Image
               src={qrSrc}
               alt="QR bilet"
               width={180}
               height={180}
               style={{
-                borderRadius: 16, border: "2px solid var(--slate-200)",
+                borderRadius: 12, display: "block",
                 opacity: isUsed ? 0.5 : isVoid ? 0.4 : 1,
               }}
               unoptimized
@@ -124,7 +126,7 @@ export default async function TicketPage({ params }: Props) {
             )}
           </div>
 
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, letterSpacing: "0.15em", color: "var(--brand-navy)", marginTop: 14 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, letterSpacing: "0.15em", color: "var(--im-fg)", marginTop: 14 }}>
             {ticket.code}
           </div>
 
@@ -133,13 +135,13 @@ export default async function TicketPage({ params }: Props) {
             <LiveClock />
           </div>
 
-          <div style={{ fontSize: 12, color: "var(--slate-500)", marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "var(--im-fg-3)", marginTop: 4 }}>
             Arată acest cod la intrare
           </div>
         </div>
 
         {/* Holder info */}
-        <div style={{ borderTop: "1px solid var(--slate-100)", padding: "16px 24px 24px" }}>
+        <div style={{ borderTop: "1px solid var(--im-line-soft)", padding: "16px 24px 24px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <DetailRow label="PARTICIPANT" value={ticket.holder_name} />
             <DetailRow label="EMAIL" value={ticket.holder_email} />
@@ -153,7 +155,7 @@ export default async function TicketPage({ params }: Props) {
       {/* Footer line */}
       <p
         className="anim-fade"
-        style={{ marginTop: 24, fontSize: 12, color: "var(--slate-500)", textAlign: "center", animationDelay: "200ms" }}
+        style={{ marginTop: 24, fontSize: 12, color: "var(--im-fg-3)", textAlign: "center", animationDelay: "200ms" }}
       >
         Ne vedem la {event?.venue ?? "eveniment"} · Interact Sf. Sava
       </p>
@@ -164,8 +166,8 @@ export default async function TicketPage({ params }: Props) {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate-500)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--brand-navy)", marginTop: 3 }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--im-fg-3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--im-fg)", marginTop: 3 }}>{value}</div>
     </div>
   );
 }

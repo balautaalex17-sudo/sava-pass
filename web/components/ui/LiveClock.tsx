@@ -43,7 +43,7 @@ export function LiveClock() {
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 13,
-          color: "var(--slate-500)",
+          color: "var(--fg-tertiary)",
           letterSpacing: "0.04em",
         }}
       >
