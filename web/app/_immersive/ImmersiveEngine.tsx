@@ -16,11 +16,14 @@ declare global {
   }
 }
 
-const LIBS = [
-  "https://unpkg.com/lenis@1.3.21/dist/lenis.min.js",
-  "https://unpkg.com/gsap@3.12.5/dist/gsap.min.js",
-  "https://unpkg.com/gsap@3.12.5/dist/ScrollTrigger.min.js",
-];
+// Self-hosted (perf U3): removes the external unpkg.com DNS/TLS/latency from the
+// animation critical path. Version-pinned to match engine.js (lenis 1.3.21,
+// gsap 3.12.5). Re-fetch with scripts/ if bumping versions.
+const VENDOR = {
+  lenis: "/imersiv/vendor/lenis.min.js",
+  gsap: "/imersiv/vendor/gsap.min.js",
+  scrollTrigger: "/imersiv/vendor/ScrollTrigger.min.js",
+};
 
 function loadScript(src: string, type?: string) {
   return new Promise<void>((resolve, reject) => {
@@ -47,12 +50,14 @@ export function ImmersiveEngine() {
           window.ScrollTrigger?.getAll().forEach((t) => t.kill());
         } catch {}
 
-        // Load the CDN libs once; on later mounts the globals already exist.
+        // Load the libs once; on later mounts the globals already exist. lenis is
+        // independent of gsap → fetch both in parallel, then ScrollTrigger (needs
+        // the gsap global), then the engine.
         if (!window.Lenis) {
-          for (const src of LIBS) {
-            await loadScript(src);
-            if (cancelled) return;
-          }
+          await Promise.all([loadScript(VENDOR.lenis), loadScript(VENDOR.gsap)]);
+          if (cancelled) return;
+          await loadScript(VENDOR.scrollTrigger);
+          if (cancelled) return;
         }
 
         await loadScript("/imersiv/engine.js");

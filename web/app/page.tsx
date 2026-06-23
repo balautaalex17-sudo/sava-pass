@@ -39,6 +39,12 @@ export default async function Home() {
 
   return (
     <>
+      {/* Perf (U3): warm the engine libs during HTML parse so they're cached by the
+          time ImmersiveEngine loads them post-hydration. */}
+      <link rel="preload" as="script" href="/imersiv/vendor/lenis.min.js" />
+      <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" />
+      <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" />
+      <link rel="preload" as="script" href="/imersiv/engine.js" />
       <style dangerouslySetInnerHTML={{ __html: IMMERSIVE_CSS }} />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
       <ImmersiveEngine />
