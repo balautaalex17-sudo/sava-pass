@@ -113,6 +113,48 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_applications: {
+        Row: {
+          availability: string | null
+          created_at: string
+          email: string
+          full_name: string
+          grade: string | null
+          id: string
+          motivation: string
+          phone: string
+          source: string
+          status: string
+          strength: string | null
+        }
+        Insert: {
+          availability?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          grade?: string | null
+          id?: string
+          motivation: string
+          phone: string
+          source?: string
+          status?: string
+          strength?: string | null
+        }
+        Update: {
+          availability?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          grade?: string | null
+          id?: string
+          motivation?: string
+          phone?: string
+          source?: string
+          status?: string
+          strength?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount_bani: number
@@ -516,3 +558,4 @@ export type Order = Tables<"orders">
 export type Scan = Tables<"scans">
 export type Profile = Tables<"profiles">
 export type EventStats = Database["public"]["Views"]["event_stats"]["Row"]
+export type MembershipApplication = Tables<"membership_applications">
