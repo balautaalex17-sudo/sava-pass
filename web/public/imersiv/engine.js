@@ -164,7 +164,7 @@ if(window.gsap && !reduce){
   const sq=[...document.querySelectorAll('#stepqr rect.m')];
   if(sq.length){gsap.to(gsap.utils.shuffle(sq).slice(0,18),{opacity:.2,duration:.6,repeat:-1,yoyo:true,stagger:{each:.05,from:'random'},ease:'sine.inOut'});}
   const scan=document.querySelector('.qr-scan'), qrEl=document.querySelector('.qr'), ok=document.querySelector('.tk-ok');
-  if(scan&&ok){
+  if(scan&&ok&&!matchMedia('(hover:none)').matches){
     gsap.set(ok,{opacity:0,y:8,scale:.96});
     const tl=gsap.timeline({repeat:-1,repeatDelay:.6});
     tl.set(scan,{top:2,opacity:0}).set(ok,{opacity:0,y:8,scale:.96})

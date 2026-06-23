@@ -177,6 +177,13 @@ const engineOut = engine
   .replace(
     "document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos();});",
     "document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos();});\nif('IntersectionObserver'in window){var __vio=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){v.muted=true;var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{threshold:.05});document.querySelectorAll('video').forEach(function(v){__vio.observe(v);});}"
+  )
+  // Mobile perf (U6): the perpetual QR-scan loop animates box-shadow forever (GPU-
+  // costly). Run the scan showpiece on non-touch only; mobile keeps the cheap
+  // opacity flicker + the static "scanned" success state.
+  .replace(
+    "if(scan&&ok){",
+    "if(scan&&ok&&!matchMedia('(hover:none)').matches){"
   );
 
 // No blink: Framer Motion's `inView` re-runs its callback every time an element
