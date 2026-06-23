@@ -78,7 +78,7 @@ function SuccessContent() {
     return (
       <div style={{ textAlign: "center" }}>
         <GearSpinner />
-        <p style={{ marginTop: 16, color: "var(--slate-600)", fontSize: 16 }}>Se emite biletul…</p>
+        <p style={{ marginTop: 16, color: "var(--im-fg-2)", fontSize: 16 }}>Se emite biletul…</p>
       </div>
     );
   }
@@ -88,8 +88,8 @@ function SuccessContent() {
       <div style={{ position: "relative", textAlign: "center", padding: "40px 20px" }}>
         <GearWatermark />
         <div style={{ position: "relative", zIndex: 1 }} className="anim-fade">
-          <p style={{ color: "var(--danger)", fontSize: 16 }}>Ceva a mers greșit. Contactează Interact Sf. Sava.</p>
-          <Link href="/" style={{ color: "var(--brand-cyan-700)", fontSize: 14, display: "block", marginTop: 16 }}>Înapoi acasă</Link>
+          <p style={{ color: "#FCA5A5", fontSize: 16 }}>Ceva a mers greșit. Contactează Interact Sf. Sava.</p>
+          <Link href="/" style={{ color: "var(--im-cyan-light)", fontSize: 14, display: "block", marginTop: 16 }}>Înapoi acasă</Link>
         </div>
       </div>
     );
@@ -132,7 +132,7 @@ function SuccessContent() {
           fontStyle: "italic",
           fontWeight: 400,
           fontSize: 40,
-          color: "var(--brand-navy)",
+          color: "var(--im-fg)",
           letterSpacing: "-0.02em",
           lineHeight: 1.1,
           margin: "0 0 12px",
@@ -146,13 +146,13 @@ function SuccessContent() {
         <p
           className="anim-fade"
           style={{
-            color: "var(--slate-500)",
+            color: "var(--im-fg-2)",
             fontSize: 14,
             margin: "0 0 32px",
             animationDelay: "320ms",
           }}
         >
-          Am trimis biletul pe <strong style={{ color: "var(--brand-navy)" }}>{email}</strong>
+          Am trimis biletul pe <strong style={{ color: "var(--im-fg)" }}>{email}</strong>
         </p>
       )}
 
@@ -163,7 +163,7 @@ function SuccessContent() {
           display: "inline-block", padding: "14px 28px", borderRadius: 14, textDecoration: "none",
           background: "linear-gradient(135deg, var(--brand-cyan) 0%, var(--brand-blue) 100%)",
           color: "white", fontWeight: 700, fontSize: 15,
-          boxShadow: "var(--shadow-brand)",
+          boxShadow: "var(--im-glow)",
           animationDelay: "400ms",
         }}
       >
@@ -175,7 +175,7 @@ function SuccessContent() {
 
 export default function SuccessPage() {
   return (
-    <div style={{ minHeight: "100vh", background: "var(--slate-50)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32 }}>
+    <div style={{ minHeight: "100vh", background: "var(--im-ink)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32 }}>
       <div style={{ marginBottom: 48 }}><Logo size={22} /></div>
       <Suspense fallback={
         <div style={{ textAlign: "center" }}>
