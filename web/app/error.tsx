@@ -8,7 +8,7 @@ export default function GlobalError({ reset }: { error: Error; reset: () => void
   return (
     <div style={{
       minHeight: "100vh",
-      background: "var(--slate-50)",
+      background: "var(--im-ink)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -25,10 +25,10 @@ export default function GlobalError({ reset }: { error: Error; reset: () => void
         style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
       >
         <div style={{ marginBottom: 32 }}><Logo size={22} /></div>
-        <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--brand-navy)", margin: "0 0 8px" }}>
+        <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--im-fg)", margin: "0 0 8px" }}>
           Ceva a mers greșit
         </h1>
-        <p style={{ color: "var(--slate-500)", fontSize: 14, margin: "0 0 24px" }}>
+        <p style={{ color: "var(--im-fg-2)", fontSize: 14, margin: "0 0 24px" }}>
           Încearcă din nou sau contactează Interact Sf. Sava.
         </p>
         <div style={{ display: "flex", gap: 12 }}>

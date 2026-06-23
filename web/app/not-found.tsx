@@ -6,7 +6,7 @@ export default function NotFound() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "var(--slate-50)",
+      background: "var(--im-ink)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -27,15 +27,15 @@ export default function NotFound() {
           fontFamily: "var(--font-display)",
           fontStyle: "italic",
           fontSize: 72,
-          color: "var(--brand-navy)",
+          color: "var(--im-cyan-light)",
           lineHeight: 1,
         }}>
           404
         </div>
-        <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--brand-navy)", margin: "12px 0 8px" }}>
+        <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--im-fg)", margin: "12px 0 8px" }}>
           Pagina nu există
         </h1>
-        <p style={{ color: "var(--slate-500)", fontSize: 14, margin: "0 0 28px" }}>
+        <p style={{ color: "var(--im-fg-2)", fontSize: 14, margin: "0 0 28px" }}>
           Link-ul e greșit sau a expirat.
         </p>
         <Link

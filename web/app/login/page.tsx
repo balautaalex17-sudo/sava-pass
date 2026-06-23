@@ -47,7 +47,7 @@ function LoginForm() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "var(--slate-50)",
+      background: "var(--im-ink)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -61,21 +61,21 @@ function LoginForm() {
         style={{
           width: "100%",
           maxWidth: 400,
-          background: "white",
-          /* 3px navy top border — staff register cue */
-          borderTop: "3px solid var(--brand-navy)",
-          borderLeft: "1px solid var(--slate-200)",
-          borderRight: "1px solid var(--slate-200)",
-          borderBottom: "1px solid var(--slate-200)",
+          background: "var(--im-ink-2)",
+          /* 3px cyan top border — staff register cue (navy is invisible on dark) */
+          borderTop: "3px solid var(--im-cyan)",
+          borderLeft: "1px solid var(--im-line)",
+          borderRight: "1px solid var(--im-line)",
+          borderBottom: "1px solid var(--im-line)",
           borderRadius: 20,
           padding: "32px 28px",
-          boxShadow: "var(--shadow-md)",
+          boxShadow: "var(--im-shadow)",
         }}
       >
-        <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--brand-navy)", margin: "0 0 4px" }}>
+        <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--im-fg)", margin: "0 0 4px" }}>
           Acces staff
         </h1>
-        <p style={{ fontSize: 13, color: "var(--slate-500)", margin: "0 0 28px" }}>
+        <p style={{ fontSize: 13, color: "var(--im-fg-2)", margin: "0 0 28px" }}>
           Interact Sf. Sava · SavaPass
         </p>
 
@@ -85,7 +85,7 @@ function LoginForm() {
               display: "block",
               fontSize: 12,
               fontWeight: 700,
-              color: "var(--slate-500)",
+              color: "var(--im-fg-3)",
               marginBottom: 6,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
@@ -103,10 +103,10 @@ function LoginForm() {
                 width: "100%",
                 padding: "10px 14px",
                 borderRadius: 12,
-                border: "1px solid var(--slate-200)",
+                border: "1px solid var(--im-line)",
                 fontSize: 15,
-                background: "var(--slate-50)",
-                color: "var(--brand-navy)",
+                background: "var(--im-ink-3)",
+                color: "var(--im-fg)",
                 outline: "none",
                 boxSizing: "border-box",
               }}
@@ -118,7 +118,7 @@ function LoginForm() {
               display: "block",
               fontSize: 12,
               fontWeight: 700,
-              color: "var(--slate-500)",
+              color: "var(--im-fg-3)",
               marginBottom: 6,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
@@ -136,10 +136,10 @@ function LoginForm() {
                 width: "100%",
                 padding: "10px 14px",
                 borderRadius: 12,
-                border: "1px solid var(--slate-200)",
+                border: "1px solid var(--im-line)",
                 fontSize: 15,
-                background: "var(--slate-50)",
-                color: "var(--brand-navy)",
+                background: "var(--im-ink-3)",
+                color: "var(--im-fg)",
                 outline: "none",
                 boxSizing: "border-box",
               }}
@@ -147,7 +147,7 @@ function LoginForm() {
           </div>
 
           {error && (
-            <p className="anim-shake anim-fade" style={{ fontSize: 13, color: "var(--danger)", margin: 0 }}>
+            <p className="anim-shake anim-fade" style={{ fontSize: 13, color: "#FCA5A5", margin: 0 }}>
               {error}
             </p>
           )}
