@@ -164,8 +164,8 @@ function CheckoutStyles() {
     <style>{`
       .checkout-page {
         min-height: 100vh;
-        background: var(--slate-50);
-        color: var(--brand-navy);
+        background: var(--im-ink);
+        color: var(--im-fg);
       }
 
       .checkout-nav {
@@ -176,8 +176,8 @@ function CheckoutStyles() {
         align-items: center;
         justify-content: space-between;
         padding: 12px 20px;
-        background: rgba(248,250,252,0.98);
-        border-bottom: 1px solid var(--slate-200);
+        background: rgba(7,10,18,0.92);
+        border-bottom: 1px solid var(--im-line);
       }
 
       .checkout-nav__back,
@@ -189,12 +189,12 @@ function CheckoutStyles() {
         width: 36px;
         height: 36px;
         border-radius: var(--radius-pill);
-        background: white;
-        border: 1px solid var(--slate-200);
+        background: var(--im-ink-3);
+        border: 1px solid var(--im-line);
         display: grid;
         place-items: center;
-        color: var(--brand-navy);
-        box-shadow: var(--shadow-xs);
+        color: var(--im-fg);
+        box-shadow: none;
       }
 
       .checkout-nav__spacer {
@@ -209,7 +209,7 @@ function CheckoutStyles() {
 
       .checkout-intro h1 {
         margin: 0;
-        color: var(--brand-navy);
+        color: var(--im-fg);
         font-size: 31px;
         line-height: 1.08;
         letter-spacing: -0.03em;
@@ -218,7 +218,7 @@ function CheckoutStyles() {
 
       .checkout-intro p {
         margin: 8px 0 0;
-        color: var(--slate-600);
+        color: var(--im-fg-2);
         font-size: 14px;
         line-height: 1.55;
       }
@@ -228,16 +228,16 @@ function CheckoutStyles() {
         display: grid;
         grid-template-columns: 72px minmax(0, 1fr) 76px;
         min-height: 104px;
-        background: white;
-        border: 1px solid var(--slate-200);
+        background: var(--im-ink-2);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-lg);
         overflow: hidden;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--im-shadow);
       }
 
       .checkout-ticket__media {
         position: relative;
-        background: var(--brand-navy);
+        background: var(--im-ink-3);
         color: white;
         display: grid;
         place-items: center;
@@ -255,7 +255,7 @@ function CheckoutStyles() {
 
       .checkout-ticket__body span {
         display: block;
-        color: var(--slate-500);
+        color: var(--im-fg-3);
         font-size: 11px;
         font-weight: 800;
         text-transform: uppercase;
@@ -266,7 +266,7 @@ function CheckoutStyles() {
         display: block;
         margin-top: 4px;
         overflow: hidden;
-        color: var(--brand-navy);
+        color: var(--im-fg);
         font-size: 15px;
         font-weight: 800;
         text-overflow: ellipsis;
@@ -277,7 +277,7 @@ function CheckoutStyles() {
         display: block;
         margin-top: 5px;
         overflow: hidden;
-        color: var(--slate-500);
+        color: var(--im-fg-2);
         font-size: 12px;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -288,8 +288,8 @@ function CheckoutStyles() {
         display: grid;
         place-content: center;
         gap: 2px;
-        background: var(--slate-50);
-        border-left: 2px dashed var(--slate-200);
+        background: var(--im-ink-3);
+        border-left: 2px dashed var(--im-line);
         text-align: center;
       }
 
@@ -301,8 +301,8 @@ function CheckoutStyles() {
         width: 14px;
         height: 14px;
         border-radius: 50%;
-        background: var(--slate-50);
-        border: 1px solid var(--slate-200);
+        background: var(--im-ink);
+        border: 1px solid var(--im-line);
       }
 
       .checkout-ticket__stub::before { top: -8px; }
@@ -310,13 +310,13 @@ function CheckoutStyles() {
 
       .checkout-ticket__stub strong {
         font-family: var(--font-mono);
-        color: var(--brand-navy);
+        color: var(--im-cyan-light);
         font-size: 20px;
         line-height: 1;
       }
 
       .checkout-ticket__stub span {
-        color: var(--slate-500);
+        color: var(--im-fg-3);
         font-family: var(--font-mono);
         font-size: 11px;
         font-weight: 800;
@@ -327,10 +327,10 @@ function CheckoutStyles() {
         display: grid;
         gap: 15px;
         padding: 18px;
-        background: white;
-        border: 1px solid var(--slate-200);
+        background: var(--im-ink-2);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-xs);
+        box-shadow: var(--im-shadow);
       }
 
       .checkout-field {
@@ -339,7 +339,7 @@ function CheckoutStyles() {
       }
 
       .checkout-field > span {
-        color: var(--slate-700);
+        color: var(--im-fg);
         font-size: 13px;
         font-weight: 800;
       }
@@ -347,23 +347,27 @@ function CheckoutStyles() {
       .checkout-field input {
         width: 100%;
         padding: 14px 15px;
-        border: 1px solid var(--slate-200);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-md);
         outline: none;
-        color: var(--brand-navy);
-        background: var(--slate-50);
+        color: var(--im-fg);
+        background: var(--im-ink-3);
         font-family: var(--font-sans);
         font-size: 15px;
       }
 
+      .checkout-field input::placeholder { color: var(--im-fg-3); }
+
+      .checkout-field input:focus { border-color: var(--im-cyan); }
+
       .checkout-field small {
-        color: var(--slate-500);
+        color: var(--im-fg-3);
         font-size: 12px;
       }
 
       .checkout-field__error,
       .checkout-error--small {
-        color: var(--danger) !important;
+        color: #FCA5A5 !important;
       }
 
       .checkout-consent {
@@ -371,9 +375,9 @@ function CheckoutStyles() {
         align-items: flex-start;
         gap: 10px;
         padding: 14px;
-        border: 1px solid var(--slate-200);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-md);
-        background: var(--slate-50);
+        background: var(--im-ink-3);
         cursor: pointer;
       }
 
@@ -381,12 +385,12 @@ function CheckoutStyles() {
         width: 16px;
         height: 16px;
         margin-top: 2px;
-        accent-color: var(--brand-cyan);
+        accent-color: var(--im-cyan);
         flex-shrink: 0;
       }
 
       .checkout-consent span {
-        color: var(--slate-600);
+        color: var(--im-fg-2);
         font-size: 13px;
         line-height: 1.5;
       }
@@ -394,8 +398,9 @@ function CheckoutStyles() {
       .checkout-error {
         padding: 12px 14px;
         border-radius: var(--radius-md);
-        background: var(--danger-100);
-        color: #7F1D1D;
+        background: rgba(225,29,72,0.14);
+        border: 1px solid rgba(225,29,72,0.34);
+        color: #FCA5A5;
         font-size: 13px;
         font-weight: 700;
       }
@@ -404,6 +409,7 @@ function CheckoutStyles() {
         margin: -8px 0 0 4px;
         padding: 0;
         background: none;
+        border: none;
         font-weight: 600;
       }
 
@@ -413,7 +419,7 @@ function CheckoutStyles() {
         justify-content: center;
         align-items: center;
         gap: 7px;
-        color: var(--slate-500);
+        color: var(--im-fg-3);
         font-size: 12px;
       }
 
