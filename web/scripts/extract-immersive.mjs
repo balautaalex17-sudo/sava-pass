@@ -64,6 +64,12 @@ const ctaRe =
 const ctaCount = (markupOut.match(ctaRe) || []).length;
 markupOut = markupOut.replace(ctaRe, '<a href="__CTA_HREF__" class="$1"$2>$3</a>');
 
+// Membership CTA: the "Aplică acum" button leads to the application page (static route).
+const applyRe =
+  /<button class="(btn btn-p[^"]*)"((?:\s+[\w-]+="[^"]*")*)\s*>\s*(Aplică acum[\s\S]*?)<\/button>/g;
+const applyCount = (markupOut.match(applyRe) || []).length;
+markupOut = markupOut.replace(applyRe, '<a href="/devino-membru" class="$1"$2>$3</a>');
+
 // ── write ───────────────────────────────────────────────────────────────────
 fs.mkdirSync("app/_immersive", { recursive: true });
 fs.mkdirSync("public/imersiv", { recursive: true });
@@ -85,3 +91,4 @@ console.log("[extract] markup chars   :", markupOut.length);
 console.log("[extract] engine chars   :", engine.length);
 console.log("[extract] motion chars   :", motion.length);
 console.log("[extract] CTAs rewired   :", ctaCount, "(expect 3)");
+console.log("[extract] apply rewired   :", applyCount, "(expect 1)");
