@@ -49,7 +49,7 @@ export default function RootLayout({
       className={`${manrope.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} h-full`}
     >
       <body
-        className="min-h-full flex flex-col"
+        className="theme-immersive min-h-full flex flex-col"
         style={{
           fontFamily: "var(--font-manrope), ui-sans-serif, system-ui, sans-serif",
         }}

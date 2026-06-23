@@ -429,3 +429,153 @@ body {
 @media (prefers-reduced-motion: reduce) {
   [data-armed] .rstag { transform: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   IMMERSIVE v3 THEME — additive rebrand layer (U1)
+   Nothing above this line is edited. New --im-* tokens, a `.theme-immersive`
+   scope that remaps the semantic aliases to the dark v3 palette, and a set of
+   `.im-*` component primitives distilled from SavaPass Immersive v3.
+   Values mirror the v3 stylesheet :root (ink/cyan/paper, brand + ig gradient).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --im-ink:        #070A12;  /* page bg */
+  --im-ink-2:      #0B1320;  /* card surface */
+  --im-ink-3:      #101A2E;  /* elevated / hover */
+  --im-paper:      #F7FAFC;  /* light inverse surface */
+  --im-cyan:       #00A7E8;
+  --im-cyan-light: #7FE0FF;
+  --im-fg:         #EAF4FB;                  /* primary text on dark */
+  --im-fg-2:       rgba(224,244,252,0.66);   /* muted text */
+  --im-fg-3:       rgba(224,244,252,0.42);   /* faint text */
+  --im-line:       rgba(0,167,232,0.16);     /* cyan hairline divider */
+  --im-line-soft:  rgba(224,244,252,0.10);   /* neutral hairline */
+  --im-grad:       linear-gradient(135deg, #00B8F0 0%, #2563EB 100%);
+  --im-ig:         linear-gradient(45deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+  --im-shadow:     0 24px 60px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.35);
+  --im-glow:       0 12px 40px rgba(0,167,232,0.28);
+}
+
+/* Theme scope: remap the existing semantic aliases onto the dark palette.
+   Applied on <body> in layout.tsx so the whole app defaults to immersive.
+   The homepage stays authoritative via its own in-page <style>. */
+.theme-immersive {
+  --bg-app:        var(--im-ink);
+  --bg-card:       var(--im-ink-2);
+  --bg-elevated:   var(--im-ink-3);
+  --bg-tint:       rgba(0,167,232,0.08);
+  --bg-inverse:    var(--im-paper);
+  --fg-primary:    var(--im-fg);
+  --fg-secondary:  var(--im-fg-2);
+  --fg-tertiary:   var(--im-fg-3);
+  --fg-on-brand:   #FFFFFF;
+  --fg-link:       var(--im-cyan-light);
+  --border-subtle: var(--im-line-soft);
+  --border-strong: var(--im-line);
+  --border-focus:  var(--im-cyan);
+  --shadow-xs:     0 1px 2px rgba(0,0,0,0.4);
+  --shadow-sm:     0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md:     0 10px 28px rgba(0,0,0,0.45);
+  --shadow-lg:     var(--im-shadow);
+}
+
+/* Make the shared primitives theme-aware centrally so pages inherit dark
+   treatment without per-component rewrites. Scoped to .theme-immersive only. */
+.theme-immersive .btn--secondary {
+  background: var(--im-ink-3);
+  color: var(--im-fg);
+  border-color: var(--im-line);
+  box-shadow: none;
+}
+.theme-immersive .btn--ghost { color: var(--im-cyan-light); }
+.theme-immersive .btn--navy {
+  background: var(--im-grad);
+  color: #fff;
+  box-shadow: var(--im-glow);
+}
+.theme-immersive .input {
+  background: var(--im-ink-2);
+  border-color: var(--im-line);
+  color: var(--im-fg);
+}
+.theme-immersive .input::placeholder { color: var(--im-fg-3); }
+.theme-immersive .input:focus { border-color: var(--im-cyan); }
+.theme-immersive .row-hover:hover { background: var(--im-ink-3); }
+
+/* Focus ring tuned for dark surfaces */
+.theme-immersive :focus-visible {
+  box-shadow: 0 0 0 3px rgba(0,167,232,0.25), 0 0 0 1.5px var(--im-cyan);
+}
+
+/* ── Immersive component primitives ─────────────────────────────────────── */
+.im-card {
+  background: var(--im-ink-2);
+  border: 1px solid var(--im-line);
+  border-radius: var(--radius-lg);
+}
+.im-card--elevated {
+  background: var(--im-ink-3);
+  border: 1px solid var(--im-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--im-shadow);
+}
+.im-divider { height: 1px; background: var(--im-line-soft); border: 0; }
+
+/* Gradient accent text (use sparingly, on accent words/numerals) */
+.im-grad-text {
+  background: var(--im-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Pill chip on dark */
+.im-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--im-fg);
+  background: rgba(224,244,252,0.05);
+  border: 1px solid var(--im-line-soft);
+}
+.im-chip__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--im-cyan);
+}
+
+/* Primary immersive button (brand gradient + glow). Mirrors .btn sizing. */
+.im-btn {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.005em;
+  padding: 14px 22px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  background: var(--im-grad);
+  color: #fff;
+  box-shadow: var(--im-glow);
+}
+.im-btn--ghost {
+  background: transparent;
+  color: var(--im-fg);
+  border: 1px solid var(--im-line);
+  box-shadow: none;
+}
+.im-btn:disabled, .im-btn[disabled] { opacity: 0.4; pointer-events: none; }
+
+/* Section vertical rhythm helper */
+.im-section { padding-block: clamp(56px, 9vw, 120px); }

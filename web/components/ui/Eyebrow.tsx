@@ -14,7 +14,7 @@ export function Eyebrow({ children, color, className }: EyebrowProps) {
         fontWeight: 700,
         letterSpacing: "0.14em",
         textTransform: "uppercase",
-        color: color ?? "var(--brand-cyan-700)",
+        color: color ?? "var(--fg-link)",
       }}
     >
       {children}

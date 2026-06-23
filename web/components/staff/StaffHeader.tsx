@@ -11,8 +11,8 @@ export function StaffHeader({ left, right, center }: StaffHeaderProps) {
   return (
     <div
       style={{
-        background: "white",
-        borderBottom: "1px solid var(--slate-200)",
+        background: "var(--im-ink-2)",
+        borderBottom: "1px solid var(--im-line)",
         padding: "14px 24px",
         display: "flex",
         alignItems: "center",

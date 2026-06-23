@@ -6,7 +6,9 @@ interface LogoProps {
 
 export function Logo({ size = 22, dark = false, showWordmark = true }: LogoProps) {
   const cyan = dark ? "#ffffff" : "#009FE3";
-  const text = dark ? "#ffffff" : "#0F172A";
+  // Non-dark wordmark follows the theme foreground so it flips automatically
+  // to light on immersive (dark) surfaces; dark={true} still forces white.
+  const text = dark ? "#ffffff" : "var(--fg-primary)";
 
   const dots = Array.from({ length: 8 }, (_, i) => {
     const a = (i / 8) * Math.PI * 2;
