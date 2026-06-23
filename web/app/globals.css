@@ -1,0 +1,431 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Fonts (variables set by next/font in layout.tsx) ─────────────────── */
+  --font-sans:    var(--font-manrope), 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), 'Instrument Serif', Georgia, serif;
+  --font-mono:    var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Brand colors ─────────────────────────────────────────────────────── */
+  --color-brand-cyan:       #009FE3;
+  --color-brand-cyan-600:   #0089C4;
+  --color-brand-cyan-700:   #006FA1;
+  --color-brand-cyan-100:   #E0F4FC;
+  --color-brand-cyan-50:    #F1FAFE;
+  --color-brand-blue:       #2563EB;
+  --color-brand-blue-700:   #1D4ED8;
+  --color-brand-blue-100:   #DBEAFE;
+  --color-brand-navy:       #0F172A;
+  --color-brand-navy-soft:  #1E293B;
+
+  /* ── Slate neutrals ──────────────────────────────────────────────────── */
+  --color-slate-50:   #F8FAFC;
+  --color-slate-100:  #F1F5F9;
+  --color-slate-200:  #E2E8F0;
+  --color-slate-300:  #CBD5E1;
+  --color-slate-400:  #94A3B8;
+  --color-slate-500:  #64748B;
+  --color-slate-600:  #475569;
+  --color-slate-700:  #334155;
+  --color-slate-800:  #1E293B;
+  --color-slate-900:  #0F172A;
+
+  /* ── Semantic ─────────────────────────────────────────────────────────── */
+  --color-success:      #16A34A;
+  --color-success-100:  #DCFCE7;
+  --color-warning:      #F59E0B;
+  --color-warning-100:  #FEF3C7;
+  --color-danger:       #DC2626;
+  --color-danger-100:   #FEE2E2;
+
+  /* ── Radii ────────────────────────────────────────────────────────────── */
+  --radius-xs:   6px;
+  --radius-sm:   10px;
+  --radius-md:   14px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-pill: 999px;
+
+  /* ── Spacing (4-step) ─────────────────────────────────────────────────── */
+  --spacing-1:  4px;
+  --spacing-2:  8px;
+  --spacing-3:  12px;
+  --spacing-4:  16px;
+  --spacing-5:  20px;
+  --spacing-6:  24px;
+  --spacing-8:  32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* ── Shadows ──────────────────────────────────────────────────────────── */
+  --shadow-xs:    0 1px 2px rgba(15,23,42,0.05);
+  --shadow-sm:    0 2px 6px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-md:    0 8px 20px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+  --shadow-lg:    0 20px 40px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.04);
+  --shadow-brand: 0 12px 30px rgba(0,159,227,0.30);
+
+  /* ── Motion ──────────────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+  --duration-slow: 380ms;
+}
+
+/* ── CSS custom properties (needed for non-Tailwind usage & gradients) ───── */
+:root {
+  --brand-cyan:        #009FE3;
+  --brand-cyan-600:    #0089C4;
+  --brand-cyan-700:    #006FA1;
+  --brand-cyan-100:    #E0F4FC;
+  --brand-cyan-50:     #F1FAFE;
+  --brand-blue:        #2563EB;
+  --brand-blue-700:    #1D4ED8;
+  --brand-blue-100:    #DBEAFE;
+  --brand-navy:        #0F172A;
+  --brand-navy-soft:   #1E293B;
+  --slate-50:          #F8FAFC;
+  --slate-100:         #F1F5F9;
+  --slate-200:         #E2E8F0;
+  --slate-300:         #CBD5E1;
+  --slate-400:         #94A3B8;
+  --slate-500:         #64748B;
+  --slate-600:         #475569;
+  --slate-700:         #334155;
+  --slate-800:         #1E293B;
+  --slate-900:         #0F172A;
+  --white:             #FFFFFF;
+  --success:           #16A34A;
+  --success-100:       #DCFCE7;
+  --warning:           #F59E0B;
+  --warning-100:       #FEF3C7;
+  --danger:            #DC2626;
+  --danger-100:        #FEE2E2;
+  --bg-app:            var(--slate-50);
+  --bg-card:           var(--white);
+  --bg-elevated:       var(--white);
+  --bg-tint:           var(--brand-cyan-50);
+  --bg-inverse:        var(--brand-navy);
+  --fg-primary:        var(--slate-900);
+  --fg-secondary:      var(--slate-700);
+  --fg-tertiary:       var(--slate-500);
+  --fg-on-brand:       var(--white);
+  --fg-link:           var(--brand-cyan-700);
+  --border-subtle:     var(--slate-200);
+  --border-strong:     var(--slate-300);
+  --border-focus:      var(--brand-cyan);
+  --grad-brand:        linear-gradient(135deg, #00B8F0 0%, #2563EB 100%);
+  --grad-brand-soft:   linear-gradient(135deg, #E0F4FC 0%, #DBEAFE 100%);
+  --grad-night:        linear-gradient(160deg, #0F172A 0%, #1E3A8A 100%);
+  --radius-xs:  6px;
+  --radius-sm:  10px;
+  --radius-md:  14px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+  --radius-pill: 999px;
+  --shadow-xs: 0 1px 2px rgba(15,23,42,0.05);
+  --shadow-sm: 0 2px 6px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-md: 0 8px 20px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+  --shadow-lg: 0 20px 40px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.04);
+  --shadow-brand: 0 12px 30px rgba(0,159,227,0.30);
+  --shadow-inset-hi: inset 0 1px 0 rgba(255,255,255,0.10);
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast:    140ms;
+  --dur-base:    220ms;
+  --dur-slow:    380ms;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--bg-app);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Semantic type classes (mirror tokens.css, for non-Tailwind markup) ───── */
+.t-display {
+  font-family: var(--font-display);
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+.t-h1 { font-size: 32px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 800; }
+.t-h2 { font-size: 24px; line-height: 1.2;  letter-spacing: -0.01em; font-weight: 700; }
+.t-h3 { font-size: 20px; line-height: 1.3;  font-weight: 700; }
+.t-h4 { font-size: 17px; line-height: 1.35; font-weight: 600; }
+.t-body    { font-size: 16px; line-height: 1.5;  font-weight: 400; color: var(--fg-secondary); }
+.t-callout { font-size: 15px; line-height: 1.45; font-weight: 500; color: var(--fg-secondary); }
+.t-footnote{ font-size: 13px; line-height: 1.4;  color: var(--fg-tertiary); }
+.t-caption { font-size: 11px; line-height: 1.3;  letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; color: var(--fg-tertiary); }
+.t-eyebrow { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--brand-cyan-700); }
+.t-mono    { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.04em; color: var(--fg-secondary); }
+
+/* ── Focus ring ──────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--brand-cyan-100), 0 0 0 1.5px var(--brand-cyan);
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOTION SYSTEM — Batch A additions (append only; no existing values touched)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 4.1 New tokens */
+:root {
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --stagger-step: 60ms;
+  --z-sticky: 10;
+  --z-cta: 20;
+  --z-nav: 30;
+  --z-overlay: 40;
+}
+
+/* 4.2 Keyframes */
+@keyframes sp-rise   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes sp-fade   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sp-pop    { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes sp-ring   { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(1.45); opacity: 0; } }
+@keyframes sp-shake  { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes sp-pulse  { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.82); } }
+@keyframes sp-spin   { to { transform: rotate(360deg); } }
+@keyframes sp-flash  { from { background-color: var(--brand-cyan-50); } to { background-color: transparent; } }
+@keyframes sp-scanline { 0%,100% { transform: translateY(-96px); opacity: 0.25; } 50% { transform: translateY(96px); opacity: 1; } }
+
+/* 4.3 Utility classes */
+.anim-rise      { animation: sp-rise var(--dur-slow) var(--ease-out) both; }
+.anim-rise-fast { animation: sp-rise var(--dur-base) var(--ease-out) both; }
+.anim-fade      { animation: sp-fade var(--dur-base) ease both; }
+.anim-pop       { animation: sp-pop  var(--dur-slow) var(--ease-spring) both; }
+.anim-shake     { animation: sp-shake 160ms ease-in-out 2; }
+.anim-pulse-dot { animation: sp-pulse 2s var(--ease-in-out) infinite; }
+.anim-spin-slow { animation: sp-spin 1.2s linear infinite; }
+.anim-flash     { animation: sp-flash 1s var(--ease-out) both; }
+.anim-scanline  { animation: sp-scanline 1.5s ease-in-out infinite; }
+
+.ring-pulse { position: relative; }
+.ring-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid currentColor;
+  animation: sp-ring var(--dur-slow) var(--ease-out) both;
+  pointer-events: none;
+}
+
+.anim-stagger > * {
+  animation-delay: calc(var(--i, 0) * var(--stagger-step));
+}
+
+.pressable {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hover-dim {
+    transition: filter var(--dur-fast) ease;
+  }
+  .hover-dim:hover {
+    filter: brightness(0.96);
+  }
+
+  .row-hover:hover {
+    background: var(--slate-50);
+  }
+
+  .btn--ghost {
+    transition: color var(--dur-fast) ease;
+  }
+  .btn--ghost:hover {
+    color: var(--brand-cyan-700);
+  }
+
+  .ticket-card:hover > div {
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.input {
+  transition: border-color var(--dur-fast) ease;
+}
+.input:focus {
+  border-color: var(--brand-cyan);
+}
+
+/* 4.4 Explicit reduced-motion overrides for infinite animations */
+@media (prefers-reduced-motion: reduce) {
+  .anim-pulse-dot, .anim-spin-slow, .anim-scanline, .ring-pulse::after {
+    animation: none !important;
+  }
+}
+
+/* 4.5 Scroll-reveal pattern */
+[data-armed]:not([data-inview]) { opacity: 0; transform: translateY(12px); }
+[data-armed] { transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { [data-armed]:not([data-inview]) { transform: none; } }
+
+/* Stagger children via transition-delay driven by --i (used under data-armed parent) */
+[data-armed] .steps__item {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * var(--stagger-step));
+}
+[data-armed][data-inview] .steps__item {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-armed] .steps__item {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Button classes (Batch A — Button.tsx rework) */
+.btn {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.005em;
+  padding: 14px 22px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+.btn--primary {
+  background: var(--grad-brand);
+  color: var(--white);
+  box-shadow: var(--shadow-brand);
+  border: none;
+}
+.btn--secondary {
+  background: var(--white);
+  color: var(--brand-navy);
+  border: 1.5px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+.btn--ghost {
+  background: transparent;
+  color: var(--brand-cyan-700);
+  border: none;
+  box-shadow: none;
+}
+.btn--navy {
+  background: var(--brand-navy);
+  color: var(--white);
+  border: none;
+  box-shadow: none;
+}
+.btn--sm {
+  padding: 9px 14px;
+  font-size: 13px;
+}
+.btn:disabled, .btn[disabled] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Logo hover spin (gear rotates on parent .logo-spin hover) */
+@media (hover: hover) and (pointer: fine) {
+  .logo-spin:hover .logo-gear {
+    transform: rotate(45deg);
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+  .logo-gear {
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+}
+
+/* Refresh link — icon rotates 180° on hover */
+.refresh-link svg {
+  transition: transform var(--dur-base) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .refresh-link:hover svg {
+    transform: rotate(180deg);
+  }
+}
+
+/* Nav link hover color transition */
+@media (hover: hover) and (pointer: fine) {
+  .landing-nav__links a {
+    transition: color var(--dur-fast) ease;
+  }
+  .landing-nav__links a:hover {
+    color: var(--brand-navy);
+  }
+}
+
+/* ---- Landing v2 motion (additive) ---- */
+
+/* Ken Burns settle — hero photo eases from 1.12 to its 1.02 resting scale, once */
+@keyframes sp-zoom-settle {
+  from { transform: scale(1.12); }
+  to   { transform: scale(1.02); }
+}
+.anim-zoom-settle { animation: sp-zoom-settle 1.6s var(--ease-out) both; }
+
+/* Line-mask reveal — headline lines rise out of an overflow-hidden mask, once */
+@keyframes sp-line-rise {
+  from { transform: translateY(112%); }
+  to   { transform: none; }
+}
+.line-mask {
+  display: block;
+  overflow: hidden;
+  /* descender + italic overhang reserve */
+  padding: 0 0.08em 0.14em 0;
+  margin-bottom: -0.14em;
+}
+.line-mask > span {
+  display: block;
+  animation: sp-line-rise 0.7s var(--ease-out) both;
+}
+
+/* Generic Reveal-driven stagger child: pair with <Reveal> parent + --i per child */
+[data-armed] .rstag {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * var(--stagger-step));
+}
+[data-armed][data-inview] .rstag {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-armed] .rstag { transform: none; }
+}

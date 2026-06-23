@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>SavaPass — Prototype</title>
+
+<link rel="stylesheet" href="src/tokens.css" />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+
+<!-- Lucide for icons (matches design system) -->
+<script src="https://unpkg.com/lucide@0.452.0/dist/umd/lucide.min.js"></script>
+
+<style>
+  html, body, #root { height: 100%; margin: 0; }
+  body {
+    background: #f0eee9;
+    font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    color: #0F172A;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  * { box-sizing: border-box; }
+
+  /* Animations */
+  @keyframes sp-spin    { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes sp-pop     {
+    0%   { transform: scale(0.4); opacity: 0; }
+    60%  { transform: scale(1.10); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  @keyframes sp-scan    {
+    0%   { transform: translateY(-58%); opacity: 0; }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(58%);  opacity: 0; }
+  }
+  @keyframes sp-ring    {
+    0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    40%  { opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+  }
+  @keyframes sp-slide-forward {
+    from { transform: translateX(28px); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  @keyframes sp-slide-back {
+    from { transform: translateX(-28px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+  }
+
+  /* Lucide produces inline SVGs — make sure they inherit color */
+  [data-lucide] { color: inherit; }
+</style>
+
+<!-- Bundler thumbnail -->
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#00B8F0"/>
+        <stop offset="100%" stop-color="#2563EB"/>
+      </linearGradient>
+    </defs>
+    <rect width="200" height="200" fill="url(#g)"/>
+    <rect x="60" y="44" width="80" height="112" rx="14" fill="#fff"/>
+    <rect x="76" y="74" width="48" height="48" rx="4" fill="#0F172A"/>
+    <rect x="84" y="82" width="6" height="6" fill="#fff"/>
+    <rect x="110" y="82" width="6" height="6" fill="#fff"/>
+    <rect x="84" y="108" width="6" height="6" fill="#fff"/>
+    <text x="100" y="140" font-family="Manrope, sans-serif" font-size="11" font-weight="800" fill="#0F172A" text-anchor="middle" letter-spacing="-0.5">SAVAPASS</text>
+  </svg>
+</template>
+
+<!-- React + Babel (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Data (plain JS — load first) -->
+<script src="src/data.js"></script>
+
+<!-- Shared atoms + frames + canvas + tweaks shell (Babel) -->
+<script type="text/babel" src="src/components.jsx"></script>
+<script type="text/babel" src="src/design-canvas.jsx"></script>
+<script type="text/babel" src="src/tweaks-panel.jsx"></script>
+
+<!-- Mobile screens + admin + website -->
+<script type="text/babel" src="src/screens-mobile.jsx"></script>
+<script type="text/babel" src="src/admin.jsx"></script>
+<script type="text/babel" src="src/browser-window.jsx"></script>
+<script type="text/babel" src="src/website.jsx"></script>
+<script type="text/babel" src="src/website-mobile.jsx"></script>
+
+<!-- Main app composition -->
+<script type="text/babel" src="src/app.jsx"></script>
+
+</body>
+</html>
