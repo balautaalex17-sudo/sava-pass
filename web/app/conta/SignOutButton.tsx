@@ -26,7 +26,7 @@ export function SignOutButton() {
         style={{
           fontSize: 13,
           fontWeight: 600,
-          color: "var(--slate-500)",
+          color: "var(--im-fg-2)",
           background: "none",
           border: "none",
           cursor: "pointer",

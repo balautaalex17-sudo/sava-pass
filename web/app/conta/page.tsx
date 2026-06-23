@@ -58,11 +58,11 @@ export default async function ContaPage() {
   const firstName = displayName ? displayName.split(" ")[0] : "";
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--slate-50)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--im-ink)" }}>
       {/* Header */}
       <div style={{
-        background: "rgba(255,255,255,0.95)",
-        borderBottom: "1px solid var(--slate-200)",
+        background: "rgba(7,10,18,0.92)",
+        borderBottom: "1px solid var(--im-line)",
         padding: "14px 24px",
         display: "flex",
         alignItems: "center",
@@ -83,13 +83,13 @@ export default async function ContaPage() {
           <h1 style={{
             fontWeight: 800,
             fontSize: 26,
-            color: "var(--brand-navy)",
+            color: "var(--im-fg)",
             letterSpacing: "-0.025em",
             margin: "0 0 4px",
           }}>
             {firstName ? `Salut, ${firstName}.` : "Contul meu"}
           </h1>
-          <p style={{ fontSize: 13, color: "var(--slate-500)", margin: 0 }}>{user.email}</p>
+          <p style={{ fontSize: 13, color: "var(--im-fg-2)", margin: 0 }}>{user.email}</p>
         </div>
 
         {/* Stat boxes — quieted */}
@@ -105,7 +105,7 @@ export default async function ContaPage() {
           <ProfileCard email={user.email ?? ""} name={displayName} />
         </div>
 
-        <p style={{ color: "var(--slate-500)", fontSize: 12, margin: "0 0 18px" }}>
+        <p style={{ color: "var(--im-fg-3)", fontSize: 12, margin: "0 0 18px" }}>
           Vezi doar biletele cumpărate cu {user.email}.
         </p>
 
@@ -126,20 +126,20 @@ function EmptyState() {
   return (
     <div style={{
       position: "relative",
-      background: "white",
+      background: "var(--im-ink-2)",
       borderRadius: 20,
-      border: "1px solid var(--slate-200)",
+      border: "1px solid var(--im-line)",
       padding: "48px 32px",
       textAlign: "center",
-      boxShadow: "var(--shadow-xs)",
+      boxShadow: "var(--im-shadow)",
       overflow: "hidden",
     }}>
       <GearWatermark />
       <div style={{ position: "relative", zIndex: 1 }}>
-        <p style={{ fontWeight: 700, fontSize: 17, color: "var(--brand-navy)", margin: "0 0 8px" }}>
+        <p style={{ fontWeight: 700, fontSize: 17, color: "var(--im-fg)", margin: "0 0 8px" }}>
           Niciun bilet încă
         </p>
-        <p style={{ fontSize: 14, color: "var(--slate-500)", margin: "0 0 24px", lineHeight: 1.55 }}>
+        <p style={{ fontSize: 14, color: "var(--im-fg-2)", margin: "0 0 24px", lineHeight: 1.55 }}>
           Cumpără un bilet pentru un eveniment Interact și apare automat aici.
         </p>
         <Link
@@ -149,11 +149,12 @@ function EmptyState() {
             display: "inline-block",
             padding: "10px 20px",
             borderRadius: 14,
-            background: "var(--brand-navy)",
+            background: "var(--im-grad)",
             color: "white",
             fontWeight: 700,
             fontSize: 14,
             textDecoration: "none",
+            boxShadow: "var(--im-glow)",
           }}
         >
           Vezi evenimentele
@@ -169,16 +170,16 @@ function StatBox({ label, value, i }: { label: string; value: string; i: number 
       className="anim-rise-fast"
       style={{
         "--i": i,
-        background: "white",
-        border: "1px solid var(--slate-200)",
+        background: "var(--im-ink-2)",
+        border: "1px solid var(--im-line)",
         borderRadius: 16,
         padding: 16,
-        boxShadow: "var(--shadow-xs)",
+        boxShadow: "var(--im-shadow)",
       } as React.CSSProperties}
     >
-      <div style={{ color: "var(--slate-500)", fontSize: 12, fontWeight: 400 }}>{label}</div>
+      <div style={{ color: "var(--im-fg-3)", fontSize: 12, fontWeight: 400 }}>{label}</div>
       <div style={{
-        color: "var(--brand-navy)",
+        color: "var(--im-fg)",
         fontSize: 24,
         fontWeight: 700,
         marginTop: 4,
@@ -193,9 +194,9 @@ function StatBox({ label, value, i }: { label: string; value: string; i: number 
 function TicketSection({ title, tickets }: { title: string; tickets: TicketRow[] }) {
   return (
     <section>
-      <h2 style={{ color: "var(--brand-navy)", fontSize: 15, margin: "0 0 10px", fontWeight: 800 }}>{title}</h2>
+      <h2 style={{ color: "var(--im-fg)", fontSize: 15, margin: "0 0 10px", fontWeight: 800 }}>{title}</h2>
       {tickets.length === 0 ? (
-        <p style={{ color: "var(--slate-500)", fontSize: 13, margin: 0 }}>Niciun bilet aici.</p>
+        <p style={{ color: "var(--im-fg-3)", fontSize: 13, margin: 0 }}>Niciun bilet aici.</p>
       ) : (
         <div className="anim-stagger" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {tickets.map((ticket, idx) => (
@@ -220,10 +221,10 @@ function TicketCard({ ticket, i }: { ticket: TicketRow; i: number }) {
       {/* Boarding-pass silhouette: left zone + vertical dashed divider + right stub */}
       <div
         style={{
-          background: "white",
+          background: "var(--im-ink-2)",
           borderRadius: 20,
-          border: "1px solid var(--slate-200)",
-          boxShadow: "var(--shadow-xs)",
+          border: "1px solid var(--im-line)",
+          boxShadow: "var(--im-shadow)",
           display: "flex",
           alignItems: "stretch",
           overflow: "hidden",
@@ -238,7 +239,7 @@ function TicketCard({ ticket, i }: { ticket: TicketRow; i: number }) {
               <div style={{
                 fontWeight: 800,
                 fontSize: 16,
-                color: "var(--brand-navy)",
+                color: "var(--im-fg)",
                 letterSpacing: "-0.01em",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -246,7 +247,7 @@ function TicketCard({ ticket, i }: { ticket: TicketRow; i: number }) {
               }}>
                 {event?.title ?? "Eveniment"}
               </div>
-              <div style={{ fontSize: 13, color: "var(--slate-500)", marginTop: 3 }}>
+              <div style={{ fontSize: 13, color: "var(--im-fg-2)", marginTop: 3 }}>
                 {event?.date_label} · {event?.venue}
               </div>
             </div>
@@ -262,8 +263,8 @@ function TicketCard({ ticket, i }: { ticket: TicketRow; i: number }) {
           width: 16,
           height: 16,
           borderRadius: "50%",
-          background: "var(--slate-50)",
-          border: "1px solid var(--slate-200)",
+          background: "var(--im-ink)",
+          border: "1px solid var(--im-line)",
           zIndex: 2,
         }} />
         <div style={{
@@ -273,15 +274,15 @@ function TicketCard({ ticket, i }: { ticket: TicketRow; i: number }) {
           width: 16,
           height: 16,
           borderRadius: "50%",
-          background: "var(--slate-50)",
-          border: "1px solid var(--slate-200)",
+          background: "var(--im-ink)",
+          border: "1px solid var(--im-line)",
           zIndex: 2,
         }} />
 
         {/* Vertical dashed hairline */}
         <div style={{
           width: 0,
-          borderLeft: "2px dashed var(--slate-200)",
+          borderLeft: "2px dashed var(--im-line)",
           flexShrink: 0,
           margin: "8px 0",
         }} />
@@ -290,7 +291,7 @@ function TicketCard({ ticket, i }: { ticket: TicketRow; i: number }) {
         <div style={{
           width: 96,
           flexShrink: 0,
-          background: "var(--slate-50)",
+          background: "var(--im-ink-3)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -303,7 +304,7 @@ function TicketCard({ ticket, i }: { ticket: TicketRow; i: number }) {
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.08em",
-            color: "var(--brand-navy)",
+            color: "var(--im-fg)",
             writingMode: "vertical-rl",
             textOrientation: "mixed",
             transform: "rotate(180deg)",
@@ -311,7 +312,7 @@ function TicketCard({ ticket, i }: { ticket: TicketRow; i: number }) {
           }}>
             {ticket.code}
           </span>
-          <span style={{ fontSize: 12, color: "var(--brand-cyan-700)", fontWeight: 600 }}>
+          <span style={{ fontSize: 12, color: "var(--im-cyan-light)", fontWeight: 600 }}>
             Vezi →
           </span>
         </div>

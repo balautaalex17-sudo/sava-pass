@@ -11,11 +11,11 @@ export function ProfileCard({ email, name }: { email: string; name: string }) {
     <form
       action={action}
       style={{
-        background: "white",
+        background: "var(--im-ink-2)",
         borderRadius: 20,
-        border: "1px solid var(--slate-200)",
+        border: "1px solid var(--im-line)",
         padding: 18,
-        boxShadow: "var(--shadow-xs)",
+        boxShadow: "var(--im-shadow)",
         display: "grid",
         gap: 12,
       }}
@@ -37,11 +37,11 @@ export function ProfileCard({ email, name }: { email: string; name: string }) {
             value={email}
             readOnly
             className="input"
-            style={{ ...inputStyle, color: "var(--slate-500)" }}
+            style={{ ...inputStyle, color: "var(--im-fg-3)" }}
           />
         </label>
       </div>
-      <p style={{ color: "var(--slate-500)", fontSize: 12, margin: 0 }}>
+      <p style={{ color: "var(--im-fg-2)", fontSize: 12, margin: 0 }}>
         Numele de pe biletele deja cumpărate nu se schimbă retroactiv.
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -64,7 +64,7 @@ export function ProfileCard({ email, name }: { email: string; name: string }) {
 const labelStyle: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 700,
-  color: "var(--slate-500)",
+  color: "var(--im-fg-3)",
   textTransform: "uppercase",
   letterSpacing: "0.08em",
 };
@@ -74,9 +74,9 @@ const inputStyle: React.CSSProperties = {
   boxSizing: "border-box",
   padding: "10px 12px",
   borderRadius: 10,
-  border: "1px solid var(--slate-200)",
-  background: "var(--slate-50)",
-  color: "var(--brand-navy)",
+  border: "1px solid var(--im-line)",
+  background: "var(--im-ink-3)",
+  color: "var(--im-fg)",
   fontSize: 14,
   outline: "none",
 };

@@ -37,7 +37,7 @@ function LoginForm() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "var(--slate-50)",
+      background: "var(--im-ink)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -51,11 +51,11 @@ function LoginForm() {
         style={{
           width: "100%",
           maxWidth: 400,
-          background: "white",
+          background: "var(--im-ink-2)",
           borderRadius: 20,
           padding: "32px 28px",
-          boxShadow: "var(--shadow-md)",
-          border: "1px solid var(--slate-200)",
+          boxShadow: "var(--im-shadow)",
+          border: "1px solid var(--im-line)",
         }}
       >
         {sent ? (
@@ -76,10 +76,10 @@ function LoginForm() {
             >
               <MailCheck size={24} color="var(--brand-cyan-700)" strokeWidth={1.75} />
             </div>
-            <h1 style={{ fontWeight: 800, fontSize: 20, color: "var(--brand-navy)", margin: "0 0 10px" }}>
+            <h1 style={{ fontWeight: 800, fontSize: 20, color: "var(--im-fg)", margin: "0 0 10px" }}>
               Verifică emailul
             </h1>
-            <p style={{ fontSize: 14, color: "var(--slate-500)", lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontSize: 14, color: "var(--im-fg-2)", lineHeight: 1.6, margin: 0 }}>
               Am trimis un link de acces la <strong>{email}</strong>.
               Deschide-l pentru a-ți vedea biletele.
             </p>
@@ -88,7 +88,7 @@ function LoginForm() {
               style={{
                 marginTop: 20,
                 fontSize: 13,
-                color: "var(--brand-cyan-700)",
+                color: "var(--im-cyan-light)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
@@ -101,10 +101,10 @@ function LoginForm() {
           </div>
         ) : (
           <div className="anim-fade">
-            <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--brand-navy)", margin: "0 0 4px" }}>
+            <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--im-fg)", margin: "0 0 4px" }}>
               Biletele mele
             </h1>
-            <p style={{ fontSize: 13, color: "var(--slate-500)", margin: "0 0 28px" }}>
+            <p style={{ fontSize: 13, color: "var(--im-fg-2)", margin: "0 0 28px" }}>
               Introdu emailul cu care ai cumpărat biletul.
             </p>
 
@@ -114,7 +114,7 @@ function LoginForm() {
                   display: "block",
                   fontSize: 12,
                   fontWeight: 700,
-                  color: "var(--slate-500)",
+                  color: "var(--im-fg-3)",
                   marginBottom: 6,
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
@@ -133,10 +133,10 @@ function LoginForm() {
                     width: "100%",
                     padding: "10px 14px",
                     borderRadius: 12,
-                    border: "1px solid var(--slate-200)",
+                    border: "1px solid var(--im-line)",
                     fontSize: 15,
-                    background: "var(--slate-50)",
-                    color: "var(--brand-navy)",
+                    background: "var(--im-ink-3)",
+                    color: "var(--im-fg)",
                     outline: "none",
                     boxSizing: "border-box",
                   }}
@@ -144,7 +144,7 @@ function LoginForm() {
               </div>
 
               {error && (
-                <p className="anim-shake anim-fade" style={{ fontSize: 13, color: "var(--danger)", margin: 0 }}>
+                <p className="anim-shake anim-fade" style={{ fontSize: 13, color: "#FCA5A5", margin: 0 }}>
                   {error}
                 </p>
               )}
@@ -154,7 +154,7 @@ function LoginForm() {
               </Button>
             </form>
 
-            <p style={{ fontSize: 12, color: "var(--slate-500)", marginTop: 20, textAlign: "center", lineHeight: 1.5 }}>
+            <p style={{ fontSize: 12, color: "var(--im-fg-3)", marginTop: 20, textAlign: "center", lineHeight: 1.5 }}>
               Vei primi un email cu un link de acces · fără parolă.
             </p>
           </div>
