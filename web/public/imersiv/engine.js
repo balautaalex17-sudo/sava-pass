@@ -85,7 +85,7 @@ const lw=document.getElementById('ll-wheel');if(lw)lw.appendChild(interactWheel(
 })();
 
 /* ── Lenis smooth scroll ── */
-const lenis = window.Lenis ? new Lenis({lerp:0.085,smoothWheel:true,wheelMultiplier:1.08,syncTouch:true,touchMultiplier:1.6}) : null;
+const lenis = window.Lenis ? new Lenis({lerp:0.085,smoothWheel:true,wheelMultiplier:1.08,syncTouch:false}) : null;
 if(lenis){if(window.gsap){gsap.ticker.add(t=>lenis.raf(t*1000));gsap.ticker.lagSmoothing(0);}else{function raf(t){lenis.raf(t);requestAnimationFrame(raf);}requestAnimationFrame(raf);}}
 window.__lenis=lenis;
 
@@ -181,6 +181,8 @@ if(window.gsap && !reduce){
     if(lenis) lenis.on('scroll',ScrollTrigger.update);
     /* hero headline mask reveal — fires as the hero scrolls up into view (not on load) */
     (function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();
+    /* mobile perf: the continuous parallax/scrub ScrollTriggers below update every scroll frame and tank mobile FPS — run them on non-touch only. Entrance reveals (.rv / .im-rv) and the hero+phone showpiece are separate and stay on all devices. */
+    var __noTouch=!matchMedia('(hover:none)').matches; if(__noTouch){
     gsap.to('#tkwrap',{yPercent:-12,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
 
     /* seam connectors: thread + node draw in as each section arrives */
@@ -202,6 +204,7 @@ if(window.gsap && !reduce){
       const row=g.closest('.gen-row'); if(!row) return;
       gsap.fromTo(g,{yPercent:-12},{yPercent:12,ease:'none',scrollTrigger:{trigger:row,start:'top bottom',end:'bottom top',scrub:true}});
     });
+    }  /* end desktop-only parallax/scrub block */
     /* recompute trigger positions once fonts/images/videos settle — otherwise
        start/end are measured against an unsettled layout and scrub feels off */
     ScrollTrigger.refresh();
@@ -286,8 +289,9 @@ function chrome(){
   secs.forEach((s,i)=>{if(s){const r=s.getBoundingClientRect();if(r.top<=cy)act=i;}});
   dotEls.forEach((a,i)=>a.classList.toggle('on',i===act));
 }
-addEventListener('scroll',chrome,{passive:true});
-if(lenis) lenis.on('scroll',chrome);
+let __chromeQ=false;function __chromeT(){if(__chromeQ)return;__chromeQ=true;requestAnimationFrame(function(){__chromeQ=false;chrome();});}
+addEventListener('scroll',__chromeT,{passive:true});
+if(lenis) lenis.on('scroll',__chromeT);
 chrome();
 dotEls.forEach(a=>a.addEventListener('click',e=>{e.preventDefault();const t=document.getElementById(a.dataset.s);
   if(t){if(lenis)lenis.scrollTo(t,{offset:-10});else window.scrollTo(0,t.getBoundingClientRect().top+(window.scrollY||0)-10);}}));
@@ -298,6 +302,7 @@ kickVideos();
 addEventListener('pointerdown',kickVideos,{once:true});
 addEventListener('scroll',kickVideos,{once:true,passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos();});
+if('IntersectionObserver'in window){var __vio=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){v.muted=true;var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{threshold:.05});document.querySelectorAll('video').forEach(function(v){__vio.observe(v);});}
 
 /* seamless ping-pong loop — the Higgsfield clips don't loop cleanly (first and
    last frames differ, so a plain loop shows a hard cut). Play forward, then

@@ -93,16 +93,35 @@ const applyRe =
 const applyCount = (markupOut.match(applyRe) || []).length;
 markupOut = markupOut.replace(applyRe, '<a href="/devino-membru" class="$1"$2>$3</a>');
 
+// SavaPass perf (2026-06-23): the homepage PNGs were 2.1-2.7 MB each (~20 MB total).
+// They are re-encoded to sized WebP by scripts/encode-media.mjs (~95% smaller);
+// rewrite the markup to reference the .webp files. Also lazy-load the two event
+// posters that ship EAGER in the source but sit below the fold.
+const WEBP_IMAGES = [
+  "echoes-unplugged", "event-easter", "event-cupid",
+  "year-2024", "year-2025", "year-2026",
+  "team-interact", "stat-community", "stat-concert", "stat-scan",
+];
+for (const n of WEBP_IMAGES) {
+  markupOut = markupOut.split(`/imersiv/${n}.png`).join(`/imersiv/${n}.webp`);
+}
+markupOut = markupOut
+  .replace('src="/imersiv/event-easter.webp" alt=', 'src="/imersiv/event-easter.webp" loading="lazy" decoding="async" alt=')
+  .replace('src="/imersiv/event-cupid.webp" alt=', 'src="/imersiv/event-cupid.webp" loading="lazy" decoding="async" alt=');
+
 // SavaPass: drive Lenis smooth-scroll from GSAP's ticker instead of a standalone
 // rAF loop, so smooth-scroll and ScrollTrigger update on the same frame (separate
 // loops desync scrub animations from the scroll), and refresh trigger positions
 // once the layout settles. Keeps the homepage scroll motion locked to the wheel.
 const engineOut = engine
   // Snappier smooth-scroll (match v2's feel): lower lerp = less floaty/laggy.
-  // Keep Lenis on touch (user choice): syncTouch routes touch through Lenis too so
-  // mobile scroll-feel + GSAP scrubs stay consistent with desktop; touchMultiplier
-  // keeps it responsive. Tune on-device (see plan U2/U7 + Risks).
-  .replace("new Lenis({lerp:0.1,smoothWheel:true,wheelMultiplier:1.05})", "new Lenis({lerp:0.085,smoothWheel:true,wheelMultiplier:1.08,syncTouch:true,touchMultiplier:1.6})")
+  // Mobile perf (2026-06-23): syncTouch:false → touch uses NATIVE momentum scroll
+  // (Lenis only smooths the wheel, on desktop). syncTouch:true was re-driving touch
+  // scroll through a JS rAF loop and was the main cause of "very laggy" on phones.
+  // Native touch scroll is buttery and every scroll handler still fires via the
+  // native listener. (Reverses the earlier "keep Lenis on touch" choice — that was
+  // the lag.)
+  .replace("new Lenis({lerp:0.1,smoothWheel:true,wheelMultiplier:1.05})", "new Lenis({lerp:0.085,smoothWheel:true,wheelMultiplier:1.08,syncTouch:false})")
   .replace(
     "if(lenis){function raf(t){lenis.raf(t);requestAnimationFrame(raf);}requestAnimationFrame(raf);}",
     "if(lenis){if(window.gsap){gsap.ticker.add(t=>lenis.raf(t*1000));gsap.ticker.lagSmoothing(0);}else{function raf(t){lenis.raf(t);requestAnimationFrame(raf);}requestAnimationFrame(raf);}}"
@@ -134,11 +153,30 @@ const engineOut = engine
   // to translateY(0)!important when the hero enters view, staggered per line.
   .replace(
     "gsap.to('.hline>span',{yPercent:0,stagger:.1,duration:1.1,ease:'power4.out',scrollTrigger:{trigger:'#hero',start:'top 78%'}});",
-    "(function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();"
+    "(function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();\n    /* mobile perf: the continuous parallax/scrub ScrollTriggers below update every scroll frame and tank mobile FPS — run them on non-touch only. Entrance reveals (.rv / .im-rv) and the hero+phone showpiece are separate and stay on all devices. */\n    var __noTouch=!matchMedia('(hover:none)').matches; if(__noTouch){"
   )
+  // Mobile perf: close the desktop-only parallax block opened after the hero reveal,
+  // then refresh trigger positions (a no-op on touch where no scrubs were created).
   .replace(
     "    /* (stat entrance is now driven by Framer Motion in the module below) */",
-    "    /* recompute trigger positions once fonts/images/videos settle — otherwise\n       start/end are measured against an unsettled layout and scrub feels off */\n    ScrollTrigger.refresh();\n    addEventListener('load',()=>ScrollTrigger.refresh());\n    setTimeout(()=>ScrollTrigger.refresh(),600);\n    /* (stat entrance is now driven by Framer Motion in the module below) */"
+    "    }  /* end desktop-only parallax/scrub block */\n    /* recompute trigger positions once fonts/images/videos settle — otherwise\n       start/end are measured against an unsettled layout and scrub feels off */\n    ScrollTrigger.refresh();\n    addEventListener('load',()=>ScrollTrigger.refresh());\n    setTimeout(()=>ScrollTrigger.refresh(),600);\n    /* (stat entrance is now driven by Framer Motion in the module below) */"
+  )
+  // Mobile perf: rAF-throttle the chrome() scroll handler — it reads
+  // getBoundingClientRect on every section on each raw scroll event (layout thrash
+  // on native touch scroll). Coalesce to at most one read per frame.
+  .replace(
+    "addEventListener('scroll',chrome,{passive:true});",
+    "let __chromeQ=false;function __chromeT(){if(__chromeQ)return;__chromeQ=true;requestAnimationFrame(function(){__chromeQ=false;chrome();});}\naddEventListener('scroll',__chromeT,{passive:true});"
+  )
+  .replace(
+    "if(lenis) lenis.on('scroll',chrome);",
+    "if(lenis) lenis.on('scroll',__chromeT);"
+  )
+  // Mobile perf: only decode the on-screen video — pause off-screen ones (helps
+  // everywhere, invisible since the visible video keeps playing).
+  .replace(
+    "document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos();});",
+    "document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos();});\nif('IntersectionObserver'in window){var __vio=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){v.muted=true;var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{threshold:.05});document.querySelectorAll('video').forEach(function(v){__vio.observe(v);});}"
   );
 
 // No blink: Framer Motion's `inView` re-runs its callback every time an element
