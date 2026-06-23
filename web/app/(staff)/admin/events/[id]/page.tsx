@@ -27,7 +27,7 @@ export default async function EventEditorPage({ params }: { params: Promise<{ id
     <>
       <StaffHeader
         left={
-          <Link href="/admin/events" className="pressable" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--slate-600)", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
+          <Link href="/admin/events" className="pressable" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--im-fg-2)", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
             <ChevronLeft size={16} strokeWidth={1.75} />
             Evenimente
           </Link>
@@ -36,10 +36,10 @@ export default async function EventEditorPage({ params }: { params: Promise<{ id
 
       <main style={{ maxWidth: 860, margin: "0 auto", padding: "28px 20px 60px" }}>
         <div style={{ marginBottom: 22 }}>
-          <h1 style={{ fontWeight: 800, fontSize: 26, color: "var(--brand-navy)", margin: "0 0 4px" }}>
+          <h1 style={{ fontWeight: 800, fontSize: 26, color: "var(--im-fg)", margin: "0 0 4px" }}>
             {isNew ? "Eveniment nou" : event!.data!.title}
           </h1>
-          <p style={{ color: "var(--slate-500)", fontSize: 13, margin: 0 }}>
+          <p style={{ color: "var(--im-fg-2)", fontSize: 13, margin: 0 }}>
             {count ? "Slug-ul este blocat pentru că există comenzi." : "Salvează ca draft, apoi activează din lista de evenimente."}
           </p>
         </div>

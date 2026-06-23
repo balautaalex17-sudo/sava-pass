@@ -34,7 +34,7 @@ export default async function TeamPage() {
     <>
       <StaffHeader
         left={
-          <Link href="/admin" className="pressable" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--slate-600)", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
+          <Link href="/admin" className="pressable" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--im-fg-2)", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
             <ChevronLeft size={16} strokeWidth={1.75} />
             Admin
           </Link>
@@ -43,10 +43,10 @@ export default async function TeamPage() {
 
       <main style={{ maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" }}>
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontWeight: 800, fontSize: 26, color: "var(--brand-navy)", margin: "0 0 4px" }}>
+          <h1 style={{ fontWeight: 800, fontSize: 26, color: "var(--im-fg)", margin: "0 0 4px" }}>
             Acces staff
           </h1>
-          <p style={{ fontSize: 13, color: "var(--slate-500)", margin: 0 }}>
+          <p style={{ fontSize: 13, color: "var(--im-fg-2)", margin: 0 }}>
             Adminii pot invita, schimba roluri și scoate membri din staff fără să șteargă conturile lor de cumpărător.
           </p>
         </div>

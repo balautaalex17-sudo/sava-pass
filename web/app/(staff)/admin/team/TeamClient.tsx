@@ -27,8 +27,8 @@ export function TeamClient({ members }: { members: Member[] }) {
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
-      <form action={inviteAction} style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: 20, padding: 18, boxShadow: "var(--shadow-xs)" }}>
-        <h2 style={{ margin: "0 0 14px", color: "var(--brand-navy)", fontSize: 18 }}>Invită membru</h2>
+      <form action={inviteAction} style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, padding: 18, boxShadow: "var(--im-shadow)" }}>
+        <h2 style={{ margin: "0 0 14px", color: "var(--im-fg)", fontSize: 18 }}>Invită membru</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 180px auto", gap: 10, alignItems: "start" }}>
           <Field label="Email" error={inviteState.errors?.email}>
             <input name="email" className="input" type="email" required placeholder="email@example.com" style={inputStyle} />
@@ -45,12 +45,12 @@ export function TeamClient({ members }: { members: Member[] }) {
         <ActionMessage state={inviteState} />
       </form>
 
-      <div style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: 20, overflow: "hidden", boxShadow: "var(--shadow-xs)" }}>
+      <div style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, overflow: "hidden", boxShadow: "var(--im-shadow)" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "var(--slate-50)", borderBottom: "1px solid var(--slate-200)" }}>
+            <tr style={{ background: "var(--im-ink-3)", borderBottom: "1px solid var(--im-line)" }}>
               {["Membru", "Rol", "Status", ""].map((h) => (
-                <th key={h} style={{ padding: "11px 14px", textAlign: "left", fontSize: 11, color: "var(--slate-500)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</th>
+                <th key={h} style={{ padding: "11px 14px", textAlign: "left", fontSize: 11, color: "var(--im-fg-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -68,10 +68,10 @@ function MemberRow({ member, index }: { member: Member; index: number }) {
   const [removeState, removeAction, removePending] = useActionState(removeMember, {});
 
   return (
-    <tr className="row-hover anim-rise-fast" style={{ borderBottom: "1px solid var(--slate-100)", animationDelay: `${Math.min(index, 6) * 60}ms` }}>
+    <tr className="row-hover anim-rise-fast" style={{ borderBottom: "1px solid var(--im-line-soft)", animationDelay: `${Math.min(index, 6) * 60}ms` }}>
       <td style={{ padding: 14 }}>
-        <div style={{ fontWeight: 700, color: "var(--brand-navy)", fontSize: 14 }}>{member.full_name}</div>
-        <div style={{ color: "var(--slate-500)", fontSize: 12, marginTop: 2 }}>{member.email}</div>
+        <div style={{ fontWeight: 700, color: "var(--im-fg)", fontSize: 14 }}>{member.full_name}</div>
+        <div style={{ color: "var(--im-fg-2)", fontSize: 12, marginTop: 2 }}>{member.email}</div>
         <ActionMessage state={roleState} compact />
         <ActionMessage state={removeState} compact />
       </td>
@@ -102,7 +102,7 @@ function MemberRow({ member, index }: { member: Member; index: number }) {
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <label style={{ display: "grid", gap: 6 }}>
-      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--slate-500)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--im-fg-2)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
       {children}
       {error && <span className="anim-shake" style={{ fontSize: 12, color: "var(--danger)" }}>{error}</span>}
     </label>
@@ -124,9 +124,9 @@ const inputStyle: React.CSSProperties = {
   boxSizing: "border-box",
   padding: "9px 11px",
   borderRadius: 10,
-  border: "1px solid var(--slate-200)",
-  color: "var(--brand-navy)",
-  background: "var(--slate-50)",
+  border: "1px solid var(--im-line)",
+  color: "var(--im-fg)",
+  background: "var(--im-ink-3)",
   fontSize: 14,
 };
 
@@ -136,26 +136,27 @@ const primaryButtonStyle: React.CSSProperties = {
   borderRadius: 10,
   padding: "10px 16px",
   color: "white",
-  background: "var(--brand-navy)",
+  background: "var(--im-grad)",
   fontWeight: 800,
   cursor: "pointer",
+  boxShadow: "var(--im-glow)",
 };
 
 const secondaryButtonStyle: React.CSSProperties = {
-  border: "1px solid var(--slate-200)",
+  border: "1px solid var(--im-line)",
   borderRadius: 10,
   padding: "8px 12px",
-  color: "var(--brand-navy)",
-  background: "white",
+  color: "var(--im-fg)",
+  background: "var(--im-ink-3)",
   fontWeight: 700,
   cursor: "pointer",
 };
 
 const iconButtonStyle: React.CSSProperties = {
-  border: "1px solid var(--slate-200)",
+  border: "1px solid var(--im-line)",
   borderRadius: 10,
   padding: 8,
-  color: "var(--danger)",
-  background: "white",
+  color: "#FCA5A5",
+  background: "var(--im-ink-3)",
   cursor: "pointer",
 };

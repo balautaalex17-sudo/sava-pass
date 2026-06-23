@@ -41,7 +41,7 @@ const RESULT_LABELS: Record<string, { text: string; icon: "ok" | "warn" | "err" 
 
 function VerdictLabel({ result }: { result: string }) {
   const def = RESULT_LABELS[result];
-  if (!def) return <span style={{ fontSize: 12, color: "var(--slate-500)" }}>{result}</span>;
+  if (!def) return <span style={{ fontSize: 12, color: "var(--im-fg-2)" }}>{result}</span>;
   const { text, icon } = def;
   const color =
     icon === "ok" ? "var(--success)" :
@@ -116,7 +116,7 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
   return (
     <div>
       {/* Tab bar */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "1px solid var(--slate-200)" }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "1px solid var(--im-line)" }}>
         {(["scans", "attendees"] as const).map(t => (
           <button
             key={t}
@@ -124,7 +124,7 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
             style={{
               padding: "8px 16px", fontSize: 13, fontWeight: 600, border: "none",
               background: "none", cursor: "pointer",
-              color: tab === t ? "var(--brand-cyan-700)" : "var(--slate-500)",
+              color: tab === t ? "var(--im-cyan-light)" : "var(--im-fg-2)",
               marginBottom: -1,
               position: "relative",
             }}
@@ -136,7 +136,7 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
               left: 0,
               right: 0,
               height: 2,
-              background: "var(--brand-cyan)",
+              background: "var(--im-cyan)",
               borderRadius: "2px 2px 0 0",
               transform: tab === t ? "scaleX(1)" : "scaleX(0)",
               transformOrigin: "left",
@@ -147,9 +147,9 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
       </div>
 
       {tab === "scans" && (
-        <div style={{ background: "white", borderRadius: 16, border: "1px solid var(--slate-200)", overflow: "hidden" }}>
+        <div style={{ background: "var(--im-ink-2)", borderRadius: 16, border: "1px solid var(--im-line)", overflow: "hidden" }}>
           {scans.length === 0 && (
-            <p style={{ textAlign: "center", color: "var(--slate-500)", padding: "32px 20px", margin: 0 }}>
+            <p style={{ textAlign: "center", color: "var(--im-fg-2)", padding: "32px 20px", margin: 0 }}>
               Niciun scan înregistrat încă.
             </p>
           )}
@@ -161,15 +161,15 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
                   <tr
                     key={s.id}
                     className={`row-hover${isNew ? " anim-flash anim-rise-fast" : ""}`}
-                    style={{ borderBottom: "1px solid var(--slate-100)" }}
+                    style={{ borderBottom: "1px solid var(--im-line-soft)" }}
                   >
-                    <td style={{ padding: "10px 16px", fontSize: 12, color: "var(--slate-500)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                    <td style={{ padding: "10px 16px", fontSize: 12, color: "var(--im-fg-2)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
                       {new Date(s.created_at).toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                     </td>
-                    <td style={{ padding: "10px 8px", fontSize: 13, fontWeight: 600, color: "var(--brand-navy)", fontVariantNumeric: "tabular-nums" }}>
+                    <td style={{ padding: "10px 8px", fontSize: 13, fontWeight: 600, color: "var(--im-fg)", fontVariantNumeric: "tabular-nums" }}>
                       {s.code ?? "—"}
                     </td>
-                    <td style={{ padding: "10px 8px", fontSize: 13, color: "var(--slate-600)" }}>
+                    <td style={{ padding: "10px 8px", fontSize: 13, color: "var(--im-fg-2)" }}>
                       {s.holder_name ?? "—"}
                     </td>
                     <td style={{ padding: "10px 16px" }}>
@@ -191,8 +191,8 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
               className="pressable"
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                fontSize: 13, fontWeight: 600, color: "var(--brand-navy)",
-                background: "white", border: "1px solid var(--slate-200)",
+                fontSize: 13, fontWeight: 600, color: "var(--im-fg)",
+                background: "var(--im-ink-3)", border: "1px solid var(--im-line)",
                 borderRadius: 8, padding: "7px 14px", cursor: "pointer",
               }}
             >
@@ -200,33 +200,33 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
               Export CSV
             </button>
           </div>
-          <div style={{ background: "white", borderRadius: 16, border: "1px solid var(--slate-200)", overflow: "auto" }}>
+          <div style={{ background: "var(--im-ink-2)", borderRadius: 16, border: "1px solid var(--im-line)", overflow: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--slate-200)", background: "var(--slate-50)" }}>
+                <tr style={{ borderBottom: "1px solid var(--im-line)", background: "var(--im-ink-3)" }}>
                   {["Cod", "Nume", "Email", "Status", "Emis"].map(h => (
-                    <th key={h} style={{ padding: "10px 14px", fontSize: 11, fontWeight: 700, color: "var(--slate-500)", textAlign: "left", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                    <th key={h} style={{ padding: "10px 14px", fontSize: 11, fontWeight: 700, color: "var(--im-fg-3)", textAlign: "left", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {tickets.map(t => (
-                  <tr key={t.id} className="row-hover" style={{ borderBottom: "1px solid var(--slate-100)" }}>
-                    <td style={{ padding: "9px 14px", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--brand-navy)", letterSpacing: "0.08em", fontVariantNumeric: "tabular-nums" }}>{t.code}</td>
-                    <td style={{ padding: "9px 14px", fontSize: 13, color: "var(--brand-navy)" }}>{t.holder_name}</td>
-                    <td style={{ padding: "9px 14px", fontSize: 12, color: "var(--slate-500)" }}>{t.holder_email}</td>
+                  <tr key={t.id} className="row-hover" style={{ borderBottom: "1px solid var(--im-line-soft)" }}>
+                    <td style={{ padding: "9px 14px", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--im-cyan-light)", letterSpacing: "0.08em", fontVariantNumeric: "tabular-nums" }}>{t.code}</td>
+                    <td style={{ padding: "9px 14px", fontSize: 13, color: "var(--im-fg)" }}>{t.holder_name}</td>
+                    <td style={{ padding: "9px 14px", fontSize: 12, color: "var(--im-fg-2)" }}>{t.holder_email}</td>
                     <td style={{ padding: "9px 14px" }}>
                       <Chip size="sm" tone={STATUS_TONE[t.status] ?? "used"} dot>
                         {t.status}
                       </Chip>
                     </td>
-                    <td style={{ padding: "9px 14px", fontSize: 12, color: "var(--slate-500)", fontVariantNumeric: "tabular-nums" }}>
+                    <td style={{ padding: "9px 14px", fontSize: 12, color: "var(--im-fg-2)", fontVariantNumeric: "tabular-nums" }}>
                       {new Date(t.issued_at).toLocaleString("ro-RO", { dateStyle: "short", timeStyle: "short" })}
                     </td>
                   </tr>
                 ))}
                 {tickets.length === 0 && (
-                  <tr><td colSpan={5} style={{ padding: "32px", textAlign: "center", color: "var(--slate-500)", fontSize: 13 }}>Niciun bilet vândut.</td></tr>
+                  <tr><td colSpan={5} style={{ padding: "32px", textAlign: "center", color: "var(--im-fg-2)", fontSize: 13 }}>Niciun bilet vândut.</td></tr>
                 )}
               </tbody>
             </table>

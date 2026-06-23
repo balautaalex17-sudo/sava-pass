@@ -43,7 +43,7 @@ export default async function AdminPage() {
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 57px)", padding: 40 }}>
           <GearWatermark />
           <div style={{ position: "relative", textAlign: "center", display: "grid", gap: 16 }}>
-            <p style={{ color: "var(--slate-500)", fontSize: 15, margin: 0 }}>Niciun eveniment activ.</p>
+            <p style={{ color: "var(--im-fg-2)", fontSize: 15, margin: 0 }}>Niciun eveniment activ.</p>
             <Link
               href="/admin/events/new"
               className="btn btn--navy pressable hover-dim"
@@ -127,10 +127,10 @@ export default async function AdminPage() {
         {/* Event title row */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
           <div>
-            <h1 style={{ fontWeight: 800, fontSize: 24, color: "var(--brand-navy)", margin: "0 0 2px", letterSpacing: "-0.02em" }}>
+            <h1 style={{ fontWeight: 800, fontSize: 24, color: "var(--im-fg)", margin: "0 0 2px", letterSpacing: "-0.02em" }}>
               {event.title}
             </h1>
-            <p style={{ fontSize: 13, color: "var(--slate-500)", margin: 0 }}>
+            <p style={{ fontSize: 13, color: "var(--im-fg-2)", margin: 0 }}>
               {event.date_label} · {event.venue}
             </p>
           </div>
@@ -211,10 +211,10 @@ function HeaderLink({ href, icon, label, primary }: { href: string; icon: ReactN
       style={{
         display: "inline-flex", alignItems: "center", gap: 6,
         fontSize: 13, fontWeight: 700,
-        color: primary ? "white" : "var(--brand-navy)",
+        color: primary ? "white" : "var(--im-fg)",
         textDecoration: "none", padding: "7px 12px",
-        background: primary ? "var(--brand-cyan)" : "white",
-        border: primary ? "none" : "1px solid var(--slate-200)",
+        background: primary ? "var(--im-cyan)" : "var(--im-ink-3)",
+        border: primary ? "none" : "1px solid var(--im-line)",
         borderRadius: 8,
       }}
     >
@@ -240,28 +240,28 @@ function StatCard({
       className="anim-rise-fast"
       style={{
         "--i": i,
-        background: "white",
+        background: "var(--im-ink-2)",
         borderRadius: 16,
         padding: "18px 20px",
-        border: `1.5px solid ${accent ? "var(--warning)" : "var(--slate-200)"}`,
-        boxShadow: "var(--shadow-xs)",
+        border: `1.5px solid ${accent ? "var(--warning)" : "var(--im-line)"}`,
+        boxShadow: "var(--im-shadow)",
       } as React.CSSProperties}
     >
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--slate-500)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--im-fg-3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
         {label}
       </div>
       <div style={{
         fontSize: 26, fontWeight: 800,
-        color: accent ? "var(--warning)" : "var(--brand-navy)",
+        color: accent ? "var(--warning)" : "var(--im-fg)",
         letterSpacing: "-0.02em",
         fontVariantNumeric: "tabular-nums",
         fontFamily: mono ? "var(--font-mono)" : undefined,
       }}>
         {value}
       </div>
-      {sub && <div style={{ fontSize: 12, color: "var(--slate-500)", marginTop: 2 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 12, color: "var(--im-fg-2)", marginTop: 2 }}>{sub}</div>}
       {bar && (
-        <div style={{ marginTop: 10, height: 4, borderRadius: "var(--radius-pill)", background: "var(--slate-100)", overflow: "hidden" }}>
+        <div style={{ marginTop: 10, height: 4, borderRadius: "var(--radius-pill)", background: "var(--im-ink-3)", overflow: "hidden" }}>
           <div style={{
             height: "100%",
             borderRadius: "var(--radius-pill)",

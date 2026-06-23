@@ -63,7 +63,7 @@ export function EventEditor({ event, hasOrders }: { event: Event | null; hasOrde
           </Field>
           <Field label="Culoare accent">
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ width: 20, height: 20, borderRadius: "50%", background: accent, border: "1px solid var(--slate-200)", flexShrink: 0, display: "inline-block" }} />
+              <span style={{ width: 20, height: 20, borderRadius: "50%", background: accent, border: "1px solid var(--im-line)", flexShrink: 0, display: "inline-block" }} />
               <input
                 name="accent"
                 value={accent}
@@ -140,8 +140,8 @@ export function EventEditor({ event, hasOrders }: { event: Event | null; hasOrde
         position: "sticky",
         bottom: 0,
         zIndex: "var(--z-sticky)" as unknown as number,
-        background: "white",
-        borderTop: "1px solid var(--slate-200)",
+        background: "var(--im-ink-2)",
+        borderTop: "1px solid var(--im-line)",
         padding: "12px 20px",
         display: "flex",
         alignItems: "center",
@@ -173,11 +173,11 @@ function IconButton({ label, onClick, children }: { label: string; onClick: () =
   return <button type="button" aria-label={label} title={label} onClick={onClick} className="pressable" style={iconButtonStyle}>{children}</button>;
 }
 
-const sectionStyle: React.CSSProperties = { background: "white", border: "1px solid var(--slate-200)", borderRadius: 20, padding: 18, boxShadow: "var(--shadow-xs)" };
-const sectionTitleStyle: React.CSSProperties = { margin: "0 0 14px", fontSize: 16, color: "var(--brand-navy)", fontWeight: 800 };
+const sectionStyle: React.CSSProperties = { background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, padding: 18, boxShadow: "var(--im-shadow)" };
+const sectionTitleStyle: React.CSSProperties = { margin: "0 0 14px", fontSize: 16, color: "var(--im-fg)", fontWeight: 800 };
 const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 };
-const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: "var(--slate-500)", textTransform: "uppercase", letterSpacing: "0.08em" };
-const inputStyle: React.CSSProperties = { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--slate-200)", background: "var(--slate-50)", color: "var(--brand-navy)", fontSize: 14 };
-const smallButtonStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--slate-200)", background: "white", color: "var(--brand-navy)", borderRadius: 10, padding: "7px 10px", fontWeight: 700, cursor: "pointer" };
+const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: "var(--im-fg-3)", textTransform: "uppercase", letterSpacing: "0.08em" };
+const inputStyle: React.CSSProperties = { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--im-line)", background: "var(--im-ink-3)", color: "var(--im-fg)", fontSize: 14 };
+const smallButtonStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--im-line)", background: "var(--im-ink-3)", color: "var(--im-fg)", borderRadius: 10, padding: "7px 10px", fontWeight: 700, cursor: "pointer" };
 const iconButtonStyle: React.CSSProperties = { ...smallButtonStyle, padding: 10 };
-const primaryButtonStyle: React.CSSProperties = { border: "none", borderRadius: 12, padding: "12px 18px", background: "var(--brand-navy)", color: "white", fontWeight: 800, cursor: "pointer", fontSize: 14 };
+const primaryButtonStyle: React.CSSProperties = { border: "none", borderRadius: 12, padding: "12px 18px", background: "var(--im-grad)", color: "white", fontWeight: 800, cursor: "pointer", fontSize: 14, boxShadow: "var(--im-glow)" };

@@ -34,12 +34,12 @@ export function StatusControl({
         {pending ? (
           <span
             className="anim-spin-slow"
-            style={{ width: 12, height: 12, border: "2px solid var(--slate-300)", borderTopColor: "var(--brand-navy)", borderRadius: "50%", display: "inline-block" }}
+            style={{ width: 12, height: 12, border: "2px solid var(--im-line)", borderTopColor: "var(--im-cyan)", borderRadius: "50%", display: "inline-block" }}
           />
         ) : label}
       </button>
       {state.errors?.general && (
-        <span className="anim-shake anim-fade" style={{ color: "var(--danger)", fontSize: 11, maxWidth: 160 }}>
+        <span className="anim-shake anim-fade" style={{ color: "#FCA5A5", fontSize: 11, maxWidth: 160 }}>
           {state.errors.general}
         </span>
       )}
@@ -48,11 +48,11 @@ export function StatusControl({
 }
 
 const smallButtonStyle: React.CSSProperties = {
-  border: "1px solid var(--slate-200)",
+  border: "1px solid var(--im-line)",
   borderRadius: 10,
   padding: "8px 10px",
-  background: "white",
-  color: "var(--brand-navy)",
+  background: "var(--im-ink-3)",
+  color: "var(--im-fg)",
   fontWeight: 800,
   cursor: "pointer",
   fontSize: 12,
