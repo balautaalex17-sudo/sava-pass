@@ -241,7 +241,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
   }, [devices, selectedDeviceId, startScanner, stopScanner]);
 
   const activeDevice = devices.find((device) => device.deviceId === selectedDeviceId);
-  const color = verdict ? (VERDICT_COLORS[verdict.result] ?? "var(--slate-400)") : "var(--brand-cyan)";
+  const color = verdict ? (VERDICT_COLORS[verdict.result] ?? "var(--slate-400)") : "var(--im-cyan)";
   const statusLabel = manualPending ? "Verific…" : cameraError ? "Eroare cameră" : state === "scanning" ? "Scanează" : state === "result" ? "Rezultat" : "Pornire";
   const bottomMessage = cameraError
     ? "Camera nu este pornită. Verifică permisiunile și încearcă din nou."
@@ -288,7 +288,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--brand-navy)", color: "white", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--im-ink)", color: "white", display: "flex", flexDirection: "column" }}>
       <header style={{ padding: "16px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(2,6,23,0.88)" }}>
         <Logo size={18} dark />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -389,7 +389,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
         {/* Aside — solid dark, no blur */}
         <aside style={{ borderRadius: 24, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(2,6,23,0.88)", boxShadow: "0 18px 50px rgba(0,0,0,0.24)", padding: 18, display: "flex", flexDirection: "column", gap: 18 }}>
           <div>
-            <div style={{ width: 42, height: 42, borderRadius: 14, background: "rgba(0,159,227,0.16)", color: "var(--brand-cyan)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 14, background: "rgba(0,167,232,0.16)", color: "var(--im-cyan)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
               <Video size={20} strokeWidth={1.75} />
             </div>
             <h1 style={{ fontSize: 24, fontWeight: 800, color: "white", margin: "0 0 8px", letterSpacing: "-0.03em" }}>Scanare bilete</h1>
