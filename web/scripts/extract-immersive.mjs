@@ -81,6 +81,20 @@ cssOut = cssOut
   )
   .replace(".rv{transform:translateY(48px) scale(.93);filter:blur(10px);}", ".rv{transform:translateY(22px);}");
 
+// SavaPass perf (2026-06-23): the stats-section equalizer is 56 bars each running
+// an INFINITE animation of `height` (a layout property) — 56 simultaneous reflows
+// per frame = the jank felt around the stats section. Switch to transform:scaleY
+// (compositor-only): fix each bar's box height (var --h) and animate scaleY.
+cssOut = cssOut
+  .replace(
+    ".eq span{width:5px;height:8px;border-radius:3px 3px 0 0;flex:none;transform-origin:bottom;",
+    ".eq span{width:5px;height:var(--h,46px);border-radius:3px 3px 0 0;flex:none;transform-origin:bottom;will-change:transform;",
+  )
+  .replace(
+    "@keyframes eqbar{from{height:7px;opacity:.4;}to{height:var(--h,46px);opacity:1;}}",
+    "@keyframes eqbar{from{transform:scaleY(.16);opacity:.4;}to{transform:scaleY(1);opacity:1;}}",
+  );
+
 let markupOut = repoint(markup);
 const ctaRe =
   /<button class="(btn btn-p[^"]*)"((?:\s+[\w-]+="[^"]*")*)\s*>\s*((?:Cumpără bilet|Vezi evenimentul)[\s\S]*?)<\/button>/g;
