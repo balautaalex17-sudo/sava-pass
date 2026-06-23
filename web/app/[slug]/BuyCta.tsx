@@ -19,8 +19,8 @@ export function BuyCta({ slug, priceRon, isSoldOut, accent }: BuyCtaProps) {
         bottom: 0,
         zIndex: "var(--z-cta)" as unknown as number,
         padding: "14px 20px max(28px, env(safe-area-inset-bottom, 16px))",
-        background: "rgba(255,255,255,0.98)",
-        borderTop: "1px solid var(--slate-200)",
+        background: "rgba(7,10,18,0.96)",
+        borderTop: "1px solid var(--im-line)",
         animationDelay: "120ms",
       }}
     >
@@ -32,8 +32,8 @@ export function BuyCta({ slug, priceRon, isSoldOut, accent }: BuyCtaProps) {
               padding: "14px 18px",
               borderRadius: 14,
               textAlign: "center",
-              background: "var(--slate-100)",
-              color: "var(--slate-500)",
+              background: "var(--im-ink-3)",
+              color: "var(--im-fg-3)",
               fontWeight: 800,
               fontSize: 15,
             }}

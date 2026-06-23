@@ -168,8 +168,8 @@ function EventStyles() {
     <style>{`
       .event-page {
         min-height: 100vh;
-        background: var(--slate-50);
-        color: var(--brand-navy);
+        background: var(--im-ink);
+        color: var(--im-fg);
       }
 
       .event-nav {
@@ -180,8 +180,8 @@ function EventStyles() {
         align-items: center;
         justify-content: space-between;
         padding: 12px 20px;
-        background: rgba(248,250,252,0.98);
-        border-bottom: 1px solid var(--slate-200);
+        background: rgba(7,10,18,0.92);
+        border-bottom: 1px solid var(--im-line);
       }
 
       .event-nav__back,
@@ -193,12 +193,12 @@ function EventStyles() {
         width: 36px;
         height: 36px;
         border-radius: var(--radius-pill);
-        background: white;
-        border: 1px solid var(--slate-200);
+        background: var(--im-ink-3);
+        border: 1px solid var(--im-line);
         display: grid;
         place-items: center;
-        color: var(--brand-navy);
-        box-shadow: var(--shadow-xs);
+        color: var(--im-fg);
+        box-shadow: none;
       }
 
       .event-nav__spacer {
@@ -221,8 +221,9 @@ function EventStyles() {
         min-height: 620px;
         border-radius: var(--radius-xl);
         overflow: hidden;
-        background: var(--brand-navy);
-        box-shadow: var(--shadow-lg);
+        background: var(--im-ink-2);
+        box-shadow: var(--im-shadow);
+        border: 1px solid var(--im-line);
       }
 
       .event-poster__image {
@@ -269,16 +270,16 @@ function EventStyles() {
       }
 
       .event-sheet {
-        background: white;
-        border: 1px solid var(--slate-200);
+        background: var(--im-ink-2);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-xl);
         padding: 28px;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--im-shadow);
       }
 
       .event-sheet h1 {
         margin: 0;
-        color: var(--brand-navy);
+        color: var(--im-fg);
         font-size: 32px;
         font-weight: 800;
         line-height: 1.05;
@@ -287,7 +288,7 @@ function EventStyles() {
 
       .event-subtitle {
         margin: 7px 0 0;
-        color: var(--slate-600);
+        color: var(--im-fg-2);
         font-family: var(--font-display);
         font-size: 17px;
         font-style: italic;
@@ -304,20 +305,20 @@ function EventStyles() {
         display: flex;
         gap: 10px;
         padding: 14px;
-        border: 1px solid var(--slate-200);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-md);
-        background: var(--slate-50);
+        background: var(--im-ink-3);
       }
 
       .event-fact__icon {
-        color: var(--brand-cyan-700);
+        color: var(--im-cyan);
         margin-top: 1px;
         flex-shrink: 0;
       }
 
       .event-fact__label {
         display: block;
-        color: var(--slate-500);
+        color: var(--im-fg-3);
         font-size: 11px;
         font-weight: 800;
         text-transform: uppercase;
@@ -327,7 +328,7 @@ function EventStyles() {
       .event-fact strong {
         display: block;
         margin-top: 3px;
-        color: var(--brand-navy);
+        color: var(--im-fg);
         font-size: 13px;
         line-height: 1.3;
       }
@@ -335,7 +336,7 @@ function EventStyles() {
       .event-fact small {
         display: block;
         margin-top: 2px;
-        color: var(--slate-500);
+        color: var(--im-fg-2);
         font-size: 12px;
       }
 
@@ -344,7 +345,7 @@ function EventStyles() {
         display: flex;
         align-items: center;
         gap: 9px;
-        color: var(--slate-500);
+        color: var(--im-fg-2);
         font-size: 13px;
       }
 
@@ -360,7 +361,7 @@ function EventStyles() {
         color: white;
         text-decoration: none;
         font-weight: 800;
-        box-shadow: var(--shadow-brand);
+        box-shadow: var(--im-glow);
       }
 
       .event-inline-cta span {
@@ -373,20 +374,20 @@ function EventStyles() {
 
       .event-copy h2 {
         margin: 0 0 10px;
-        color: var(--brand-navy);
+        color: var(--im-fg);
         font-size: 16px;
         font-weight: 800;
       }
 
       .event-copy p {
         margin: 0;
-        color: var(--slate-700);
+        color: var(--im-fg-2);
         font-size: 15px;
         line-height: 1.62;
       }
 
       .event-program {
-        border: 1px solid var(--slate-200);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-lg);
         overflow: hidden;
       }
@@ -396,8 +397,8 @@ function EventStyles() {
         gap: 14px;
         align-items: center;
         padding: 14px 16px;
-        border-bottom: 1px solid var(--slate-100);
-        background: white;
+        border-bottom: 1px solid var(--im-line-soft);
+        background: var(--im-ink-2);
       }
 
       .event-program div:last-child {
@@ -407,14 +408,14 @@ function EventStyles() {
       .event-program time {
         width: 44px;
         flex-shrink: 0;
-        color: var(--brand-navy);
+        color: var(--im-cyan-light);
         font-family: var(--font-mono);
         font-size: 13px;
         font-weight: 800;
       }
 
       .event-program span {
-        color: var(--brand-navy);
+        color: var(--im-fg);
         font-size: 14px;
         font-weight: 600;
       }
@@ -430,9 +431,9 @@ function EventStyles() {
         align-items: center;
         gap: 6px;
         padding: 8px 13px;
-        border: 1px solid var(--slate-200);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-pill);
-        color: var(--slate-700);
+        color: var(--im-fg-2);
         font-size: 13px;
         font-weight: 600;
       }
@@ -447,8 +448,8 @@ function EventStyles() {
         align-items: center;
         gap: 12px;
         padding: 16px;
-        background: var(--slate-50);
-        border: 1px solid var(--slate-200);
+        background: var(--im-ink-3);
+        border: 1px solid var(--im-line);
         border-radius: var(--radius-lg);
       }
 
@@ -459,7 +460,7 @@ function EventStyles() {
 
       .event-organizer span {
         display: block;
-        color: var(--slate-500);
+        color: var(--im-fg-3);
         font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.06em;
@@ -468,7 +469,7 @@ function EventStyles() {
       .event-organizer strong {
         display: block;
         margin-top: 2px;
-        color: var(--brand-navy);
+        color: var(--im-fg);
         font-size: 14px;
       }
 
