@@ -111,6 +111,14 @@ cssOut = cssOut.replace(
   "@media(max-width:760px){.lrail{display:none;}.dots{display:none;}.strip{display:none;}.tele{display:none;}}",
 );
 
+// SavaPass mobile (plan 004 follow-up): on phones the hero grid stacks to 1 column
+// and .tk-wrap was justify-self:start, so the phone mockup left-aligned and clipped
+// off the left edge. Centre it (desktop already centres via the base .tk-wrap rule).
+cssOut = cssOut.replace(
+  ".tk-wrap{margin-top:10px;justify-self:start;}",
+  ".tk-wrap{margin-top:10px;justify-self:center;}",
+);
+
 // SavaPass mobile (plan 004 follow-up): the intro lockup hugged the LEFT edge on
 // phones (#logo-stage is align-items:flex-start ≤920px), leaving the right half a
 // dead white void and the whole card unbalanced. Center the lockup + gear block and
