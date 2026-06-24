@@ -1,0 +1,507 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dedicated mobile homepage — design system + sections.
+   Namespaced under .mh so the GLOBAL/unscoped immersive route CSS
+   (body{display:flex;padding-left}, bare .btn{min-width:210px}, :root{}) can
+   never bleed in. Desktop never sees this (.home-mobile is display:none >900px).
+   Design Direction: ink + single cyan accent, kinetic type, real photography,
+   CSS+IO motion (emil), anti-slop guardrails (impeccable / design-taste).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.mh {
+  --mh-ink: #070a12;
+  --mh-ink-2: #0b111e;
+  --mh-ink-3: #121a2c;
+  --mh-cyan: #00a7e8;
+  --mh-cyan-2: #2563eb;
+  --mh-grad: linear-gradient(135deg, #00a7e8 0%, #2563eb 100%);
+  --mh-fg: #f8fafc;
+  --mh-fg-2: #aab6ca;
+  --mh-fg-3: #6c7a93;
+  --mh-line: rgba(255, 255, 255, 0.1);
+  --mh-line-cyan: rgba(0, 167, 232, 0.28);
+  --mh-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --mh-pad: clamp(20px, 6vw, 28px);
+
+  position: relative;
+  background: var(--mh-ink);
+  color: var(--mh-fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+.mh *,
+.mh *::before,
+.mh *::after { box-sizing: border-box; }
+.mh img { display: block; max-width: 100%; }
+
+/* ── Buttons (.mh-btn — NEVER the global .btn) ─────────────────────────────── */
+.mh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 14px;
+  font: 700 16px/1 var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 140ms var(--mh-ease), filter 200ms var(--mh-ease);
+}
+.mh-btn:active { transform: scale(0.97); }
+.mh-btn--primary {
+  background: var(--mh-grad);
+  color: #fff;
+  box-shadow: 0 14px 34px rgba(0, 150, 220, 0.32);
+}
+.mh-btn--primary:hover { filter: brightness(1.06); }
+.mh-btn--ghost {
+  background: transparent;
+  color: var(--mh-fg);
+  border: 1px solid var(--mh-line);
+}
+.mh-btn--ghost:hover { border-color: var(--mh-line-cyan); }
+.mh-btn .mh-ar { transition: transform 240ms var(--mh-ease); }
+.mh-btn:hover .mh-ar { transform: translateX(3px); }
+
+.mh-num { font-family: var(--font-mono), ui-monospace, monospace; }
+.mh-serif { font-family: var(--font-display), Georgia, serif; font-style: italic; font-weight: 400; }
+
+/* ── Reveal primitive: MhReveal sets data-in on .mh-rv when in view ────────── */
+.mh-rv .mh-up {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.6s var(--mh-ease), transform 0.6s var(--mh-ease);
+  transition-delay: var(--d, 0s);
+  will-change: opacity, transform;
+}
+.mh-rv[data-in="true"] .mh-up { opacity: 1; transform: none; }
+
+/* Line-mask headline reveal (clip via overflow + translateY) */
+.mh-hl { display: block; overflow: hidden; padding: 0.06em 0 0.12em; }
+.mh-hl > span {
+  display: block;
+  transform: translateY(112%);
+  transition: transform 0.72s var(--mh-ease);
+  transition-delay: var(--d, 0s);
+}
+.mh-rv[data-in="true"] .mh-hl > span { transform: translateY(0); }
+
+/* ── Section rhythm ────────────────────────────────────────────────────────── */
+.mh-sec { padding: clamp(64px, 13vw, 104px) var(--mh-pad); position: relative; }
+.mh-eyebrow {
+  font: 500 11.5px/1 var(--font-mono), monospace;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mh-cyan);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1 · THE DOOR (hero)
+   ───────────────────────────────────────────────────────────────────────────── */
+.mh-hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 var(--mh-pad)
+    calc(clamp(34px, 9vw, 56px) + env(safe-area-inset-bottom));
+  overflow: hidden;
+  isolation: isolate;
+}
+.mh-hero__photo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.08);
+  transition: transform 1.4s var(--mh-ease);
+}
+.mh-hero[data-in="true"] .mh-hero__photo { transform: scale(1); }
+.mh-hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(120% 80% at 80% 0%, rgba(0, 167, 232, 0.18), transparent 55%),
+    linear-gradient(180deg, rgba(7, 10, 18, 0.42) 0%, rgba(7, 10, 18, 0.72) 52%, var(--mh-ink) 100%);
+}
+.mh-gear {
+  position: absolute;
+  z-index: -1;
+  top: 12%;
+  right: -34px;
+  width: 230px;
+  height: 230px;
+  opacity: 0.16;
+  color: var(--mh-cyan);
+  animation: mh-spin 64s linear infinite;
+}
+@keyframes mh-spin { to { transform: rotate(360deg); } }
+
+.mh-hero__head {
+  margin: 16px 0 0;
+  font-weight: 800;
+  font-size: clamp(38px, 11.5vw, 60px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.mh-hero__head .c { color: var(--mh-cyan); }
+.mh-hero__head .mh-serif { letter-spacing: -0.01em; }
+.mh-hero__sub {
+  margin: 18px 0 0;
+  max-width: 30ch;
+  color: var(--mh-fg-2);
+  font-size: 16px;
+  line-height: 1.55;
+}
+.mh-hero__cta {
+  display: grid;
+  gap: 11px;
+  margin-top: 26px;
+}
+.mh-hero__scroll {
+  margin-top: 24px;
+  font: 500 10.5px/1 var(--font-mono), monospace;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--mh-fg-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.mh-hero__scroll i {
+  width: 1px;
+  height: 22px;
+  background: linear-gradient(var(--mh-cyan), transparent);
+  animation: mh-pulse 1.8s var(--mh-ease) infinite;
+}
+@keyframes mh-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2 · THE TICKET (next event — boarding-pass silhouette)
+   ───────────────────────────────────────────────────────────────────────────── */
+.mh-ticket-sec { padding-top: clamp(28px, 7vw, 48px); }
+.mh-ticket {
+  position: relative;
+  border-radius: 20px;
+  background: var(--mh-ink-2);
+  border: 1px solid var(--mh-line);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  transition: transform 200ms var(--mh-ease), border-color 200ms var(--mh-ease);
+}
+.mh-ticket:active { transform: scale(0.985); }
+.mh-ticket__poster { position: relative; aspect-ratio: 16 / 10; }
+.mh-ticket__poster img { width: 100%; height: 100%; object-fit: cover; }
+.mh-ticket__poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(11, 17, 30, 0.85) 100%);
+}
+.mh-ticket__chip {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(7, 10, 18, 0.66);
+  backdrop-filter: blur(6px);
+  font: 500 10.5px/1 var(--font-mono), monospace;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mh-fg);
+}
+.mh-ticket__chip::before {
+  content: "";
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--mh-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 167, 232, 0.25);
+}
+/* perforation / tear line with notch cutouts */
+.mh-perf {
+  position: relative;
+  height: 0;
+  border-top: 1.5px dashed var(--mh-line);
+  margin: 0 18px;
+}
+.mh-perf::before,
+.mh-perf::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--mh-ink);
+  transform: translateY(-50%);
+}
+.mh-perf::before { left: -30px; }
+.mh-perf::after { right: -30px; }
+
+.mh-ticket__body { padding: 20px 18px 22px; }
+.mh-ticket__title {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(24px, 7vw, 30px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+}
+.mh-ticket__meta {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--mh-fg-2);
+  font-size: 13.5px;
+}
+.mh-ticket__meta span { display: inline-flex; align-items: center; gap: 7px; }
+.mh-ticket__meta svg { width: 15px; height: 15px; color: var(--mh-cyan); }
+.mh-ticket__meta b { color: var(--mh-fg); font-weight: 700; }
+
+.mh-seats { margin-top: 18px; }
+.mh-seats__track {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--mh-ink-3);
+  overflow: hidden;
+}
+.mh-seats__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(0);
+  border-radius: 99px;
+  background: var(--mh-grad);
+  transition: transform 1.1s var(--mh-ease);
+  transition-delay: 0.15s;
+}
+.mh-rv[data-in="true"] .mh-seats__fill { transform: scaleX(var(--p, 0)); }
+.mh-seats__row {
+  margin-top: 9px;
+  display: flex;
+  justify-content: space-between;
+  font: 500 12.5px/1 var(--font-mono), monospace;
+  letter-spacing: 0.02em;
+  color: var(--mh-fg-3);
+}
+.mh-seats__row b { color: var(--mh-cyan); font-weight: 700; }
+
+.mh-ticket__buy {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 18px;
+  border-radius: 14px;
+  background: var(--mh-grad);
+  color: #fff;
+  box-shadow: 0 14px 30px rgba(0, 150, 220, 0.3);
+}
+.mh-ticket__buy span { font-weight: 800; font-size: 15.5px; }
+.mh-ticket__buy .mh-num { font-size: 15.5px; }
+
+.mh-empty {
+  border: 1px dashed var(--mh-line);
+  border-radius: 20px;
+  padding: 40px 22px;
+  text-align: center;
+  color: var(--mh-fg-2);
+}
+.mh-empty a { color: var(--mh-cyan); text-decoration: none; font-weight: 700; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3 · THE RIBBON (stats — count-up on a cyan hairline, NOT a metric grid)
+   ───────────────────────────────────────────────────────────────────────────── */
+.mh-ribbon { border-top: 1px solid var(--mh-line-cyan); padding-top: clamp(40px, 9vw, 64px); }
+.mh-ribbon__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.mh-ribbon__fig { text-align: left; }
+.mh-ribbon__n {
+  font: 800 clamp(30px, 9vw, 42px) / 1 var(--font-mono), monospace;
+  letter-spacing: -0.04em;
+  color: var(--mh-fg);
+}
+.mh-ribbon__n em { font-style: normal; color: var(--mh-cyan); }
+.mh-ribbon__l {
+  margin-top: 7px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--mh-fg-3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4 · THE THREAD (how it works — drawn cyan line + 3 beats)
+   ───────────────────────────────────────────────────────────────────────────── */
+.mh-thread { position: relative; }
+.mh-thread__h {
+  font-weight: 800;
+  font-size: clamp(26px, 7.5vw, 34px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  margin: 0 0 30px;
+  text-wrap: balance;
+}
+.mh-thread__list { position: relative; display: grid; gap: 26px; padding-left: 46px; }
+.mh-thread__line {
+  position: absolute;
+  left: 17px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(var(--mh-cyan), var(--mh-cyan-2));
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.9s var(--mh-ease);
+}
+.mh-rv[data-in="true"] .mh-thread__line { transform: scaleY(1); }
+.mh-step { position: relative; }
+.mh-step__dot {
+  position: absolute;
+  left: -46px;
+  top: -2px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--mh-ink-2);
+  border: 1px solid var(--mh-line-cyan);
+  color: var(--mh-cyan);
+}
+.mh-step__dot svg { width: 17px; height: 17px; }
+.mh-step__n {
+  font: 500 10.5px/1 var(--font-mono), monospace;
+  letter-spacing: 0.2em;
+  color: var(--mh-fg-3);
+}
+.mh-step__t { margin: 6px 0 4px; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
+.mh-step__d { color: var(--mh-fg-2); font-size: 14px; line-height: 1.5; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5 · THE INVITATION (membership — full-bleed photo, one line, one CTA)
+   ───────────────────────────────────────────────────────────────────────────── */
+.mh-join {
+  position: relative;
+  min-height: 78svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 var(--mh-pad) clamp(40px, 11vw, 64px);
+  overflow: hidden;
+  isolation: isolate;
+}
+.mh-join__photo { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.mh-join__scrim {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.5) 0%, rgba(7, 10, 18, 0.82) 70%, var(--mh-ink) 100%);
+}
+.mh-join__h {
+  font-weight: 800;
+  font-size: clamp(30px, 9vw, 44px);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  margin: 0;
+  text-wrap: balance;
+}
+.mh-join__p { margin: 14px 0 24px; max-width: 32ch; color: var(--mh-fg-2); font-size: 15.5px; line-height: 1.55; }
+
+/* ── Footer ────────────────────────────────────────────────────────────────── */
+.mh-foot {
+  padding: clamp(48px, 11vw, 72px) var(--mh-pad)
+    calc(120px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--mh-line);
+}
+.mh-foot__brand { display: flex; align-items: center; gap: 11px; font-weight: 800; font-size: 19px; letter-spacing: -0.02em; }
+.mh-foot__brand svg { width: 26px; height: 26px; color: var(--mh-cyan); }
+.mh-foot__tag { margin: 12px 0 26px; color: var(--mh-fg-3); font-size: 14px; max-width: 36ch; }
+.mh-foot__links { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.mh-foot__links a {
+  color: var(--mh-fg-2);
+  text-decoration: none;
+  font-size: 14.5px;
+  padding: 6px 0;
+  transition: color 180ms var(--mh-ease);
+}
+.mh-foot__links a:active { color: var(--mh-cyan); }
+.mh-foot__legal {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--mh-line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--mh-fg-3);
+  font: 500 11.5px/1.5 var(--font-mono), monospace;
+  letter-spacing: 0.04em;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6 · THE STICKY DOOR (always-present buy bar; yields near the ticket CTA)
+   ───────────────────────────────────────────────────────────────────────────── */
+.mh-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: 12px var(--mh-pad) calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.6), rgba(7, 10, 18, 0.96) 40%);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--mh-line);
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.42s var(--mh-ease), opacity 0.42s var(--mh-ease);
+}
+.mh-dock[data-hidden="true"] { transform: translateY(130%); opacity: 0; pointer-events: none; }
+.mh-dock__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  border-radius: 13px;
+  background: var(--mh-grad);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 15.5px;
+  box-shadow: 0 12px 28px rgba(0, 150, 220, 0.32);
+  transition: transform 140ms var(--mh-ease);
+}
+.mh-dock__btn:active { transform: scale(0.97); }
+
+/* Reduced motion: the app forces motion on globally (matchMedia shim in
+   layout.tsx). This block is the accessibility fallback if that is ever removed. */
+@media (prefers-reduced-motion: reduce) {
+  .mh-rv .mh-up,
+  .mh-hl > span,
+  .mh-seats__fill,
+  .mh-thread__line,
+  .mh-hero__photo { transition: none; transform: none; opacity: 1; }
+  .mh-hl > span { transform: none; }
+  .mh-seats__fill { transform: scaleX(var(--p, 0)); }
+  .mh-thread__line { transform: scaleY(1); }
+  .mh-gear, .mh-hero__scroll i { animation: none; }
+}
