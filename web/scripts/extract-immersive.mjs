@@ -111,6 +111,19 @@ cssOut = cssOut.replace(
   "@media(max-width:760px){.lrail{display:none;}.dots{display:none;}.strip{display:none;}.tele{display:none;}}",
 );
 
+// SavaPass mobile (plan 004 follow-up): the intro lockup hugged the LEFT edge on
+// phones (#logo-stage is align-items:flex-start ≤920px), leaving the right half a
+// dead white void and the whole card unbalanced. Center the lockup + gear block and
+// center the text so the title card reads balanced and intentional in portrait, and
+// re-centre the cyan underline accordingly. Desktop (>=761px) keeps the original
+// horizontal flex-start lockup.
+cssOut += "@media(max-width:760px){" +
+  "#logo-stage{align-items:center;text-align:center;}" +
+  ".ll-text{align-items:center;}" +
+  ".ll-sub{padding-left:0;}" +
+  ".ll-sub::before{left:50%;margin-left:-54px;transform-origin:center;}" +
+  "}";
+
 // SavaPass mobile (2026-06-24): on phones the hero + join `.cta` buttons (Vezi
 // evenimentul / Vezi arhiva / Aplică acum) sat side by side and read cramped.
 // Stack them full-width (thumb-native) at <=520px — mirrors the existing
