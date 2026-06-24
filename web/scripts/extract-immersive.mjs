@@ -95,32 +95,20 @@ cssOut = cssOut
     "@keyframes eqbar{from{transform:scaleY(.16);opacity:.4;}to{transform:scaleY(1);opacity:1;}}",
   );
 
-// SavaPass mobile decoratives (plan 2026-06-24-004): the immersive is served on
-// phones now, so we KEEP the desktop ambient chrome that reads as live instrument
-// panelling — the left progress rail (.lrail) and the section-nav (.dots) — for
-// fidelity to desktop, and only hide the two that genuinely collide/duplicate on a
-// phone:
-//   .strip — hero marquee, position:absolute top:23px; overlaps the hero eyebrow
-//            (INTERACT SF. SAVA · CURTEA VECHE) which already carries the same words.
-//   .tele  — 4 intro corner labels. The existing engine-ticket ≤760 block already
-//            hides the bl + tr pair, so re-showing .tele surfaces only the tl + br
-//            diagonal (SavaPass / Curtea Veche) — these sit at top:90px / bottom:58px,
-//            clear of the mid-height engine chips, and match the desktop intro corners
-//            (mobile was emptier than desktop without them). Sized down for phones.
-// .lrail re-shows by simply not hiding it (its base rule fades it in on scroll); its
-// rotated vertical .tag label is hidden so it can't crowd the hero copy.
-// .dots re-shows but drops mix-blend-mode:difference — that inverted its numerals
-// over the event poster on mobile (the 2026-06-24-001 bug) — for a solid low-alpha
-// cyan tint, tucked to the far edge clear of card content.
+// SavaPass mobile decoratives: hide the viewport-level ambient chrome on phones.
+// Re-showing these for "desktop fidelity" backfired on real hardware (plan 004
+// follow-up): the .lrail progress rail rendered as a weird cyan stub + glowing node
+// hanging off the top-left, and the .dots section-nav (01–05) jammed off-centre
+// against the right edge over the buttons. They look great on a 1280px canvas and
+// wrong on a 412px phone — which is exactly why the original build hid them. The
+// mobile "wow" comes from the engine + content + animations, not this chrome.
+//   .lrail — left progress rail (stub + node looked like a glitch)
+//   .dots  — right section-nav 01–05 (off-centre, crowded the CTAs/poster)
+//   .strip — hero marquee (overlaps the eyebrow)
+//   .tele  — intro corner labels (redundant with the engine-ticket chips; clutter)
 cssOut = cssOut.replace(
   "@media(max-width:760px){.lrail{display:none;}}",
-  "@media(max-width:760px){.strip{display:none;}" +
-    ".intro .tele{font-size:9px;padding:6px 9px;letter-spacing:.16em;}" +
-    ".lrail .tag{display:none;}" +
-    ".dots{mix-blend-mode:normal;right:6px;gap:9px;}" +
-    ".dots a{font-size:8px;letter-spacing:.12em;color:rgba(151,226,255,.5);}" +
-    ".dots a .b{width:10px;background:rgba(151,226,255,.4);}" +
-    ".dots a.on{color:var(--cyan);}.dots a.on .b{background:var(--cyan);width:16px;}}",
+  "@media(max-width:760px){.lrail{display:none;}.dots{display:none;}.strip{display:none;}.tele{display:none;}}",
 );
 
 // SavaPass mobile (2026-06-24): on phones the hero + join `.cta` buttons (Vezi
