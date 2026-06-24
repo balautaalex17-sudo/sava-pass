@@ -304,6 +304,69 @@ const motionOut = [
   "",
 ].join("\n");
 
+// ── SavaPass mobile rich intro (plan 004 follow-up, from the user's Higgsfield
+//    mockup): a structured portrait intro — labeled badge pills + 3 feature columns
+//    + the Sf. Sava church band, over a Higgsfield ambient orbital-rings video loop.
+//    All injected here and gated <=760px so the DESKTOP intro is byte-for-byte
+//    unchanged. Icons are inline stroke SVGs. Assets generated via Higgsfield MCP:
+//    /imersiv/intro-ambient.mp4 (kling3_0_turbo) + /imersiv/church.webp (nano_banana).
+const ICON = {
+  qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3M18 18h3v3h-3"/>',
+  user: '<circle cx="12" cy="8" r="3.4"/><path d="M5 20c1-4 5-5 7-5s6 1 7 5"/>',
+  seat: '<path d="M5 11V7a2 2 0 012-2h10a2 2 0 012 2v4"/><path d="M3 11h18v4a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+  chart: '<path d="M5 20V11M12 20V5M19 20v-6"/>',
+  clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  coin: '<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 010 3h-4"/>',
+  shield: '<path d="M12 3l7 3v5c0 4.5-3 7-7 9-4-2-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  people: '<circle cx="9" cy="9" r="3"/><path d="M3 19c.5-3 3-4.5 6-4.5s5.5 1.5 6 4.5"/><path d="M16 9a3 3 0 010 5M17 14.5c2 .5 3.4 2 3.9 4.4"/>',
+  bolt: '<path d="M13 3L5 13h5l-1 8 8-11h-5z"/>',
+};
+const mhiBadge = (ic, label, sub) =>
+  `<span class="mhi-b"><svg class="mhi-bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[ic]}</svg><span class="mhi-bt"><b>${label}</b><i>${sub}</i></span></span>`;
+const mhiFeat = (ic, label, sub) =>
+  `<div class="mhi-f"><span class="mhi-fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[ic]}</svg></span><b>${label}</b><i>${sub}</i></div>`;
+
+const MHI_AMBIENT = '<video class="mhi-ambient" autoplay muted loop playsinline preload="metadata" aria-hidden="true" src="/imersiv/intro-ambient.mp4"></video>';
+const MHI_TOP = `<div class="mhi-row mhi-top">${mhiBadge('qr', 'QR Valid', 'Acces permis')}${mhiBadge('user', 'Utilizator', 'Identificat')}</div>`;
+const MHI_BOTTOM =
+  `<div class="mhi-row mhi-stat">${mhiBadge('seat', 'Locuri 36', 'Disponibile')}${mhiBadge('chart', 'Statistici', 'În timp real')}${mhiBadge('clock', 'Acces', 'Rapid')}</div>` +
+  `<div class="mhi-row mhi-mid">${mhiBadge('qr', 'Scan OK', 'Cod recunoscut')}${mhiBadge('coin', '13.5K RON', 'Încasări astăzi')}</div>` +
+  `<div class="mhi-features">${mhiFeat('shield', 'Siguranță', 'Verificări rapide și sigure')}${mhiFeat('people', 'Organizare', 'Totul sub control, fără efort')}${mhiFeat('bolt', 'Eficiență', 'Flux optim, rezultate mai bune')}</div>` +
+  '<div class="mhi-church"><img src="/imersiv/church.webp" alt="" loading="lazy" decoding="async"/></div>';
+
+markupOut = markupOut
+  .replace('<video class="intro-video"', MHI_AMBIENT + '\n  <video class="intro-video"')
+  .replace('<div id="logo-stage">', MHI_TOP + '\n  <div id="logo-stage">')
+  .replace('<div class="scrollhint"', MHI_BOTTOM + '\n  <div class="scrollhint"');
+
+// Desktop: keep all mobile-intro extras hidden (intro unchanged). Mobile: structured column.
+cssOut += '\n.mhi-ambient,.mhi-row,.mhi-features,.mhi-church{display:none;}\n@keyframes mhi-in{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}\n' +
+  '@media(max-width:760px){' +
+  '.intro{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:68px 15px 0;min-height:100svh;overflow:hidden;}' +
+  '.engine-stage{display:none;}.scrollhint{display:none;}' +
+  '.mhi-ambient{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5;z-index:0;pointer-events:none;mix-blend-mode:multiply;}' +
+  '#logo-stage{margin:0;z-index:2;}.ll-wheel{width:clamp(112px,36vw,156px);}' +
+  '.mhi-row{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;width:100%;max-width:362px;position:relative;z-index:2;}' +
+  '.mhi-b{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.72);border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:7px 11px;backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(15,23,42,.06);}' +
+  '.mhi-bi{width:17px;height:17px;color:var(--cyan);flex:none;}' +
+  '.mhi-bt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.12;}' +
+  '.mhi-b b{font-family:var(--f-mono);font-size:9px;letter-spacing:.07em;color:var(--ink);font-weight:700;text-transform:uppercase;}' +
+  '.mhi-b i{font-family:var(--f-mono);font-size:7.5px;letter-spacing:.09em;color:var(--cyan);font-style:normal;text-transform:uppercase;}' +
+  '.mhi-features{display:flex;justify-content:center;gap:8px;width:100%;max-width:384px;margin-top:4px;position:relative;z-index:2;}' +
+  '.mhi-f{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}' +
+  '.mhi-fi{width:33px;height:33px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(0,167,232,.1);color:var(--cyan);}' +
+  '.mhi-fi svg{width:17px;height:17px;}' +
+  '.mhi-f b{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.05em;color:var(--ink);text-transform:uppercase;}' +
+  '.mhi-f i{font-style:normal;font-size:9.5px;line-height:1.25;color:var(--mut-l);}' +
+  '.mhi-church{display:block;width:100vw;margin-top:auto;position:relative;z-index:1;}' +
+  '.mhi-church img{width:100%;height:auto;-webkit-mask-image:linear-gradient(180deg,transparent,#000 44%);mask-image:linear-gradient(180deg,transparent,#000 44%);opacity:.9;}' +
+  '.mhi-b,.mhi-f{animation:mhi-in .7s var(--e) both;}' +
+  '.mhi-top .mhi-b:nth-child(2){animation-delay:.08s;}' +
+  '.mhi-stat .mhi-b:nth-child(1){animation-delay:.16s;}.mhi-stat .mhi-b:nth-child(2){animation-delay:.22s;}.mhi-stat .mhi-b:nth-child(3){animation-delay:.28s;}' +
+  '.mhi-mid .mhi-b:nth-child(1){animation-delay:.34s;}.mhi-mid .mhi-b:nth-child(2){animation-delay:.4s;}' +
+  '.mhi-f:nth-child(1){animation-delay:.46s;}.mhi-f:nth-child(2){animation-delay:.52s;}.mhi-f:nth-child(3){animation-delay:.58s;}' +
+  '}';
+
 // ── write ───────────────────────────────────────────────────────────────────
 fs.mkdirSync("app/_immersive", { recursive: true });
 fs.mkdirSync("public/imersiv", { recursive: true });
