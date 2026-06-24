@@ -119,6 +119,13 @@ cssOut = cssOut.replace(
   ".tk-wrap{margin-top:10px;justify-self:center;}",
 );
 
+// SavaPass mobile (plan 004 follow-up): the "baked tuning" translate shifts pull
+// sections up by 18-42px to overlap nicely on the 1280px canvas. On phones the
+// event section-head wraps (the "Toate edițiile" button drops below the heading)
+// and .ev-feat{translate:-42px} then drags the featured card UP over that button.
+// Neutralise these desktop-only micro-shifts on phones so nothing overlaps.
+cssOut += "@media(max-width:760px){#event .sec-head>div:first-child{translate:none;}.ev-feat{translate:none;}.ev-detail{translate:none;}#join{translate:none;}}";
+
 // SavaPass mobile (plan 004 follow-up): the intro lockup hugged the LEFT edge on
 // phones (#logo-stage is align-items:flex-start ≤920px), leaving the right half a
 // dead white void and the whole card unbalanced. Center the lockup + gear block and
