@@ -1,6 +1,6 @@
 ---
 title: "feat: Responsive immersive homepage on mobile (retire dedicated mobile homepage)"
-status: active
+status: completed
 date: 2026-06-24
 type: feat
 origin: none (solo ce-plan invocation; supersedes 2026-06-24-003-feat-mobile-native-homepage, which built the now-retired dedicated mobile homepage)
