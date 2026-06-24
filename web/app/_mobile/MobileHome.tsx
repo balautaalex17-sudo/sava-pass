@@ -1,6 +1,7 @@
 import type { Event, EventStats } from "@/lib/supabase/types";
 import { priceRon } from "@/lib/events";
 import "./mobile-home.css";
+import { MhHeader } from "./MhHeader";
 import { MhHero } from "./MhHero";
 import { MhEventCard } from "./MhEventCard";
 import { MhStats } from "./MhStats";
@@ -26,6 +27,7 @@ export function MobileHome({
 
   return (
     <div className="mh">
+      <MhHeader ctaHref={ctaHref} priceRon={active ? priceRon(active.price_bani) : null} hasEvent={!!active} />
       <MhHero ctaHref={ctaHref} hasEvent={!!active} />
       <MhEventCard event={active} stats={stats} />
       <MhStats editions={editions} />

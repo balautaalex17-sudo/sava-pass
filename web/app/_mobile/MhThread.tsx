@@ -11,7 +11,7 @@ const STEPS = [
 
 export function MhThread() {
   return (
-    <MhReveal as="section" className="mh-sec mh-thread" amount={0.25}>
+    <MhReveal as="section" className="mh-sec mh-thread" id="mh-cum" amount={0.25}>
       <h2 className="mh-thread__h mh-up">De la telefon, la ușă în trei pași.</h2>
       <div className="mh-thread__list">
         <span className="mh-thread__line" />
