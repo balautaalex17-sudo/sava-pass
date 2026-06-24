@@ -142,7 +142,7 @@ export function EventEditor({ event, hasOrders }: { event: Event | null; hasOrde
         zIndex: "var(--z-sticky)" as unknown as number,
         background: "var(--im-ink-2)",
         borderTop: "1px solid var(--im-line)",
-        padding: "12px 20px",
+        padding: "12px 20px max(12px, env(safe-area-inset-bottom))",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

@@ -169,6 +169,13 @@ body {
    toolbar (dvh) with a static fallback. Used by the immersive intro/hero (U3). */
 .min-h-screen-dyn { min-height: 100vh; min-height: 100dvh; }
 
+/* Tap-target helper — guarantees the WCAG/iOS ~44px minimum hit area on touch
+   controls without forcing a visible size on desktop. Consumed by buyer/account/
+   staff controls (U5–U7). Apply to the interactive element itself. */
+@media (pointer: coarse) {
+  .tap { min-height: 44px; min-width: 44px; }
+}
+
 /* iOS zooms the page when a focused control has font-size < 16px. On touch
    (coarse pointer), floor form controls at 16px so focusing never zooms. */
 @media (pointer: coarse) {

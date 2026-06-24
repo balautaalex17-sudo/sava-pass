@@ -95,14 +95,30 @@ cssOut = cssOut
     "@keyframes eqbar{from{transform:scaleY(.16);opacity:.4;}to{transform:scaleY(1);opacity:1;}}",
   );
 
-// SavaPass mobile (2026-06-24): the right-side section-nav `.dots` (01–05) is a
-// position:fixed overlay with mix-blend-mode:difference and had NO mobile-hide,
-// so on phones it floated over the event poster / seats bar / buy button. Its
-// sibling `.lrail` is already hidden ≤760px; hide `.dots` the same way. The dots
-// are aria-hidden decorative desktop nav — no function lost on touch.
+// SavaPass mobile (2026-06-24): viewport-level decorative overlays positioned for
+// desktop had NO mobile-hide and overlapped content on phones. Their sibling
+// `.lrail` is already hidden ≤760px; hide them the same way. All are aria-hidden
+// decoration — no function lost on touch.
+//   .dots  — right-side section-nav (01–05), position:fixed mix-blend-mode:difference;
+//            floated over the event poster / seats bar / buy button.
+//   .strip — hero marquee, position:absolute top:23px; landed on top of the
+//            `.eyebrow` line (INTERACT SF. SAVA · CURTEA VECHE).
+//   .tele  — the 4 intro corner telemetry labels (SavaPass / Interact Sf. Sava /
+//            Secțiunea 01·05 / Curtea Veche); desktop instrument-panel clutter,
+//            and every fact they show is repeated in the hero right below.
 cssOut = cssOut.replace(
   "@media(max-width:760px){.lrail{display:none;}}",
-  "@media(max-width:760px){.lrail{display:none;}.dots{display:none;}}",
+  "@media(max-width:760px){.lrail{display:none;}.dots{display:none;}.strip{display:none;}.tele{display:none;}}",
+);
+
+// SavaPass mobile (2026-06-24): on phones the hero + join `.cta` buttons (Vezi
+// evenimentul / Vezi arhiva / Aplică acum) sat side by side and read cramped.
+// Stack them full-width (thumb-native) at <=520px — mirrors the existing
+// `.ev-cta .btn{flex:1 1 100%}` rule in the same block. Column flex stretches
+// items to full width. Desktop untouched.
+cssOut = cssOut.replace(
+  ".ev-cta .btn,.ev-ghost{flex:1 1 100%;}",
+  ".ev-cta .btn,.ev-ghost{flex:1 1 100%;}.cta{flex-direction:column;}",
 );
 
 let markupOut = repoint(markup);
