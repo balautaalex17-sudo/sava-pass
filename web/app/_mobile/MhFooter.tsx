@@ -4,15 +4,13 @@ import { MhGear } from "./MhGear";
 export function MhFooter() {
   return (
     <footer className="mh-foot" id="mh-arhiva">
-      <div className="mh-foot__lead">
-        <div className="mh-foot__brand">
-          <MhGear size={26} style={{ color: "var(--mh-cyan)" }} />
-          SavaPass
-        </div>
-        <p className="mh-foot__tag">
-          Biletele oficiale ale serilor Interact Sf. Sava. Cumperi online, intri cu o scanare.
-        </p>
+      <div className="mh-foot__brand">
+        <MhGear size={26} style={{ color: "var(--mh-cyan)" }} />
+        SavaPass
       </div>
+      <p className="mh-foot__tag">
+        Biletele oficiale ale serilor Interact Sf. Sava. Cumperi online, intri cu o scanare.
+      </p>
       <nav className="mh-foot__links">
         <a href="#mh-eveniment">Evenimentul curent</a>
         <a href="/devino-membru">Devino membru</a>
