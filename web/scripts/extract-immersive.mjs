@@ -344,8 +344,8 @@ const mhiFeat = (ic, label, sub) =>
 const MHI_AMBIENT = '<video class="mhi-ambient" autoplay muted loop playsinline preload="metadata" aria-hidden="true" src="/imersiv/intro-ambient.mp4"></video>';
 const MHI_TOP = `<div class="mhi-row mhi-top">${mhiBadge('qr', 'QR Valid', 'Acces permis')}${mhiBadge('user', 'Utilizator', 'Identificat')}</div>`;
 const MHI_BOTTOM =
-  `<div class="mhi-row mhi-stat">${mhiBadge('seat', 'Locuri 36', 'Disponibile')}${mhiBadge('chart', 'Statistici', 'În timp real')}${mhiBadge('clock', 'Acces', 'Rapid')}</div>` +
-  `<div class="mhi-row mhi-mid">${mhiBadge('qr', 'Scan OK', 'Cod recunoscut')}${mhiBadge('coin', '13.5K RON', 'Încasări astăzi')}</div>` +
+  `<div class="mhi-row mhi-stat">${mhiBadge('seat', 'Locuri', 'Disponibile')}${mhiBadge('chart', 'Statistici', 'În timp real')}${mhiBadge('clock', 'Acces', 'Rapid')}</div>` +
+  `<div class="mhi-row mhi-mid">${mhiBadge('qr', 'Scan OK', 'Cod recunoscut')}${mhiBadge('coin', 'Încasări', 'În timp real')}</div>` +
   `<div class="mhi-features">${mhiFeat('shield', 'Siguranță', 'Verificări rapide și sigure')}${mhiFeat('people', 'Organizare', 'Totul sub control, fără efort')}${mhiFeat('bolt', 'Eficiență', 'Flux optim, rezultate mai bune')}</div>` +
   '<div class="mhi-church"><img src="/imersiv/church.webp" alt="" loading="lazy" decoding="async"/></div>';
 
@@ -362,7 +362,7 @@ cssOut += '\n.mhi-ambient,.mhi-row,.mhi-features,.mhi-church{display:none;}\n@ke
   '.mhi-ambient{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5;z-index:0;pointer-events:none;mix-blend-mode:multiply;}' +
   '#logo-stage{margin:0;z-index:2;}.ll-wheel{width:clamp(112px,36vw,156px);}' +
   '.mhi-row{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;width:100%;max-width:362px;position:relative;z-index:2;}' +
-  '.mhi-b{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.72);border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:7px 11px;backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(15,23,42,.06);}' +
+  '.mhi-b{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.82);border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:7px 11px;box-shadow:0 8px 22px rgba(15,23,42,.06);}' +
   '.mhi-bi{width:17px;height:17px;color:var(--cyan);flex:none;}' +
   '.mhi-bt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.12;}' +
   '.mhi-b b{font-family:var(--f-mono);font-size:9px;letter-spacing:.07em;color:var(--ink);font-weight:700;text-transform:uppercase;}' +
@@ -393,6 +393,16 @@ const content =
   `/* eslint-disable */\n` +
   `export const IMMERSIVE_CSS = ${JSON.stringify(cssOut)};\n` +
   `export const IMMERSIVE_MARKUP = ${JSON.stringify(markupOut)};\n`;
+
+// Fail loudly if a string transform silently no-opped (e.g. the v3 source changed and
+// an anchor no longer matches) — otherwise we'd ship a half-patched bundle at exit 0.
+const assert = (cond, msg) => { if (!cond) { console.error("[extract] ASSERT FAILED:", msg); process.exit(1); } };
+assert(ctaCount === 3, `expected 3 CTAs rewired, got ${ctaCount}`);
+assert(applyCount === 1, `expected 1 apply CTA rewired, got ${applyCount}`);
+assert(engineOut !== engine, "engine transforms did not apply (engineOut === raw engine)");
+assert(cssOut.includes(".mhi-b"), "mobile intro CSS (.mhi-b) missing from cssOut");
+assert(markupOut.includes("mhi-row"), "mobile intro markup (mhi-row) not injected");
+assert(markupOut.includes("__CTA_HREF__"), "CTA placeholder missing from markupOut");
 
 fs.writeFileSync("app/_immersive/content.ts", content, "utf8");
 fs.writeFileSync("public/imersiv/engine.js", engineOut, "utf8");

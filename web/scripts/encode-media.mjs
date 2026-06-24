@@ -4,7 +4,7 @@ import path from "node:path";
 
 // Read canonical PNGs from the same source the extractor uses (kept out of the
 // app/deploy); write sized WebP into public/imersiv (the only copy shipped).
-const SRC_DIR = "C:/Users/cycla/Documents/Bussines/projects/Sava Pass #2/assets";
+const SRC_DIR = path.resolve(import.meta.dirname, "../../../Sava Pass #2/assets");
 const DIR = "public/imersiv";
 // Images actually referenced by the homepage (orphans intentionally excluded).
 const IMAGES = [

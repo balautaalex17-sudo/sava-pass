@@ -66,5 +66,14 @@ console.log("By type            :", Object.fromEntries(Object.entries(byType).ma
 console.log("Top assets:");
 for (const a of top) console.log("  " + mb(a.bytes).padStart(9), a.type.padEnd(8), a.url.replace(/^https?:\/\/[^/]+/, ""));
 
+// Regression gate. Baseline after the U2-U6 perf pass: LCP ~460ms, full transfer ~2.6MB.
+// Generous ceilings so this only fires on a real regression, not normal variance.
+const LCP_MAX = 1500;
+const BYTES_MAX = 6 * 1048576;
+let failed = false;
+if (lcp > LCP_MAX) { console.error(`FAIL  LCP ${lcp}ms exceeds ${LCP_MAX}ms`); failed = true; }
+if (totalBytes > BYTES_MAX) { console.error(`FAIL  full transfer ${mb(totalBytes)} exceeds ${mb(BYTES_MAX)}`); failed = true; }
+
 await ctx.close();
 await browser.close();
+process.exit(failed ? 1 : 0);

@@ -19,13 +19,19 @@ export const revalidate = 300;
 
 // Never let a slow/paused Supabase block the static shell — fail fast to no slug.
 async function activeSlug(): Promise<string | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       getActiveEvent().then((e) => e?.slug ?? null),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), 2000);
+      }),
     ]);
   } catch {
     return null;
+  } finally {
+    // Don't let the loser's timer hold the serverless function open ~2s per ISR revalidate.
+    clearTimeout(timer);
   }
 }
 

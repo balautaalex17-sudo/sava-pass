@@ -26,6 +26,15 @@ export function MembershipForm() {
 
   return (
     <form action={action} className="apply-form" id="aplica">
+      {/* Honeypot: real users never see or fill this; bots auto-fill it. */}
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+      />
       <div className="apply-grid">
         <Field label="Prenume și nume" name="full_name" placeholder="Ana Vasilescu" autoComplete="name" error={state.errors?.full_name} />
         <Field label="Email" name="email" type="email" placeholder="ana@email.ro" autoComplete="email" error={state.errors?.email} />

@@ -29,6 +29,13 @@ export interface MembershipState {
 }
 
 export async function submitApplication(_prev: MembershipState, form: FormData): Promise<MembershipState> {
+  // Honeypot: a hidden field only bots fill. If set, silently accept and drop the
+  // submission — don't tip off the bot, don't write to the table or send mail.
+  const honeypot = form.get("website");
+  if (typeof honeypot === "string" && honeypot.trim() !== "") {
+    return { ok: true };
+  }
+
   const parsed = schema.safeParse({
     full_name: form.get("full_name"),
     email: form.get("email"),

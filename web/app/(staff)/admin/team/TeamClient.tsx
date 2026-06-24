@@ -39,7 +39,7 @@ export function TeamClient({ members }: { members: Member[] }) {
             </select>
           </Field>
           <button type="submit" className="pressable hover-dim" disabled={invitePending} style={primaryButtonStyle}>
-            {invitePending ? "Se trimite..." : "Invită"}
+            {invitePending ? "Se trimite…" : "Invită"}
           </button>
         </div>
         <ActionMessage state={inviteState} />

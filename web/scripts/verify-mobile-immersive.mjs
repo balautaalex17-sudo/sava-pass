@@ -57,7 +57,7 @@ async function mobile(w, h, label) {
   ok(ov.bad.length === 0, `no text-overflow offenders ${ov.bad.length ? JSON.stringify(ov.bad) : ""}`);
 
   // reveals fired (some .rv/.im-rv/.anim-rise carry an "in"/shown state after scroll)
-  const revealed = await page.evaluate(() => document.querySelectorAll(".rv.in, .im-rv.im-in, .anim-rise").length);
+  const revealed = await page.evaluate(() => document.querySelectorAll(".rv.in, .im-rv.im-in, .anim-rise.sr-shown").length);
   ok(revealed > 0, `scroll reveals present (${revealed})`);
 
   // hero-video plays when scrolled into view
