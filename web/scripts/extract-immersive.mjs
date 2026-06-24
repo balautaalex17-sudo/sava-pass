@@ -95,20 +95,28 @@ cssOut = cssOut
     "@keyframes eqbar{from{transform:scaleY(.16);opacity:.4;}to{transform:scaleY(1);opacity:1;}}",
   );
 
-// SavaPass mobile (2026-06-24): viewport-level decorative overlays positioned for
-// desktop had NO mobile-hide and overlapped content on phones. Their sibling
-// `.lrail` is already hidden ≤760px; hide them the same way. All are aria-hidden
-// decoration — no function lost on touch.
-//   .dots  — right-side section-nav (01–05), position:fixed mix-blend-mode:difference;
-//            floated over the event poster / seats bar / buy button.
-//   .strip — hero marquee, position:absolute top:23px; landed on top of the
-//            `.eyebrow` line (INTERACT SF. SAVA · CURTEA VECHE).
-//   .tele  — the 4 intro corner telemetry labels (SavaPass / Interact Sf. Sava /
-//            Secțiunea 01·05 / Curtea Veche); desktop instrument-panel clutter,
-//            and every fact they show is repeated in the hero right below.
+// SavaPass mobile decoratives (plan 2026-06-24-004): the immersive is served on
+// phones now, so we KEEP the desktop ambient chrome that reads as live instrument
+// panelling — the left progress rail (.lrail) and the section-nav (.dots) — for
+// fidelity to desktop, and only hide the two that genuinely collide/duplicate on a
+// phone:
+//   .strip — hero marquee, position:absolute top:23px; overlaps the hero eyebrow
+//            (INTERACT SF. SAVA · CURTEA VECHE) which already carries the same words.
+//   .tele  — 4 intro corner labels; the .engine-ticket chips already occupy those
+//            edges on mobile (QR VALID / LOCURI 36 / SCAN OK / 13.5K RON), so .tele
+//            is redundant and would collide.
+// .lrail re-shows by simply not hiding it (its base rule fades it in on scroll).
+// .dots re-shows but drops mix-blend-mode:difference — that inverted its numerals
+// over the event poster on mobile (the 2026-06-24-001 bug) — for a solid low-alpha
+// cyan tint, tucked to the far edge clear of card content.
 cssOut = cssOut.replace(
   "@media(max-width:760px){.lrail{display:none;}}",
-  "@media(max-width:760px){.lrail{display:none;}.dots{display:none;}.strip{display:none;}.tele{display:none;}}",
+  "@media(max-width:760px){.strip{display:none;}.tele{display:none;}" +
+    ".lrail .tag{display:none;}" +
+    ".dots{mix-blend-mode:normal;right:6px;gap:9px;}" +
+    ".dots a{font-size:8px;letter-spacing:.12em;color:rgba(151,226,255,.5);}" +
+    ".dots a .b{width:10px;background:rgba(151,226,255,.4);}" +
+    ".dots a.on{color:var(--cyan);}.dots a.on .b{background:var(--cyan);width:16px;}}",
 );
 
 // SavaPass mobile (2026-06-24): on phones the hero + join `.cta` buttons (Vezi
