@@ -95,6 +95,16 @@ cssOut = cssOut
     "@keyframes eqbar{from{transform:scaleY(.16);opacity:.4;}to{transform:scaleY(1);opacity:1;}}",
   );
 
+// SavaPass mobile (2026-06-24): the right-side section-nav `.dots` (01–05) is a
+// position:fixed overlay with mix-blend-mode:difference and had NO mobile-hide,
+// so on phones it floated over the event poster / seats bar / buy button. Its
+// sibling `.lrail` is already hidden ≤760px; hide `.dots` the same way. The dots
+// are aria-hidden decorative desktop nav — no function lost on touch.
+cssOut = cssOut.replace(
+  "@media(max-width:760px){.lrail{display:none;}}",
+  "@media(max-width:760px){.lrail{display:none;}.dots{display:none;}}",
+);
+
 let markupOut = repoint(markup);
 const ctaRe =
   /<button class="(btn btn-p[^"]*)"((?:\s+[\w-]+="[^"]*")*)\s*>\s*((?:Cumpără bilet|Vezi evenimentul)[\s\S]*?)<\/button>/g;
