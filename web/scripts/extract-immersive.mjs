@@ -193,13 +193,13 @@ const engineOut = engine
   // to translateY(0)!important when the hero enters view, staggered per line.
   .replace(
     "gsap.to('.hline>span',{yPercent:0,stagger:.1,duration:1.1,ease:'power4.out',scrollTrigger:{trigger:'#hero',start:'top 78%'}});",
-    "(function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();\n    /* mobile perf: the continuous parallax/scrub ScrollTriggers below update every scroll frame and tank mobile FPS — run them on non-touch only. Entrance reveals (.rv / .im-rv) and the hero+phone showpiece are separate and stay on all devices. */\n    var __noTouch=!matchMedia('(hover:none)').matches; if(__noTouch){"
+    "(function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();\n    /* mobile (plan 004): the parallax/scrub set runs on ALL devices (tuned). The two heaviest — the background-video parallaxes + the ghost-numeral drift — skip low-end phones (deviceMemory<=4) to hold FPS; iOS reports no deviceMemory so it is treated as capable. Touch halves amplitudes via __vamp. */\n    var __touch=matchMedia('(hover:none)').matches; var __lowEnd=!!(navigator.deviceMemory&&navigator.deviceMemory<=4); var __vamp=__touch?0.5:1; {"
   )
   // Mobile perf: close the desktop-only parallax block opened after the hero reveal,
   // then refresh trigger positions (a no-op on touch where no scrubs were created).
   .replace(
     "    /* (stat entrance is now driven by Framer Motion in the module below) */",
-    "    }  /* end desktop-only parallax/scrub block */\n    /* recompute trigger positions once fonts/images/videos settle — otherwise\n       start/end are measured against an unsettled layout and scrub feels off */\n    ScrollTrigger.refresh();\n    addEventListener('load',()=>ScrollTrigger.refresh());\n    setTimeout(()=>ScrollTrigger.refresh(),600);\n    /* (stat entrance is now driven by Framer Motion in the module below) */"
+    "    }  /* end parallax/scrub block (runs on all devices, tuned) */\n    /* recompute trigger positions once fonts/images/videos settle — otherwise\n       start/end are measured against an unsettled layout and scrub feels off */\n    ScrollTrigger.refresh();\n    addEventListener('load',()=>ScrollTrigger.refresh());\n    setTimeout(()=>ScrollTrigger.refresh(),600);\n    /* (stat entrance is now driven by Framer Motion in the module below) */"
   )
   // Mobile perf: rAF-throttle the chrome() scroll handler — it reads
   // getBoundingClientRect on every section on each raw scroll event (layout thrash
@@ -218,12 +218,35 @@ const engineOut = engine
     "document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos();});",
     "document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos();});\nif('IntersectionObserver'in window){var __vio=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){v.muted=true;var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{threshold:.05});document.querySelectorAll('video').forEach(function(v){__vio.observe(v);});}"
   )
-  // Mobile perf (U6): the perpetual QR-scan loop animates box-shadow forever (GPU-
-  // costly). Run the scan showpiece on non-touch only; mobile keeps the cheap
-  // opacity flicker + the static "scanned" success state.
+  // Mobile (plan 004): the QR-scan showpiece now runs on phones too (capable ones).
+  // The box-shadow loop is GPU-costly, so it is skipped only on low-end devices
+  // (deviceMemory<=4); iOS reports no deviceMemory and gets the full showpiece.
   .replace(
     "if(scan&&ok){",
-    "if(scan&&ok&&!matchMedia('(hover:none)').matches){"
+    "if(scan&&ok&&!(navigator.deviceMemory&&navigator.deviceMemory<=4)){"
+  )
+  // Mobile (plan 004): tune the hero ticket parallax amplitude down on touch.
+  .replace(
+    "gsap.to('#tkwrap',{yPercent:-12,",
+    "gsap.to('#tkwrap',{yPercent:-12*__vamp,"
+  )
+  // Mobile (plan 004): the two background-video parallaxes are the heaviest scrub
+  // effects (compositing full-bleed video) — skip them on low-end phones, halve the
+  // amplitude on touch.
+  .replace(
+    "gsap.to('.hero-video',{yPercent:16,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});\n    gsap.to('.foot-video',{yPercent:14,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});",
+    "if(!__lowEnd){gsap.to('.hero-video',{yPercent:16*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});\n    gsap.to('.foot-video',{yPercent:14*__vamp,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});}"
+  )
+  // Mobile (plan 004): tune the footer headline rise amplitude down on touch.
+  .replace(
+    "gsap.from('.foot .big',{yPercent:22,",
+    "gsap.from('.foot .big',{yPercent:22*__vamp,"
+  )
+  // Mobile (plan 004): the ghost-numeral drift is a per-row scrub — skip it on
+  // low-end phones, halve the amplitude on touch.
+  .replace(
+    "document.querySelectorAll('.gen-ghost').forEach(g=>{\n      const row=g.closest('.gen-row'); if(!row) return;\n      gsap.fromTo(g,{yPercent:-12},{yPercent:12,ease:'none',scrollTrigger:{trigger:row,start:'top bottom',end:'bottom top',scrub:true}});\n    });",
+    "if(!__lowEnd) document.querySelectorAll('.gen-ghost').forEach(g=>{\n      const row=g.closest('.gen-row'); if(!row) return;\n      gsap.fromTo(g,{yPercent:-12*__vamp},{yPercent:12*__vamp,ease:'none',scrollTrigger:{trigger:row,start:'top bottom',end:'bottom top',scrub:true}});\n    });"
   );
 
 // No blink: Framer Motion's `inView` re-runs its callback every time an element

@@ -164,7 +164,7 @@ if(window.gsap && !reduce){
   const sq=[...document.querySelectorAll('#stepqr rect.m')];
   if(sq.length){gsap.to(gsap.utils.shuffle(sq).slice(0,18),{opacity:.2,duration:.6,repeat:-1,yoyo:true,stagger:{each:.05,from:'random'},ease:'sine.inOut'});}
   const scan=document.querySelector('.qr-scan'), qrEl=document.querySelector('.qr'), ok=document.querySelector('.tk-ok');
-  if(scan&&ok&&!matchMedia('(hover:none)').matches){
+  if(scan&&ok&&!(navigator.deviceMemory&&navigator.deviceMemory<=4)){
     gsap.set(ok,{opacity:0,y:8,scale:.96});
     const tl=gsap.timeline({repeat:-1,repeatDelay:.6});
     tl.set(scan,{top:2,opacity:0}).set(ok,{opacity:0,y:8,scale:.96})
@@ -181,9 +181,9 @@ if(window.gsap && !reduce){
     if(lenis) lenis.on('scroll',ScrollTrigger.update);
     /* hero headline mask reveal — fires as the hero scrolls up into view (not on load) */
     (function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();
-    /* mobile perf: the continuous parallax/scrub ScrollTriggers below update every scroll frame and tank mobile FPS — run them on non-touch only. Entrance reveals (.rv / .im-rv) and the hero+phone showpiece are separate and stay on all devices. */
-    var __noTouch=!matchMedia('(hover:none)').matches; if(__noTouch){
-    gsap.to('#tkwrap',{yPercent:-12,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
+    /* mobile (plan 004): the parallax/scrub set runs on ALL devices (tuned). The two heaviest — the background-video parallaxes + the ghost-numeral drift — skip low-end phones (deviceMemory<=4) to hold FPS; iOS reports no deviceMemory so it is treated as capable. Touch halves amplitudes via __vamp. */
+    var __touch=matchMedia('(hover:none)').matches; var __lowEnd=!!(navigator.deviceMemory&&navigator.deviceMemory<=4); var __vamp=__touch?0.5:1; {
+    gsap.to('#tkwrap',{yPercent:-12*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
 
     /* seam connectors: thread + node draw in as each section arrives */
     document.querySelectorAll('.seam').forEach(seam=>{
@@ -193,18 +193,18 @@ if(window.gsap && !reduce){
         .fromTo(node,{scale:0},{scale:1,ease:'none'},.25);
     });
     /* ambient parallax — depth on the Higgsfield loops */
-    gsap.to('.hero-video',{yPercent:16,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});
-    gsap.to('.foot-video',{yPercent:14,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});
+    if(!__lowEnd){gsap.to('.hero-video',{yPercent:16*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});
+    gsap.to('.foot-video',{yPercent:14*__vamp,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});}
     /* event poster: slow scrub zoom as it passes through */
     gsap.fromTo('.ev-poster img',{scale:1.12},{scale:1,ease:'none',scrollTrigger:{trigger:'.ev-feat',start:'top bottom',end:'bottom top',scrub:true}});
     /* footer headline rises into place */
-    gsap.from('.foot .big',{yPercent:22,opacity:.35,ease:'none',scrollTrigger:{trigger:'.foot',start:'top 88%',end:'top 48%',scrub:true}});
+    gsap.from('.foot .big',{yPercent:22*__vamp,opacity:.35,ease:'none',scrollTrigger:{trigger:'.foot',start:'top 88%',end:'top 48%',scrub:true}});
     /* time: the ghost year-numerals drift as each generation scrolls through */
-    document.querySelectorAll('.gen-ghost').forEach(g=>{
+    if(!__lowEnd) document.querySelectorAll('.gen-ghost').forEach(g=>{
       const row=g.closest('.gen-row'); if(!row) return;
-      gsap.fromTo(g,{yPercent:-12},{yPercent:12,ease:'none',scrollTrigger:{trigger:row,start:'top bottom',end:'bottom top',scrub:true}});
+      gsap.fromTo(g,{yPercent:-12*__vamp},{yPercent:12*__vamp,ease:'none',scrollTrigger:{trigger:row,start:'top bottom',end:'bottom top',scrub:true}});
     });
-    }  /* end desktop-only parallax/scrub block */
+    }  /* end parallax/scrub block (runs on all devices, tuned) */
     /* recompute trigger positions once fonts/images/videos settle — otherwise
        start/end are measured against an unsettled layout and scrub feels off */
     ScrollTrigger.refresh();

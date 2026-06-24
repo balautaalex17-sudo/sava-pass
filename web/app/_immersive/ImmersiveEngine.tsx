@@ -40,11 +40,10 @@ export function ImmersiveEngine() {
   useEffect(() => {
     let cancelled = false;
 
-    // Mobile renders the dedicated <MobileHome/> instead of the immersive port,
-    // so the heavy GSAP/Lenis engine must never load or run on phones. Bail before
-    // any script fetch. (A phone won't cross 900px mid-session, so no resize watch.)
-    if (window.matchMedia("(max-width: 900px)").matches) return;
-
+    // The immersive is served at ALL widths now (plan 2026-06-24-004) — the engine
+    // runs on mobile too. The continuous parallax/scrub set is tuned and
+    // capability-gated inside engine.js (amplitudes halved on touch; the heaviest
+    // effects skip low-end phones), so there is no blanket mobile bail here.
     (async () => {
       try {
         // Tear down any previous run (client re-navigation into the homepage).
