@@ -102,16 +102,20 @@ cssOut = cssOut
 // phone:
 //   .strip — hero marquee, position:absolute top:23px; overlaps the hero eyebrow
 //            (INTERACT SF. SAVA · CURTEA VECHE) which already carries the same words.
-//   .tele  — 4 intro corner labels; the .engine-ticket chips already occupy those
-//            edges on mobile (QR VALID / LOCURI 36 / SCAN OK / 13.5K RON), so .tele
-//            is redundant and would collide.
-// .lrail re-shows by simply not hiding it (its base rule fades it in on scroll).
+//   .tele  — 4 intro corner labels. The existing engine-ticket ≤760 block already
+//            hides the bl + tr pair, so re-showing .tele surfaces only the tl + br
+//            diagonal (SavaPass / Curtea Veche) — these sit at top:90px / bottom:58px,
+//            clear of the mid-height engine chips, and match the desktop intro corners
+//            (mobile was emptier than desktop without them). Sized down for phones.
+// .lrail re-shows by simply not hiding it (its base rule fades it in on scroll); its
+// rotated vertical .tag label is hidden so it can't crowd the hero copy.
 // .dots re-shows but drops mix-blend-mode:difference — that inverted its numerals
 // over the event poster on mobile (the 2026-06-24-001 bug) — for a solid low-alpha
 // cyan tint, tucked to the far edge clear of card content.
 cssOut = cssOut.replace(
   "@media(max-width:760px){.lrail{display:none;}}",
-  "@media(max-width:760px){.strip{display:none;}.tele{display:none;}" +
+  "@media(max-width:760px){.strip{display:none;}" +
+    ".intro .tele{font-size:9px;padding:6px 9px;letter-spacing:.16em;}" +
     ".lrail .tag{display:none;}" +
     ".dots{mix-blend-mode:normal;right:6px;gap:9px;}" +
     ".dots a{font-size:8px;letter-spacing:.12em;color:rgba(151,226,255,.5);}" +
