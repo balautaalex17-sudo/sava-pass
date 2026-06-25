@@ -282,11 +282,11 @@ const secs=dotEls.map(a=>document.getElementById(a.dataset.s));
 function chrome(){
   const h=document.documentElement, max=h.scrollHeight-innerHeight, sc=window.scrollY||h.scrollTop||0;
   const pct=(max>0?Math.min(100,sc/max*100):0);
+  const cy=innerHeight*.4; let act=0;
+  secs.forEach((s,i)=>{if(s){const r=s.getBoundingClientRect();if(r.top<=cy)act=i;}});
   if(rail) rail.style.width=pct.toFixed(2)+'%';
   if(lrailFill) lrailFill.style.height=pct.toFixed(2)+'%';
   document.body.classList.toggle('scrolled',sc>innerHeight*.5);
-  const cy=innerHeight*.4; let act=0;
-  secs.forEach((s,i)=>{if(s){const r=s.getBoundingClientRect();if(r.top<=cy)act=i;}});
   dotEls.forEach((a,i)=>a.classList.toggle('on',i===act));
 }
 let __chromeQ=false;function __chromeT(){if(__chromeQ)return;__chromeQ=true;requestAnimationFrame(function(){__chromeQ=false;chrome();});}

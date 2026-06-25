@@ -42,10 +42,17 @@ export default async function Home() {
 
   return (
     <>
-      <link rel="preload" as="script" href="/imersiv/vendor/lenis.min.js" />
-      <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" />
-      <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" />
-      <link rel="preload" as="script" href="/imersiv/engine.js" />
+      {/* Mobile LCP image — discoverable in the initial document + high priority so it
+          wins the bandwidth race (perf: church.webp is the mobile LCP). Mobile-scoped so
+          desktop, whose LCP is a different element, is untouched. */}
+      <link rel="preload" as="image" href="/imersiv/church.webp" fetchPriority="high" media="(max-width: 760px)" />
+      {/* Desktop-scoped: the immersive engine is desktop's whole experience, so warm the
+          cache there. On mobile these ~100KB+ of JS must NOT compete with the LCP image, so
+          they're not preloaded — ImmersiveEngine still loads them after hydration (perf). */}
+      <link rel="preload" as="script" href="/imersiv/vendor/lenis.min.js" media="(min-width: 761px)" />
+      <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 761px)" />
+      <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 761px)" />
+      <link rel="preload" as="script" href="/imersiv/engine.js" media="(min-width: 761px)" />
       <style dangerouslySetInnerHTML={{ __html: IMMERSIVE_CSS }} />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
       <ImmersiveEngine />

@@ -236,6 +236,13 @@ const engineOut = engine
     "addEventListener('scroll',chrome,{passive:true});",
     "let __chromeQ=false;function __chromeT(){if(__chromeQ)return;__chromeQ=true;requestAnimationFrame(function(){__chromeQ=false;chrome();});}\naddEventListener('scroll',__chromeT,{passive:true});"
   )
+  // Mobile perf: kill the forced reflow inside chrome() — it wrote rail/fill/body-class
+  // BEFORE reading every section's getBoundingClientRect, so each scroll frame reflowed
+  // (PageSpeed "forced reflow"). Reorder to read all layout first, then write all styles.
+  .replace(
+    "  if(rail) rail.style.width=pct.toFixed(2)+'%';\n  if(lrailFill) lrailFill.style.height=pct.toFixed(2)+'%';\n  document.body.classList.toggle('scrolled',sc>innerHeight*.5);\n  const cy=innerHeight*.4; let act=0;\n  secs.forEach((s,i)=>{if(s){const r=s.getBoundingClientRect();if(r.top<=cy)act=i;}});",
+    "  const cy=innerHeight*.4; let act=0;\n  secs.forEach((s,i)=>{if(s){const r=s.getBoundingClientRect();if(r.top<=cy)act=i;}});\n  if(rail) rail.style.width=pct.toFixed(2)+'%';\n  if(lrailFill) lrailFill.style.height=pct.toFixed(2)+'%';\n  document.body.classList.toggle('scrolled',sc>innerHeight*.5);"
+  )
   .replace(
     "if(lenis) lenis.on('scroll',chrome);",
     "if(lenis) lenis.on('scroll',__chromeT);"
@@ -347,7 +354,10 @@ const MHI_BOTTOM =
   `<div class="mhi-row mhi-stat">${mhiBadge('seat', 'Locuri', 'Disponibile')}${mhiBadge('chart', 'Statistici', 'În timp real')}${mhiBadge('clock', 'Acces', 'Rapid')}</div>` +
   `<div class="mhi-row mhi-mid">${mhiBadge('qr', 'Scan OK', 'Cod recunoscut')}${mhiBadge('coin', 'Încasări', 'În timp real')}</div>` +
   `<div class="mhi-features">${mhiFeat('shield', 'Siguranță', 'Verificări rapide și sigure')}${mhiFeat('people', 'Organizare', 'Totul sub control, fără efort')}${mhiFeat('bolt', 'Eficiență', 'Flux optim, rezultate mai bune')}</div>` +
-  '<div class="mhi-church"><img src="/imersiv/church.webp" alt="" loading="lazy" decoding="async"/></div>';
+  // LCP element on mobile — eager + high priority (perf: was loading="lazy", which
+  // caused a ~1380ms LCP load delay on PageSpeed mobile). A mobile-scoped preload in
+  // app/page.tsx makes it discoverable in the initial document.
+  '<div class="mhi-church"><img src="/imersiv/church.webp" alt="" fetchpriority="high" decoding="async"/></div>';
 
 markupOut = markupOut
   .replace('<video class="intro-video"', MHI_AMBIENT + '\n  <video class="intro-video"')

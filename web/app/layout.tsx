@@ -21,12 +21,17 @@ const manrope = Manrope({
   display: "swap",
 });
 
+// preload:false on the two non-body fonts — only Manrope (body) belongs on the critical
+// path. Instrument Serif is ceremonial and JetBrains Mono is for numerals; preloading all
+// three put 3 woff2 (~800-860ms) on the mobile critical path (PageSpeed). They still load on
+// demand via `swap`, with no layout shift (adjustFontFallback is on by default).
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
   weight: ["400"],
   style: ["normal", "italic"],
   variable: "--font-instrument-serif",
   display: "swap",
+  preload: false,
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -34,6 +39,7 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500"],
   variable: "--font-jetbrains-mono",
   display: "swap",
+  preload: false,
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://savapass.ro";
