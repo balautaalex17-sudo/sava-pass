@@ -25,7 +25,11 @@ async function mobile(w, h, label) {
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("request", (r) => { const f = r.url().split("/").pop(); if (/gsap|lenis|ScrollTrigger|engine\.js/.test(f)) eng.add(f); });
   await page.goto(URL, { waitUntil: "networkidle", timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(1200);
+  // The engine now defers to first interaction / idle (perf) — nudge it with a scroll
+  // event so this guard observes the loaded state.
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.dispatchEvent(new Event("scroll")));
+  await page.waitForTimeout(1500);
 
   console.log(`\n--- mobile ${label} (${w}x${h}) ---`);
   ok(eng.size >= 3, `engine scripts loaded (${[...eng].join(",")})`);
@@ -83,7 +87,9 @@ await mobile(844, 390, "landscape");
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   page.on("request", (r) => { const f = r.url().split("/").pop(); if (/gsap|lenis|ScrollTrigger|engine\.js/.test(f)) eng.add(f); });
   await page.goto(URL, { waitUntil: "networkidle", timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.dispatchEvent(new Event("scroll")));
+  await page.waitForTimeout(1600);
   console.log(`\n--- desktop 1280 (R1 baseline) ---`);
   ok(eng.size >= 4, `engine scripts loaded (${[...eng].join(",")})`);
   const d = await page.evaluate(() => ({

@@ -14,11 +14,17 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 //     strips the gate so nothing stays hidden — content always ends up visible.
 const SCROLL_REVEAL_BOOT = `(function(){try{if('scrollRestoration'in history)history.scrollRestoration='manual';}catch(e){}try{window.scrollTo(0,0);}catch(e){}try{var mm=window.matchMedia?window.matchMedia.bind(window):null;if(mm){window.matchMedia=function(q){if(typeof q==='string'&&q.indexOf('prefers-reduced-motion')!==-1){return{media:q,matches:false,onchange:null,addEventListener:function(){},removeEventListener:function(){},addListener:function(){},removeListener:function(){},dispatchEvent:function(){return false;}};}return mm(q);};}}catch(e){}var d=document.documentElement;d.classList.add('sr-on');setTimeout(function(){if(!window.__srReady){d.classList.remove('sr-on');}},4000);})();`;
 
+// preload:false on the body font too. With `swap` + `adjustFontFallback` the text
+// paints immediately in a metric-matched fallback (no FCP block, no layout shift) and
+// swaps to Manrope when it arrives. Preloading all 5 weights put 5 woff2 (~460ms each)
+// on the mobile critical path, competing with the LCP image (PageSpeed network-
+// dependency-tree). Now the only preloaded resource on mobile is the LCP image itself.
 const manrope = Manrope({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-manrope",
   display: "swap",
+  preload: false,
 });
 
 // preload:false on the two non-body fonts — only Manrope (body) belongs on the critical

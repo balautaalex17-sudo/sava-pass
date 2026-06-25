@@ -39,12 +39,13 @@ function loadScript(src: string, type?: string) {
 export function ImmersiveEngine() {
   useEffect(() => {
     let cancelled = false;
+    let started = false;
 
     // The immersive is served at ALL widths now (plan 2026-06-24-004) — the engine
     // runs on mobile too. The continuous parallax/scrub set is tuned and
     // capability-gated inside engine.js (amplitudes halved on touch; the heaviest
     // effects skip low-end phones), so there is no blanket mobile bail here.
-    (async () => {
+    const run = async () => {
       try {
         // Tear down any previous run (client re-navigation into the homepage).
         try {
@@ -71,10 +72,38 @@ export function ImmersiveEngine() {
         // Engine is progressive enhancement: the page still renders without it.
         console.error("[immersive] engine load failed", err);
       }
-    })();
+    };
+
+    // Perf: defer the engine off the LCP critical window. It's scroll-driven
+    // enhancement, so load it on the first user interaction, or when the main thread
+    // goes idle (timeout fallback for static loads / Lighthouse). This keeps the
+    // engine's script-eval + DOM wiring (equalizer, count-ups, parallax) from
+    // competing with the LCP image paint on mobile.
+    const events = ["scroll", "pointerdown", "touchstart", "keydown", "wheel"];
+    const trigger = () => {
+      if (started || cancelled) return;
+      started = true;
+      teardown();
+      run();
+    };
+    const ric =
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(trigger, { timeout: 1800 })
+        : window.setTimeout(trigger, 1200);
+    function teardown() {
+      events.forEach((e) => window.removeEventListener(e, trigger));
+      if (typeof window.cancelIdleCallback === "function") {
+        try {
+          window.cancelIdleCallback(ric as number);
+        } catch {}
+      }
+      clearTimeout(ric as number);
+    }
+    events.forEach((e) => window.addEventListener(e, trigger, { once: true, passive: true }));
 
     return () => {
       cancelled = true;
+      teardown();
     };
   }, []);
 
