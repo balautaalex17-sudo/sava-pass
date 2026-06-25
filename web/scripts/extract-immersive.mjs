@@ -188,6 +188,15 @@ const engineOut = engine
   // making fast scroll feel low-fps on real mid-range phones.
   .replace("if(!__lowEnd){gsap.to('.hero-video'", "if(!__touch){gsap.to('.hero-video'")
   .replace("if(!__lowEnd) document.querySelectorAll('.gen-ghost')", "if(!__touch) document.querySelectorAll('.gen-ghost')")
+  // ...and gate the remaining pure-parallax scrubs off touch (the #tkwrap ticket parallax is
+  // the hero-region scrub the user felt stutter on; ev-poster/foot are decorative). The seam
+  // draws stay (they start hidden at scaleY:0). NOTE: chrome() is ALSO hand-restructured in
+  // public/imersiv/engine.js to skip its per-section getBoundingClientRect reflow on touch
+  // (the .dots/.lrail are display:none on mobile) — re-apply that manually if regenerating;
+  // it is not captured as a transform here.
+  .replace("    gsap.to('#tkwrap',", "    if(!__touch) gsap.to('#tkwrap',")
+  .replace("    gsap.fromTo('.ev-poster img',", "    if(!__touch) gsap.fromTo('.ev-poster img',")
+  .replace("    gsap.from('.foot .big',", "    if(!__touch) gsap.from('.foot .big',")
   // Snappier smooth-scroll (match v2's feel): lower lerp = less floaty/laggy.
   // Mobile perf (2026-06-23): syncTouch:false → touch uses NATIVE momentum scroll
   // (Lenis only smooths the wheel, on desktop). syncTouch:true was re-driving touch

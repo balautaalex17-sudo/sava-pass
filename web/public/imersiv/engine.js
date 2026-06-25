@@ -183,7 +183,7 @@ if(window.gsap && !reduce){
     (function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();
     /* mobile (plan 004): the parallax/scrub set runs on ALL devices (tuned). The two heaviest — the background-video parallaxes + the ghost-numeral drift — skip low-end phones (deviceMemory<=4) to hold FPS; iOS reports no deviceMemory so it is treated as capable. Touch halves amplitudes via __vamp. */
     var __touch=matchMedia('(hover:none)').matches; var __lowEnd=!!(navigator.deviceMemory&&navigator.deviceMemory<=4); var __vamp=__touch?0.5:1; {
-    gsap.to('#tkwrap',{yPercent:-12*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
+    if(!__touch) gsap.to('#tkwrap',{yPercent:-12*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
 
     /* seam connectors: thread + node draw in as each section arrives */
     document.querySelectorAll('.seam').forEach(seam=>{
@@ -196,9 +196,9 @@ if(window.gsap && !reduce){
     if(!__touch){gsap.to('.hero-video',{yPercent:16*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});
     gsap.to('.foot-video',{yPercent:14*__vamp,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});}
     /* event poster: slow scrub zoom as it passes through */
-    gsap.fromTo('.ev-poster img',{scale:1.12},{scale:1,ease:'none',scrollTrigger:{trigger:'.ev-feat',start:'top bottom',end:'bottom top',scrub:true}});
+    if(!__touch) gsap.fromTo('.ev-poster img',{scale:1.12},{scale:1,ease:'none',scrollTrigger:{trigger:'.ev-feat',start:'top bottom',end:'bottom top',scrub:true}});
     /* footer headline rises into place */
-    gsap.from('.foot .big',{yPercent:22*__vamp,opacity:.35,ease:'none',scrollTrigger:{trigger:'.foot',start:'top 88%',end:'top 48%',scrub:true}});
+    if(!__touch) gsap.from('.foot .big',{yPercent:22*__vamp,opacity:.35,ease:'none',scrollTrigger:{trigger:'.foot',start:'top 88%',end:'top 48%',scrub:true}});
     /* time: the ghost year-numerals drift as each generation scrolls through */
     if(!__touch) document.querySelectorAll('.gen-ghost').forEach(g=>{
       const row=g.closest('.gen-row'); if(!row) return;
@@ -279,9 +279,20 @@ const rail=document.getElementById('rail');
 const lrailFill=document.querySelector('.lrail .fill');
 const dotEls=[...document.querySelectorAll('.dots a')];
 const secs=dotEls.map(a=>document.getElementById(a.dataset.s));
+var __isTouch=matchMedia('(hover:none)').matches;
 function chrome(){
   const h=document.documentElement, max=h.scrollHeight-innerHeight, sc=window.scrollY||h.scrollTop||0;
   const pct=(max>0?Math.min(100,sc/max*100):0);
+  // Mobile: .lrail + .dots are display:none, so the only live chrome is the top rail
+  // and the body.scrolled class. Skip the per-section getBoundingClientRect loop (a
+  // forced reflow on every scroll frame, computing a dots `act` that nothing shows) and
+  // the hidden-element writes — the biggest per-frame fast-scroll win on phones.
+  if(__isTouch){
+    if(rail) rail.style.width=pct.toFixed(2)+'%';
+    document.body.classList.toggle('scrolled',sc>innerHeight*.5);
+    return;
+  }
+  // Desktop: read all layout first, then write (no forced reflow).
   const cy=innerHeight*.4; let act=0;
   secs.forEach((s,i)=>{if(s){const r=s.getBoundingClientRect();if(r.top<=cy)act=i;}});
   if(rail) rail.style.width=pct.toFixed(2)+'%';
