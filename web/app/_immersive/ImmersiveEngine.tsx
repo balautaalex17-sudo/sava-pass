@@ -74,11 +74,19 @@ export function ImmersiveEngine() {
       }
     };
 
-    // Perf: defer the engine off the LCP critical window. It's scroll-driven
-    // enhancement, so load it on the first user interaction, or when the main thread
-    // goes idle (timeout fallback for static loads / Lighthouse). This keeps the
-    // engine's script-eval + DOM wiring (equalizer, count-ups, parallax) from
-    // competing with the LCP image paint on mobile.
+    // Perf: defer the engine off the LCP window — but MOBILE-ONLY. On phones the LCP
+    // is the church image and the engine's script-eval competes with it, so wait for
+    // first interaction / idle. On desktop the immersive IS the experience and the
+    // above-the-fold hero headline is un-masked BY the engine, so deferring it would
+    // delay the desktop LCP — load immediately there.
+    const isMobile = window.matchMedia("(max-width: 760px)").matches;
+    if (!isMobile) {
+      run();
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const events = ["scroll", "pointerdown", "touchstart", "keydown", "wheel"];
     const trigger = () => {
       if (started || cancelled) return;
