@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "6mb",
     },
+    // Inline the (small, atomic Tailwind) CSS into <style> tags instead of a
+    // render-blocking <link> (perf: PageSpeed "render-blocking requests", ~300ms off
+    // FCP/LCP). Homepage CSS is tiny and first-load perf is the goal here.
+    inlineCss: true,
   },
 };
 

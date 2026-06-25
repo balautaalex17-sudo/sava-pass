@@ -2,6 +2,14 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "comment:browserslist": "Modern targets only — drops Next/SWC legacy polyfills (Array.at/flat/flatMap, Object.fromEntries/hasOwn, String trim*) that PageSpeed flagged as unused on modern phones. SavaPass's 2026 audience is all well past these.",
+  "browserslist": [
+    "chrome >= 100",
+    "edge >= 100",
+    "firefox >= 100",
+    "safari >= 15.4",
+    "not dead"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
