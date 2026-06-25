@@ -193,14 +193,14 @@ if(window.gsap && !reduce){
         .fromTo(node,{scale:0},{scale:1,ease:'none'},.25);
     });
     /* ambient parallax — depth on the Higgsfield loops */
-    if(!__lowEnd){gsap.to('.hero-video',{yPercent:16*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});
+    if(!__touch){gsap.to('.hero-video',{yPercent:16*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});
     gsap.to('.foot-video',{yPercent:14*__vamp,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});}
     /* event poster: slow scrub zoom as it passes through */
     gsap.fromTo('.ev-poster img',{scale:1.12},{scale:1,ease:'none',scrollTrigger:{trigger:'.ev-feat',start:'top bottom',end:'bottom top',scrub:true}});
     /* footer headline rises into place */
     gsap.from('.foot .big',{yPercent:22*__vamp,opacity:.35,ease:'none',scrollTrigger:{trigger:'.foot',start:'top 88%',end:'top 48%',scrub:true}});
     /* time: the ghost year-numerals drift as each generation scrolls through */
-    if(!__lowEnd) document.querySelectorAll('.gen-ghost').forEach(g=>{
+    if(!__touch) document.querySelectorAll('.gen-ghost').forEach(g=>{
       const row=g.closest('.gen-row'); if(!row) return;
       gsap.fromTo(g,{yPercent:-12*__vamp},{yPercent:12*__vamp,ease:'none',scrollTrigger:{trigger:row,start:'top bottom',end:'bottom top',scrub:true}});
     });

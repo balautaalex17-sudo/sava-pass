@@ -182,6 +182,12 @@ markupOut = markupOut
 // loops desync scrub animations from the scroll), and refresh trigger positions
 // once the layout settles. Keeps the homepage scroll motion locked to the wheel.
 const engineOut = engine
+  // Mobile fps (also hand-patched in public/imersiv/engine.js): gate the two heaviest
+  // scrubs — the background-video parallaxes + the ghost-numeral drift — off TOUCH
+  // entirely (desktop-only), not just low-end phones. They were the main per-frame cost
+  // making fast scroll feel low-fps on real mid-range phones.
+  .replace("if(!__lowEnd){gsap.to('.hero-video'", "if(!__touch){gsap.to('.hero-video'")
+  .replace("if(!__lowEnd) document.querySelectorAll('.gen-ghost')", "if(!__touch) document.querySelectorAll('.gen-ghost')")
   // Snappier smooth-scroll (match v2's feel): lower lerp = less floaty/laggy.
   // Mobile perf (2026-06-23): syncTouch:false → touch uses NATIVE momentum scroll
   // (Lenis only smooths the wheel, on desktop). syncTouch:true was re-driving touch

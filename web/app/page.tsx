@@ -46,13 +46,20 @@ export default async function Home() {
           wins the bandwidth race (perf: church.webp is the mobile LCP). Mobile-scoped so
           desktop, whose LCP is a different element, is untouched. */}
       <link rel="preload" as="image" href="/imersiv/church.webp" fetchPriority="high" media="(max-width: 760px)" />
-      {/* Desktop-scoped: the immersive engine is desktop's whole experience, so warm the
-          cache there. On mobile these ~100KB+ of JS must NOT compete with the LCP image, so
-          they're not preloaded — ImmersiveEngine still loads them after hydration (perf). */}
+      {/* Warm the engine/vendor scripts on BOTH viewports so the engine inits without a
+          download stall. Desktop loads the engine immediately → default priority. Mobile loads
+          it on interaction/idle → fetchpriority=low so the scripts ride BEHIND the high-priority
+          LCP image (no competition) but are cached by the time the user scrolls — this removes
+          the "animations feel delayed" stall on the first scroll. Only one media query matches
+          per viewport, so each script is fetched once. */}
       <link rel="preload" as="script" href="/imersiv/vendor/lenis.min.js" media="(min-width: 761px)" />
       <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 761px)" />
       <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 761px)" />
       <link rel="preload" as="script" href="/imersiv/engine.js" media="(min-width: 761px)" />
+      <link rel="preload" as="script" href="/imersiv/vendor/lenis.min.js" fetchPriority="low" media="(max-width: 760px)" />
+      <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" fetchPriority="low" media="(max-width: 760px)" />
+      <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" fetchPriority="low" media="(max-width: 760px)" />
+      <link rel="preload" as="script" href="/imersiv/engine.js" fetchPriority="low" media="(max-width: 760px)" />
       <style dangerouslySetInnerHTML={{ __html: IMMERSIVE_CSS }} />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
       <ImmersiveEngine />
