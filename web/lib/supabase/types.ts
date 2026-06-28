@@ -47,6 +47,33 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          handled: boolean
+          id: string
+          message: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          handled?: boolean
+          id?: string
+          message: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          handled?: boolean
+          id?: string
+          message?: string
+          name?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           about: string | null
@@ -242,6 +269,75 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          beneficiary: string | null
+          body: string | null
+          category: string | null
+          cover_path: string | null
+          created_at: string
+          date_label: string | null
+          event_id: string | null
+          gallery: Json
+          id: string
+          location: string | null
+          published: boolean
+          slug: string
+          sort: number
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          beneficiary?: string | null
+          body?: string | null
+          category?: string | null
+          cover_path?: string | null
+          created_at?: string
+          date_label?: string | null
+          event_id?: string | null
+          gallery?: Json
+          id?: string
+          location?: string | null
+          published?: boolean
+          slug: string
+          sort?: number
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          beneficiary?: string | null
+          body?: string | null
+          category?: string | null
+          cover_path?: string | null
+          created_at?: string
+          date_label?: string | null
+          event_id?: string | null
+          gallery?: Json
+          id?: string
+          location?: string | null
+          published?: boolean
+          slug?: string
+          sort?: number
+          summary?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_stats"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "projects_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scans: {
         Row: {
           created_at: string
@@ -297,6 +393,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_content: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      sponsors: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          logo_path: string | null
+          name: string
+          sort: number
+          tier: string
+          url: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          logo_path?: string | null
+          name: string
+          sort?: number
+          tier?: string
+          url?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          logo_path?: string | null
+          name?: string
+          sort?: number
+          tier?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          active: boolean
+          bio: string | null
+          created_at: string
+          id: string
+          mandate: string | null
+          name: string
+          photo_path: string | null
+          role: string
+          sort: number
+        }
+        Insert: {
+          active?: boolean
+          bio?: string | null
+          created_at?: string
+          id?: string
+          mandate?: string | null
+          name: string
+          photo_path?: string | null
+          role: string
+          sort?: number
+        }
+        Update: {
+          active?: boolean
+          bio?: string | null
+          created_at?: string
+          id?: string
+          mandate?: string | null
+          name?: string
+          photo_path?: string | null
+          role?: string
+          sort?: number
+        }
+        Relationships: []
       }
       tickets: {
         Row: {
@@ -559,3 +742,8 @@ export type Scan = Tables<"scans">
 export type Profile = Tables<"profiles">
 export type EventStats = Database["public"]["Views"]["event_stats"]["Row"]
 export type MembershipApplication = Tables<"membership_applications">
+export type TeamMember = Tables<"team_members">
+export type Project = Tables<"projects">
+export type Sponsor = Tables<"sponsors">
+export type ContactMessage = Tables<"contact_messages">
+export type SiteContent = Tables<"site_content">
