@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireStaffRole, STAFF_ROLES, type StaffRole } from "@/lib/roles";
+import { resolveSiteUrl } from "@/lib/site-url";
 
 const roleSchema = z.enum(STAFF_ROLES);
 
@@ -69,7 +70,7 @@ export async function inviteStaff(_prev: TeamActionState, form: FormData): Promi
   }
 
   const { email, role } = parsed.data;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = resolveSiteUrl();
 
   const invited = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${siteUrl}/invite/confirm`,

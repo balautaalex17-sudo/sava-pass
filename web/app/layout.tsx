@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
+import { resolveSiteUrl } from "@/lib/site-url";
 
 // Runs before first paint. Two jobs:
 //  1. Force-on motion: shim `matchMedia` so any `prefers-reduced-motion` query
@@ -48,7 +49,7 @@ const jetbrainsMono = JetBrains_Mono({
   preload: false,
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://savapass.ro";
+const siteUrl = resolveSiteUrl();
 
 export const metadata: Metadata = {
   title: { default: "SavaPass — by Interact Sf. Sava", template: "%s — SavaPass" },

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getEventBySlug, getEventStats } from "@/lib/events";
+import { resolveSiteUrl } from "@/lib/site-url";
 
 const schema = z.object({
   slug: z.string(),
@@ -67,7 +68,7 @@ export async function createCheckout(_prev: CheckoutState, form: FormData): Prom
     return { errors: { general: "Eroare internă. Încearcă din nou." } };
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = resolveSiteUrl();
 
   let session;
   try {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signTicket } from "@/lib/qr-token";
+import { resolveSiteUrl } from "@/lib/site-url";
 import { generateCode } from "@/lib/ticket-code";
 import { Resend } from "resend";
 import type Stripe from "stripe";
@@ -93,7 +94,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (!ticket) return;
 
   // send email
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = resolveSiteUrl();
   const ticketUrl = `${siteUrl}/bilet/${qrToken}`;
   const qrUrl = `${siteUrl}/api/qr/${qrToken}`;
 
