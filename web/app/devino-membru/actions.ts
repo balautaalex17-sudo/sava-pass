@@ -39,6 +39,12 @@ export async function submitApplication(_prev: MembershipState, form: FormData):
   const tracks = form.getAll("tracks").map((t) => String(t)).filter(Boolean);
   const availabilityList = form.getAll("availability").map((a) => String(a)).filter(Boolean);
 
+  // Mirror the client step-1 rule server-side so a crafted POST can't store a
+  // direction-less application.
+  if (tracks.length === 0) {
+    return { errors: { general: "Alege cel puțin o direcție de interes." } };
+  }
+
   const parsed = schema.safeParse({
     full_name: form.get("full_name"),
     email: form.get("email"),

@@ -22,7 +22,12 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    await handleCheckoutCompleted(session);
+    const done = await handleCheckoutCompleted(session);
+    if (!done) {
+      // Issuance failed after payment — return non-2xx so Stripe redelivers.
+      // The ticket-existence guard below makes the retry idempotent.
+      return NextResponse.json({ error: "ticket_issue_failed" }, { status: 500 });
+    }
   }
 
   if (event.type === "charge.refunded") {
@@ -33,18 +38,28 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<boolean> {
   const orderId = session.metadata?.order_id;
-  if (!orderId) return;
+  if (!orderId) return true;
 
-  // idempotency: skip if already paid
   const { data: existing } = await supabaseAdmin
     .from("orders")
     .select("id, status, event_id, buyer_name, buyer_email")
     .eq("id", orderId)
     .single();
 
-  if (!existing || existing.status === "paid") return;
+  if (!existing) return true;
+
+  // Idempotency keyed on ticket existence (not order status): a redelivery after a
+  // successful issuance is a no-op, but a paid order that never got a ticket (e.g.
+  // a transient insert failure) is re-processed and re-issued on retry.
+  const { data: existingTicket } = await supabaseAdmin
+    .from("tickets")
+    .select("id")
+    .eq("order_id", orderId)
+    .limit(1)
+    .maybeSingle();
+  if (existingTicket) return true;
 
   // check capacity one more time
   const { data: stats } = await supabaseAdmin
@@ -60,9 +75,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .single();
 
   if (stats && ev && (stats.sold ?? 0) >= ev.capacity) {
-    // mark failed — over capacity (edge case)
+    // mark failed — over capacity (edge case). Not retryable; ack so Stripe stops.
     await supabaseAdmin.from("orders").update({ status: "failed" }).eq("id", orderId);
-    return;
+    return true;
   }
 
   // mark order paid
@@ -80,7 +95,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     holderName: existing.buyer_name,
     holderEmail: existing.buyer_email,
   });
-  if (!issued) return;
+  if (!issued) return false;
   const { code, qrToken } = issued;
 
   // send email
@@ -101,6 +116,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       qrUrl,
     }),
   });
+
+  return true;
 }
 
 async function handleRefund(charge: Stripe.Charge) {
