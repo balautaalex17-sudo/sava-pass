@@ -49,7 +49,7 @@ const jetbrainsMono = JetBrains_Mono({
   preload: false,
 });
 
-const siteUrl = resolveSiteUrl();
+const siteUrl = resolveSiteUrl({ fallback: "https://savapass.ro" });
 
 export const metadata: Metadata = {
   title: { default: "SavaPass — by Interact Sf. Sava", template: "%s — SavaPass" },

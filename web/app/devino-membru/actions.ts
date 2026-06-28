@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
+import { escapeHtml } from "@/lib/escape-html";
 
 const schema = z.object({
   full_name: z.string().min(2, "Introdu numele complet"),
@@ -112,8 +113,4 @@ function buildEmailHtml(firstName: string): string {
       </p>
     </div>
   `;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c));
 }

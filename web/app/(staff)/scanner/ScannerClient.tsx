@@ -174,6 +174,9 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
     } catch {}
   }, []);
 
+  // Release the AudioContext on unmount (browsers cap concurrent contexts ~6).
+  useEffect(() => () => { audioCtxRef.current?.close().catch(() => {}); audioCtxRef.current = null; }, []);
+
   const toggleMuted = useCallback(() => {
     setMuted((prev) => {
       const next = !prev;

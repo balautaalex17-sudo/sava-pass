@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { resolveSiteUrl } from "@/lib/site-url";
 import { sendEmail } from "@/lib/email";
 import { issueTicket } from "@/lib/tickets";
+import { escapeHtml } from "@/lib/escape-html";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -121,12 +122,12 @@ function buildEmailHtml({ name, eventTitle, dateLabel, venue, code, ticketUrl, q
 <div style="max-width:480px;margin:40px auto;background:white;border-radius:24px;overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,0.08);">
   <div style="background:linear-gradient(135deg,#009FE3 0%,#2563EB 100%);padding:32px 32px 24px;">
     <div style="color:rgba(255,255,255,0.7);font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:8px;">BILETUL TĂU</div>
-    <div style="color:white;font-size:24px;font-weight:800;letter-spacing:-0.02em;">${eventTitle}</div>
-    <div style="color:rgba(255,255,255,0.8);font-size:14px;margin-top:6px;">${dateLabel} · ${venue}</div>
+    <div style="color:white;font-size:24px;font-weight:800;letter-spacing:-0.02em;">${escapeHtml(eventTitle)}</div>
+    <div style="color:rgba(255,255,255,0.8);font-size:14px;margin-top:6px;">${escapeHtml(dateLabel)} · ${escapeHtml(venue)}</div>
   </div>
   <div style="padding:28px 32px;">
     <p style="color:#334155;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Salut, <strong>${name}</strong>! Biletul tău este gata. Arată codul QR la intrare sau introdu codul de 6 caractere.
+      Salut, <strong>${escapeHtml(name)}</strong>! Biletul tău este gata. Arată codul QR la intrare sau introdu codul de 6 caractere.
     </p>
     <div style="text-align:center;margin-bottom:24px;">
       <img src="${qrUrl}" alt="QR bilet" width="180" height="180" style="border-radius:16px;border:2px solid #E2E8F0;" />
@@ -136,7 +137,7 @@ function buildEmailHtml({ name, eventTitle, dateLabel, venue, code, ticketUrl, q
       Deschide biletul
     </a>
     <p style="color:#94A3B8;font-size:12px;text-align:center;margin:20px 0 0;">
-      Ne vedem la ${venue}. — Interact Sf. Sava
+      Ne vedem la ${escapeHtml(venue)}. — Interact Sf. Sava
     </p>
   </div>
 </div>

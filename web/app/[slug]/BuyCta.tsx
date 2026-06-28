@@ -11,17 +11,16 @@ interface BuyCtaProps {
 export function BuyCta({ slug, priceRon, isSoldOut, accent }: BuyCtaProps) {
   return (
     <div
-      className="buy-cta-shell anim-rise"
+      className="buy-cta-shell"
       style={{
         position: "fixed",
         left: 0,
         right: 0,
         bottom: 0,
         zIndex: "var(--z-cta)" as unknown as number,
-        padding: "14px 20px max(28px, env(safe-area-inset-bottom, 16px))",
-        background: "rgba(7,10,18,0.96)",
-        borderTop: "1px solid var(--im-line)",
-        animationDelay: "120ms",
+        padding: "14px 20px max(20px, env(safe-area-inset-bottom, 16px))",
+        background: "rgba(255,255,255,0.97)",
+        borderTop: "1px solid var(--slate-200)",
       }}
     >
       <div style={{ maxWidth: 440, margin: "0 auto" }}>
@@ -29,11 +28,11 @@ export function BuyCta({ slug, priceRon, isSoldOut, accent }: BuyCtaProps) {
           <div
             style={{
               width: "100%",
-              padding: "14px 18px",
+              padding: "15px 18px",
               borderRadius: 14,
               textAlign: "center",
-              background: "var(--im-ink-3)",
-              color: "var(--im-fg-3)",
+              background: "var(--slate-100)",
+              color: "var(--slate-500)",
               fontWeight: 800,
               fontSize: 15,
             }}
@@ -47,7 +46,7 @@ export function BuyCta({ slug, priceRon, isSoldOut, accent }: BuyCtaProps) {
             style={{
               display: "block",
               width: "100%",
-              padding: "15px 18px",
+              padding: "16px 18px",
               borderRadius: 14,
               background: `linear-gradient(135deg, ${accent} 0%, #2563EB 100%)`,
               color: "white",

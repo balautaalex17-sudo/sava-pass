@@ -13,7 +13,7 @@ import "server-only";
  *  3. `VERCEL_URL` — the per-deployment URL (preview deploys).
  *  4. `http://localhost:3000` — local dev only.
  */
-export function resolveSiteUrl(): string {
+export function resolveSiteUrl(opts?: { fallback?: string }): string {
   const onVercel = Boolean(process.env.VERCEL);
   const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 
@@ -27,5 +27,5 @@ export function resolveSiteUrl(): string {
   const deployment = process.env.VERCEL_URL?.trim();
   if (deployment) return `https://${deployment.replace(/\/+$/, "")}`;
 
-  return "http://localhost:3000";
+  return opts?.fallback ?? "http://localhost:3000";
 }
