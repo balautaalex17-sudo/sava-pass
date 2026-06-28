@@ -3,27 +3,36 @@ import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 
 interface HomeNavProps {
-  /** Active-event href (falls back to #evenimente when no live event). */
+  /** Active-event href (falls back to #event when no live event). */
   eventHref: string;
+  /** Key of the current page for active-link highlight (despre/proiecte/echipa/evenimente/membru). */
+  active?: string;
 }
 
+/** Primary site nav — one clean line (spec §6.2). Secondaries live in the footer. */
 const LINKS = [
-  { label: "Bilete", href: "__EVENT__" },
-  { label: "Devino membru", href: "/devino-membru" },
+  { label: "Despre", href: "/despre", key: "despre" },
+  { label: "Proiecte", href: "/proiecte", key: "proiecte" },
+  { label: "Echipă", href: "/echipa", key: "echipa" },
+  { label: "Evenimente", href: "__EVENT__", key: "evenimente" },
+  { label: "Devino membru", href: "/devino-membru", key: "membru" },
+];
+
+/** Demoted to the mobile sheet (and the footer) so the desktop nav stays one line. */
+const SECONDARY = [
+  { label: "Sponsori", href: "/sponsori" },
+  { label: "District 2241", href: "/district" },
+  { label: "Contact", href: "/contact" },
   { label: "Contul meu", href: "/conta" },
   { label: "Check-in", href: "/scanner" },
 ];
 
 /**
- * Persistent overlay nav for the immersive landing — the single place every
- * destination (buy a ticket, become a member, your account, check-in) is
- * reachable directly. Server component with a CSS-only mobile disclosure
- * (`<details>`), so it ships ZERO client JS / hydration on the homepage's LCP
- * path (the immersive engine is the only scripted layer, deferred on mobile).
- * Fully namespaced (`.hnav-*`) so the page's global/unscoped immersive CSS can't
- * bleed in. Dark to match the immersive aesthetic; no backdrop-filter (paint cost).
+ * Public site nav, rendered on the immersive landing and every club page. Server
+ * component with a CSS-only `<details>` mobile disclosure — zero client JS on the
+ * LCP path. Dark immersive register; namespaced `.hnav-*`. No backdrop-filter.
  */
-export function HomeNav({ eventHref }: HomeNavProps) {
+export function HomeNav({ eventHref, active }: HomeNavProps) {
   const resolve = (href: string) => (href === "__EVENT__" ? eventHref : href);
 
   return (
@@ -32,11 +41,21 @@ export function HomeNav({ eventHref }: HomeNavProps) {
         <Logo size={20} />
       </Link>
 
-      {/* Desktop links (CSS-shown ≥761px) */}
+      {/* Desktop links */}
       <div className="hnav__links">
-        {LINKS.map((l) => (
-          <Link key={l.label} href={resolve(l.href)} className="hnav__link">{l.label}</Link>
-        ))}
+        {LINKS.map((l) => {
+          const isActive = active === l.key;
+          return (
+            <Link
+              key={l.key}
+              href={resolve(l.href)}
+              className={isActive ? "hnav__link hnav__link--active" : "hnav__link"}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {l.label}
+            </Link>
+          );
+        })}
         <Link href={eventHref} className="hnav__cta">Cumpără bilet</Link>
       </div>
 
@@ -48,9 +67,13 @@ export function HomeNav({ eventHref }: HomeNavProps) {
         </summary>
         <div className="hnav__sheet">
           {LINKS.map((l) => (
-            <Link key={l.label} href={resolve(l.href)} className="hnav__sheet-link">{l.label}</Link>
+            <Link key={l.key} href={resolve(l.href)} className="hnav__sheet-link">{l.label}</Link>
           ))}
           <Link href={eventHref} className="hnav__sheet-cta">Cumpără bilet</Link>
+          <div className="hnav__sheet-sep" />
+          {SECONDARY.map((l) => (
+            <Link key={l.href} href={l.href} className="hnav__sheet-link hnav__sheet-link--sec">{l.label}</Link>
+          ))}
         </div>
       </details>
 
@@ -62,13 +85,14 @@ export function HomeNav({ eventHref }: HomeNavProps) {
           background: linear-gradient(180deg, rgba(7,10,18,0.92) 0%, rgba(7,10,18,0) 100%);
         }
         .hnav__brand { text-decoration: none; display: inline-flex; align-items: center; }
-        .hnav__links { display: flex; align-items: center; gap: clamp(14px, 2vw, 30px); }
+        .hnav__links { display: flex; align-items: center; gap: clamp(12px, 1.8vw, 26px); }
         .hnav__link {
           color: rgba(234,244,251,0.78); text-decoration: none;
           font-family: var(--font-sans); font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
           transition: color 160ms ease;
         }
         .hnav__link:hover { color: #fff; }
+        .hnav__link--active { color: var(--im-fg); border-bottom: 2px solid var(--im-cyan); padding-bottom: 3px; }
         .hnav__cta {
           display: inline-flex; align-items: center;
           padding: 10px 18px; border-radius: 999px; text-decoration: none;
@@ -101,14 +125,16 @@ export function HomeNav({ eventHref }: HomeNavProps) {
           padding: 13px 14px; border-radius: 10px; text-decoration: none;
           color: #EAF4FB; font-family: var(--font-sans); font-size: 15px; font-weight: 600;
         }
+        .hnav__sheet-link--sec { color: rgba(234,244,251,0.66); font-size: 14px; font-weight: 500; }
         .hnav__sheet-link:active { background: rgba(255,255,255,0.06); }
+        .hnav__sheet-sep { height: 1px; margin: 6px 8px; background: rgba(234,244,251,0.10); }
         .hnav__sheet-cta {
           margin-top: 4px; padding: 14px; border-radius: 12px; text-align: center; text-decoration: none;
           background: linear-gradient(135deg, #00B8F0 0%, #2563EB 100%);
           color: #fff; font-family: var(--font-sans); font-size: 15px; font-weight: 700;
         }
 
-        @media (max-width: 760px) {
+        @media (max-width: 860px) {
           .hnav__links { display: none; }
           .hnav__m { display: block; }
         }
