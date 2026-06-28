@@ -4,12 +4,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signTicket } from "@/lib/qr-token";
 import { resolveSiteUrl } from "@/lib/site-url";
 import { generateCode } from "@/lib/ticket-code";
-import { Resend } from "resend";
+import { sendEmail } from "@/lib/email";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -98,8 +96,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const ticketUrl = `${siteUrl}/bilet/${qrToken}`;
   const qrUrl = `${siteUrl}/api/qr/${qrToken}`;
 
-  await resend.emails.send({
-    from: "SavaPass <noreply@savapass.ro>",
+  await sendEmail({
     to: existing.buyer_email,
     subject: `Biletul tău pentru ${ev?.title ?? "eveniment"} — ${code}`,
     html: buildEmailHtml({

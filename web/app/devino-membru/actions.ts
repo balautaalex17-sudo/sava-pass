@@ -1,9 +1,7 @@
 "use server";
 import { z } from "zod";
-import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendEmail } from "@/lib/email";
 
 const schema = z.object({
   full_name: z.string().min(2, "Introdu numele complet"),
@@ -36,14 +34,20 @@ export async function submitApplication(_prev: MembershipState, form: FormData):
     return { ok: true };
   }
 
+  // Multi-select fields come from the wizard as repeated inputs.
+  const tracks = form.getAll("tracks").map((t) => String(t)).filter(Boolean);
+  const availabilityList = form.getAll("availability").map((a) => String(a)).filter(Boolean);
+
   const parsed = schema.safeParse({
     full_name: form.get("full_name"),
     email: form.get("email"),
     phone: form.get("phone"),
     grade: form.get("grade") || undefined,
     motivation: form.get("motivation"),
-    strength: form.get("strength") || undefined,
-    availability: form.get("availability") || undefined,
+    // Tracks (interest areas) are stored in the existing `strength` column; the
+    // single-line availability inputs are joined into `availability`.
+    strength: tracks.length ? tracks.join(" · ") : (form.get("strength") || undefined),
+    availability: availabilityList.length ? availabilityList.join(" · ") : (form.get("availability") || undefined),
     gdpr: form.get("gdpr"),
   });
 
@@ -81,8 +85,7 @@ export async function submitApplication(_prev: MembershipState, form: FormData):
 
   // Confirmation email is best-effort — a failed send must NOT fail the application.
   try {
-    await resend.emails.send({
-      from: "SavaPass <noreply@savapass.ro>",
+    await sendEmail({
       to: email,
       subject: "Am primit aplicația ta — Interact Sf. Sava",
       html: buildEmailHtml(full_name.split(" ")[0] || full_name),
