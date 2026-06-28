@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { signTicket } from "@/lib/qr-token";
 import { resolveSiteUrl } from "@/lib/site-url";
-import { generateCode } from "@/lib/ticket-code";
 import { sendEmail } from "@/lib/email";
+import { issueTicket } from "@/lib/tickets";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -73,23 +72,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     paid_at: new Date().toISOString(),
   }).eq("id", orderId);
 
-  // issue ticket
-  const ticketId = crypto.randomUUID();
-  const code = generateCode(6);
-  const qrToken = signTicket(ticketId);
-
-  const { data: ticket } = await supabaseAdmin.from("tickets").insert({
-    id: ticketId,
-    order_id: orderId,
-    event_id: existing.event_id,
-    code,
-    qr_token: qrToken,
-    holder_name: existing.buyer_name,
-    holder_email: existing.buyer_email,
-    status: "valid",
-  }).select().single();
-
-  if (!ticket) return;
+  // issue ticket (shared with the admin comp/test-ticket tool)
+  const issued = await issueTicket({
+    eventId: existing.event_id,
+    orderId,
+    holderName: existing.buyer_name,
+    holderEmail: existing.buyer_email,
+  });
+  if (!issued) return;
+  const { code, qrToken } = issued;
 
   // send email
   const siteUrl = resolveSiteUrl();

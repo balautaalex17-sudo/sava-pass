@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Camera, CheckCircle, LayoutDashboard, RotateCcw, Video, XCircle } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle, LayoutDashboard, RotateCcw, Video, Volume2, VolumeX, XCircle } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { scanTicket, scanTicketByCode, type ScanVerdict } from "./actions";
@@ -137,8 +137,11 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [manualCode, setManualCode] = useState("");
   const [manualPending, setManualPending] = useState(false);
+  const [muted, setMuted] = useState(false);
   const lastTokenRef = useRef<string | null>(null);
   const scanCooldownRef = useRef(false);
+  const mutedRef = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const loadCameras = useCallback(async () => {
     try {
@@ -162,7 +165,64 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
     controlsRef.current = null;
   }, []);
 
+  // Persisted mute toggle for scan feedback (sound + haptic). Default ON.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sp-scan-muted") === "1";
+      setMuted(saved);
+      mutedRef.current = saved;
+    } catch {}
+  }, []);
+
+  const toggleMuted = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev;
+      mutedRef.current = next;
+      try { localStorage.setItem("sp-scan-muted", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  }, []);
+
+  // Distinct accept vs reject feedback for a loud door. Never throws.
+  const playFeedback = useCallback((result: string) => {
+    if (mutedRef.current) return;
+    const ok = result === "ok";
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+        navigator.vibrate(ok ? 60 : [40, 40, 40]);
+      }
+    } catch {}
+    try {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      let ctx = audioCtxRef.current;
+      if (!ctx) { ctx = new AC(); audioCtxRef.current = ctx; }
+      if (ctx.state === "suspended") void ctx.resume();
+      const beep = (freq: number, start: number, dur: number) => {
+        const osc = ctx!.createOscillator();
+        const gain = ctx!.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const t0 = ctx!.currentTime + start;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(gain);
+        gain.connect(ctx!.destination);
+        osc.start(t0);
+        osc.stop(t0 + dur + 0.02);
+      };
+      if (ok) {
+        beep(880, 0, 0.15);
+      } else {
+        beep(300, 0, 0.12);
+        beep(233, 0.16, 0.18);
+      }
+    } catch {}
+  }, []);
+
   const showVerdict = useCallback((nextVerdict: ScanVerdict) => {
+    playFeedback(nextVerdict.result);
     setVerdict(nextVerdict);
     setState("result");
 
@@ -171,7 +231,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
       setVerdict(null);
       scanCooldownRef.current = false;
     }, 3000);
-  }, []);
+  }, [playFeedback]);
 
   const startScanner = useCallback(async (deviceId: string) => {
     if (!videoRef.current) return;
@@ -426,6 +486,11 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
           <button type="button" onClick={() => void optimizeCamera()} disabled={state !== "scanning"} className="pressable" style={{ ...buttonStyle, opacity: state === "scanning" ? 1 : 0.4 }}>
             <Camera size={14} strokeWidth={1.75} />
             Claritate QR
+          </button>
+
+          <button type="button" onClick={toggleMuted} className="pressable" style={buttonStyle}>
+            {muted ? <VolumeX size={14} strokeWidth={1.75} /> : <Volume2 size={14} strokeWidth={1.75} />}
+            {muted ? "Sunet oprit" : "Sunet pornit"}
           </button>
 
           <form onSubmit={submitManualCode} style={{ display: "grid", gap: 8 }}>

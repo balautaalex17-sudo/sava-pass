@@ -7,7 +7,7 @@ import { StaffHeader } from "@/components/staff/StaffHeader";
 import { requireStaffRole } from "@/lib/roles";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BarChart3, CalendarDays, Inbox, QrCode, Users } from "lucide-react";
+import { BarChart3, CalendarDays, Inbox, QrCode, Ticket, Users } from "lucide-react";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
@@ -36,6 +36,7 @@ export default async function AdminPage() {
               <HeaderLink href="/admin/events" icon={<CalendarDays size={14} strokeWidth={1.75} />} label="Evenimente" />
               <HeaderLink href="/admin/team" icon={<Users size={14} strokeWidth={1.75} />} label="Echipă" />
               <HeaderLink href="/statistici" icon={<BarChart3 size={14} strokeWidth={1.75} />} label="Statistici" />
+              <HeaderLink href="/admin/emite-bilet" icon={<Ticket size={14} strokeWidth={1.75} />} label="Emite bilet" />
               <HeaderLink href="/scanner" icon={<QrCode size={14} strokeWidth={1.75} />} label="Scanner" primary />
             </div>
           }
@@ -119,7 +120,8 @@ export default async function AdminPage() {
             <HeaderLink href="/admin/team" icon={<Users size={14} strokeWidth={1.75} />} label="Echipă" />
             <HeaderLink href="/admin/aplicatii" icon={<Inbox size={14} strokeWidth={1.75} />} label="Aplicații" />
             <HeaderLink href="/statistici" icon={<BarChart3 size={14} strokeWidth={1.75} />} label="Statistici" />
-            <HeaderLink href="/scanner" icon={<QrCode size={14} strokeWidth={1.75} />} label="Scanner" primary />
+            <HeaderLink href="/admin/emite-bilet" icon={<Ticket size={14} strokeWidth={1.75} />} label="Emite bilet" />
+              <HeaderLink href="/scanner" icon={<QrCode size={14} strokeWidth={1.75} />} label="Scanner" primary />
           </div>
         }
       />
