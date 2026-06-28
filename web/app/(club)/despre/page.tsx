@@ -2,7 +2,10 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ClubPage } from "@/components/club/ClubPage";
 import { ClubHero } from "@/components/club/ClubHero";
+import { getContent } from "@/lib/club";
 import type { Metadata } from "next";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Despre — Interact Sf. Sava",
@@ -25,20 +28,40 @@ const FAMILY = [
   { name: "Rotary", age: "30+ ani", role: "Adulți cu experiență care susțin comunitatea cu timp, resurse și mentorat." },
 ];
 
-// PLACEHOLDER — replace with real club data via site_content in U2 (no fake-precise live claims).
-const IMPACT = [
-  { n: "—", label: "ani activi" },
-  { n: "—", label: "proiecte" },
-  { n: "—", label: "beneficiari" },
-  { n: "—", label: "lei strânși" },
-];
+// Impact figures are admin-editable via site_content (keys below); they render as
+// "—" until seeded, so no fake-precise claims ship.
+const IMPACT_KEYS = [
+  { key: "impact_years", label: "ani activi" },
+  { key: "impact_projects", label: "proiecte" },
+  { key: "impact_beneficiaries", label: "beneficiari" },
+  { key: "impact_funds", label: "lei strânși" },
+] as const;
 
-export default function DesprePage() {
+export default async function DesprePage() {
+  // Editable prose comes from site_content (admin CMS in U9); the current copy is
+  // the fallback so the page reads complete before anything is seeded.
+  const [lead, who1, who2, ...impactValues] = await Promise.all([
+    getContent(
+      "despre_lead",
+      "Interact Sf. Sava este clubul de voluntariat al elevilor — un loc unde tinerii pornesc proiecte reale și cresc împreună.",
+    ),
+    getContent(
+      "despre_who_1",
+      "Interact Sf. Sava este clubul de voluntariat al elevilor de la Colegiul Național „Sfântul Sava” din București. Facem parte din familia Rotary și organizăm proiecte sociale, evenimente și acțiuni care lasă urme în comunitate.",
+    ),
+    getContent(
+      "despre_who_2",
+      "Dincolo de fapte bune, clubul e un loc de creștere: descoperi ce te pasionează, înveți să lucrezi în echipă și devii un lider responsabil al generației tale.",
+    ),
+    ...IMPACT_KEYS.map((k) => getContent(k.key, "—")),
+  ]);
+  const impact = IMPACT_KEYS.map((k, i) => ({ n: impactValues[i], label: k.label }));
+
   const hero = (
     <ClubHero
       variant="editorial"
       lines={[<>Servim comunitatea,</>, <span key="a" className="cl-hero__accent">prin acțiune.</span>]}
-      lead="Interact Sf. Sava este clubul de voluntariat al elevilor — un loc unde tinerii pornesc proiecte reale și cresc împreună."
+      lead={lead}
       cta={<Link href="/proiecte" className="cl-link">Vezi proiectele <ArrowRight size={16} strokeWidth={2} /></Link>}
     />
   );
@@ -61,15 +84,8 @@ export default function DesprePage() {
         <div className="cl-2col">
           <div>
             <h2 className="cl-h2">Cine suntem</h2>
-            <p className="cl-text">
-              Interact Sf. Sava este clubul de voluntariat al elevilor de la Colegiul Național „Sfântul Sava” din
-              București. Facem parte din familia Rotary și organizăm proiecte sociale, evenimente și acțiuni care lasă
-              urme în comunitate.
-            </p>
-            <p className="cl-text">
-              Dincolo de fapte bune, clubul e un loc de creștere: descoperi ce te pasionează, înveți să lucrezi în
-              echipă și devii un lider responsabil al generației tale.
-            </p>
+            <p className="cl-text">{who1}</p>
+            <p className="cl-text">{who2}</p>
           </div>
           <div className="cl-2col__media" aria-hidden>
             <GearMotif />
@@ -107,7 +123,7 @@ export default function DesprePage() {
       {/* Impact band — the page's single metric moment (placeholder values until U2) */}
       <section className="cl-impact anim-rise" aria-label="Impact">
         <div className="cl-impact__grid">
-          {IMPACT.map((s) => (
+          {impact.map((s) => (
             <div key={s.label}>
               <div className="cl-impact__num">{s.n}</div>
               <div className="cl-impact__label">{s.label}</div>

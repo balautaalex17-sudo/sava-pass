@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { getActiveEvent } from "@/lib/events";
+import { getPublishedProjects } from "@/lib/club";
+import type { Project } from "@/lib/supabase/types";
 import { IMMERSIVE_CSS, IMMERSIVE_MARKUP } from "./_immersive/content";
 import { ImmersiveEngine } from "./_immersive/ImmersiveEngine";
+import { LandingTeasers } from "@/components/club/LandingTeasers";
+import { HomeNav } from "./HomeNav";
 
 // Homepage = the v3 immersive port, served responsively at ALL widths. The phone
 // breakpoint lives inside IMMERSIVE_CSS (@media <=760/<=520) and the engine runs
@@ -35,8 +39,26 @@ async function activeSlug(): Promise<string | null> {
   }
 }
 
+// Featured projects for the teaser band — same fail-fast posture as activeSlug so
+// a slow/paused DB never blocks the static shell (returns [] → the rail is hidden).
+async function featuredProjects(): Promise<Project[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      getPublishedProjects(),
+      new Promise<Project[]>((resolve) => {
+        timer = setTimeout(() => resolve([]), 2000);
+      }),
+    ]);
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default async function Home() {
-  const slug = await activeSlug();
+  const [slug, projects] = await Promise.all([activeSlug(), featuredProjects()]);
   const ctaHref = slug ? `/${slug}` : "#evenimente";
   const markup = IMMERSIVE_MARKUP.split("__CTA_HREF__").join(ctaHref);
 
@@ -61,7 +83,9 @@ export default async function Home() {
       <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" fetchPriority="low" media="(max-width: 760px)" />
       <link rel="preload" as="script" href="/imersiv/engine.js" fetchPriority="low" media="(max-width: 760px)" />
       <style dangerouslySetInnerHTML={{ __html: IMMERSIVE_CSS }} />
+      <HomeNav eventHref={ctaHref} />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
+      <LandingTeasers projects={projects} eventHref={ctaHref} />
       <ImmersiveEngine />
     </>
   );
