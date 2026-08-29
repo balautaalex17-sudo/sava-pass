@@ -61,8 +61,8 @@ function AccessForm({
           </span>
           <h2>Cererea a fost verificată</h2>
           <p>
-            Dacă datele corespund unui bilet, linkul privat a fost trimis pe email.
-            Verifică Inbox și Spam.
+            Dacă datele corespund unui bilet, emailul cu QR și linkul privat a fost trimis.
+            Verifică Inbox, apoi Spam dacă nu apare după un minut.
           </p>
           <button type="button" className={styles.resetButton} onClick={onReset}>
             <RotateCcw size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -146,14 +146,14 @@ function AccessForm({
 
         <button type="submit" className={styles.submitButton} disabled={pending}>
           {pending ? <span className={`${styles.spinner} anim-spin-slow`} aria-hidden="true" /> : null}
-          {pending ? "Se verifică…" : "Trimite linkul"}
+          {pending ? "Se verifică…" : "Trimite biletul"}
           {!pending ? <ArrowRight size={18} strokeWidth={1.75} aria-hidden="true" /> : null}
         </button>
       </form>
 
       <p className={styles.securityNote}>
         <ShieldCheck size={16} strokeWidth={1.75} aria-hidden="true" />
-        QR-ul rămâne ascuns până confirmi accesul din email.
+        Linkul și codul QR sunt personale. Nu le trimite altor persoane.
       </p>
     </div>
   );

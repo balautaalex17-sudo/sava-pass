@@ -120,8 +120,8 @@ function TicketLookupPage({ initialError }: { initialError: boolean }) {
             Biletele tale. <span>Fără cont.</span>
           </h1>
           <p className={styles.accessLead}>
-            Introdu emailul sau telefonul folosit la rezervare. Îți trimitem un link privat,
-            iar toate biletele apar într-un singur loc.
+            Introdu emailul sau telefonul folosit la rezervare. Îți trimitem biletul cu QR
+            și un link privat către toate biletele tale.
           </p>
 
         </section>
