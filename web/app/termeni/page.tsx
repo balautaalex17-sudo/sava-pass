@@ -28,14 +28,14 @@ export default function TermeniPage() {
 
       <h2>Preț și plată</h2>
       <p>
-        Prețurile sunt afișate în lei (RON) și includ orice taxe aplicabile. Plata se face online, securizat,
-        prin <strong>Stripe</strong>. Nu primim și nu stocăm datele cardului tău — acestea sunt gestionate direct de Stripe.
+        Prețurile sunt afișate în lei (RON) și includ orice taxe aplicabile. Plata se face exclusiv cash,
+        la punctul comunicat de organizator. Rezervarea și codul QR nu confirmă automat plata.
       </p>
 
       <h2>Livrarea biletului</h2>
       <p>
-        După confirmarea plății primești biletul pe email și îl poți accesa oricând în aplicație (codul QR
-        plus codul de 6 caractere). Dacă emailul nu ajunge, biletul rămâne disponibil prin linkul din aplicație.
+        După rezervare primești codul QR pe email și îl poți accesa oricând în aplicație. Pentru biletele cu
+        plată, accesul devine valid numai după ce organizatorul confirmă încasarea cash.
       </p>
 
       <h2>Accesul la eveniment</h2>

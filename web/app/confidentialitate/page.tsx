@@ -26,7 +26,7 @@ export default function ConfidentialitatePage() {
         <li><strong>La cumpărarea biletului:</strong> numele și adresa de email.</li>
         <li><strong>La aplicația de membru:</strong> nume, email, telefon, clasa/liceul, motivația, direcțiile de interes și disponibilitatea.</li>
         <li><strong>La intrarea în eveniment:</strong> momentul scanării biletului (check-in).</li>
-        <li><strong>Plata:</strong> este procesată de Stripe. Noi <strong>nu</strong> primim și <strong>nu</strong> stocăm datele cardului.</li>
+        <li><strong>Plata:</strong> se face cash; SavaPass nu colectează și nu stochează date de card.</li>
       </ul>
 
       <h2>Scopuri și temei legal</h2>
@@ -39,7 +39,6 @@ export default function ConfidentialitatePage() {
       <h2>Cui transmitem datele</h2>
       <p>Folosim furnizori (împuterniciți) care prelucrează datele doar la instrucțiunile noastre:</p>
       <ul>
-        <li><strong>Stripe</strong> — procesarea plăților;</li>
         <li><strong>Resend</strong> — trimiterea emailurilor (biletul, confirmarea aplicației);</li>
         <li><strong>Supabase</strong> — găzduirea bazei de date;</li>
         <li><strong>Vercel</strong> — găzduirea aplicației.</li>

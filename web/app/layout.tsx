@@ -1,19 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { Commissioner, Manrope, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { resolveSiteUrl } from "@/lib/site-url";
+import { NavRouteTransitionCoordinator } from "./AnimatedNavLink";
 
-// Runs before first paint. Two jobs:
-//  1. Force-on motion: shim `matchMedia` so any `prefers-reduced-motion` query
-//     reports `matches:false`. This makes the homepage GSAP engine, the Framer
-//     reveals and ScrollReveal all animate regardless of the visitor's OS "reduce
-//     motion" setting (product decision). CSS `@media reduce` suppressors are
-//     neutralized separately in globals.css + the immersive CSS.
-//  2. Arm the scroll-reveal gate so entrance elements start hidden (no flash);
-//     ScrollReveal then plays them in. If it never boots (JS error), the timer
-//     strips the gate so nothing stays hidden — content always ends up visible.
-const SCROLL_REVEAL_BOOT = `(function(){try{if('scrollRestoration'in history)history.scrollRestoration='manual';}catch(e){}try{window.scrollTo(0,0);}catch(e){}try{var mm=window.matchMedia?window.matchMedia.bind(window):null;if(mm){window.matchMedia=function(q){if(typeof q==='string'&&q.indexOf('prefers-reduced-motion')!==-1){return{media:q,matches:false,onchange:null,addEventListener:function(){},removeEventListener:function(){},addListener:function(){},removeListener:function(){},dispatchEvent:function(){return false;}};}return mm(q);};}}catch(e){}var d=document.documentElement;d.classList.add('sr-on');setTimeout(function(){if(!window.__srReady){d.classList.remove('sr-on');}},4000);})();`;
+// Runs before first paint so reveal targets never flash fully visible before
+// IntersectionObserver arms them. If motion is reduced or JS fails to boot, the
+// page stays visible and usable.
+const SCROLL_REVEAL_BOOT = `(function(){try{if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;}catch(e){}var d=document.documentElement;d.classList.add('sr-on');setTimeout(function(){d.classList.remove('sr-on');},4000);})();`;
 
 // preload:false on the body font too. With `swap` + `adjustFontFallback` the text
 // paints immediately in a metric-matched fallback (no FCP block, no layout shift) and
@@ -45,6 +40,18 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-jetbrains-mono",
+  display: "swap",
+  preload: false,
+});
+
+// Brand display face for the public club site. Commissioner can shift from a
+// restrained grotesk toward a lightly flared civic-poster voice through its
+// variable axes, while Manrope remains the familiar product/UI face.
+const commissioner = Commissioner({
+  subsets: ["latin", "latin-ext"],
+  weight: "variable",
+  axes: ["FLAR", "VOLM"],
+  variable: "--font-commissioner",
   display: "swap",
   preload: false,
 });
@@ -81,9 +88,7 @@ export default function RootLayout({
   return (
     <html
       lang="ro"
-      className={`${manrope.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} h-full`}
-      // The pre-paint SCROLL_REVEAL_BOOT script adds the `sr-on` class to <html>
-      // before hydration, so server/client classNames differ by design.
+      className={`${manrope.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} ${commissioner.variable} h-full`}
       suppressHydrationWarning
     >
       <body
@@ -93,6 +98,7 @@ export default function RootLayout({
         }}
       >
         <script dangerouslySetInnerHTML={{ __html: SCROLL_REVEAL_BOOT }} />
+        <NavRouteTransitionCoordinator />
         {children}
         <ScrollReveal />
       </body>

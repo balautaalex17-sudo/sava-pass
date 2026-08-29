@@ -26,8 +26,8 @@ export default async function DistrictPage() {
   const hero = (
     <ClubHero
       variant="index"
-      kicker="District 2241"
-      lines={[<>O rețea care <span key="a" className="cl-hero__accent">nu se termină la liceu.</span></>]}
+      kicker="Districtul Rotary 2241"
+      lines={[<>De la Sf. Sava,</>, <>într‑o rețea mai mare.</>]}
       lead={intro}
     />
   );

@@ -23,7 +23,7 @@ export function ProjectCard({ project }: { project: Project }) {
         {meta && <div className="cl-proj-card__meta cl-label">{meta}</div>}
         <div className="cl-proj-card__title">
           <span>{project.title}</span>
-          <ArrowUpRight size={18} strokeWidth={2} className="cl-proj-card__arrow" />
+          <ArrowUpRight size={18} strokeWidth={1.75} className="cl-proj-card__arrow" />
         </div>
         {project.summary && <p className="cl-proj-card__sum">{project.summary}</p>}
       </div>

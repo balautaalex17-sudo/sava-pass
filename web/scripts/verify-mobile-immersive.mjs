@@ -32,7 +32,37 @@ async function mobile(w, h, label) {
   await page.waitForTimeout(1500);
 
   console.log(`\n--- mobile ${label} (${w}x${h}) ---`);
-  ok(eng.size >= 3, `engine scripts loaded (${[...eng].join(",")})`);
+  const engineScripts = [...eng];
+  const lightweightMobile = w <= 820;
+  ok(
+    lightweightMobile
+      ? engineScripts.some((file) => file.startsWith("engine.js")) && !engineScripts.some((file) => /gsap|lenis|ScrollTrigger/.test(file))
+      : eng.size >= 4,
+    `${lightweightMobile ? "lightweight mobile" : "desktop landscape"} engine loaded (${engineScripts.join(",")})`,
+  );
+  const strip = await page.evaluate(() => {
+    const root = document.querySelector(".hero .strip");
+    const lane = root?.querySelector(".lane");
+    return root && lane ? {
+      display: getComputedStyle(root).display,
+      height: root.getBoundingClientRect().height,
+      background: getComputedStyle(root).backgroundColor,
+      animation: getComputedStyle(lane).animationName,
+      timing: getComputedStyle(lane).animationTimingFunction,
+      fontSize: Number.parseFloat(getComputedStyle(root.querySelector(".item")).fontSize),
+    } : null;
+  });
+  ok(strip?.display !== "none" && (strip?.height ?? 0) >= (lightweightMobile ? 60 : 30), `mobile marquee shows (${strip?.height ?? 0}px)`);
+  ok(strip?.animation === "strip-l" && strip?.timing === "linear", `mobile marquee uses linear transform animation`);
+  if (lightweightMobile) {
+    ok(strip?.background === "rgb(7, 10, 18)", `mobile marquee background is solid (${strip?.background})`);
+    ok((strip?.fontSize ?? 0) >= 20, `mobile marquee type is prominent (${strip?.fontSize ?? 0}px)`);
+    const headingLinesVisible = await page.evaluate(() => [...document.querySelectorAll("#hero h1 .hline > span")].every((line) => {
+      const transform = getComputedStyle(line).transform;
+      return transform === "none" || Math.abs(new DOMMatrixReadOnly(transform).m42) < 1;
+    }));
+    ok(headingLinesVisible, "mobile hero headline is not translated out of view");
+  }
 
   // wheel-scroll through, sampling frame intervals for an FPS smoke
   const fps = await page.evaluate(async () => {

@@ -43,8 +43,6 @@ const GATE = {
   // cumulative layout shift accumulated through load + scroll
   cls: { target: 0, ceil: 0.1, anchor: "load-stutter" },
 };
-const ADVISORY = ["median", "max", "longFrames32", "lcp", "scrollDelay"];
-
 const browser = await chromium.launch({ channel: "msedge", headless: true });
 
 async function measure(ctxOpts, label) {
@@ -65,6 +63,7 @@ async function measure(ctxOpts, label) {
 
   await page.goto(URL, { waitUntil: "networkidle", timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(1000);
+  const initialLcp = await page.evaluate(() => window.__lcp || 0);
 
   // sample rAF frame deltas (absolute t + scroll position per frame) while driving a
   // Lenis scroll through the whole page. Plain window.scrollTo does NOT move Lenis, so
@@ -93,7 +92,7 @@ async function measure(ctxOpts, label) {
     return { frames: frames.slice(3), H, startY, firstCmd, scrollStart: firstCmd, scrollEnd: performance.now() };
   });
 
-  const obs = await page.evaluate(() => ({ lt: window.__lt || [], cls: +(window.__cls || 0).toFixed(4), lcp: window.__lcp || 0 }));
+  const obs = await page.evaluate((lcp) => ({ lt: window.__lt || [], cls: +(window.__cls || 0).toFixed(4), lcp }), initialLcp);
 
   // --- frame metrics ---
   const deltas = raw.frames.map((f) => f.dt).filter((d) => d >= 0).sort((a, b) => a - b);

@@ -25,7 +25,7 @@ export default async function EventsPage() {
   const events = await getAllEventsForAdmin();
   const { data: stats } = await supabaseAdmin.from("event_stats").select("*");
   const statsByEvent = new Map((stats ?? []).map((row) => [row.event_id, row]));
-  const activeEvent = events.find((event) => event.status === "active") ?? null;
+  const activeCount = events.filter((event) => event.status === "active").length;
 
   return (
     <>
@@ -47,7 +47,7 @@ export default async function EventsPage() {
       <main style={{ maxWidth: 960, margin: "0 auto", padding: "28px 20px 60px" }}>
         <div style={{ marginBottom: 22 }}>
           <h1 style={{ fontWeight: 800, fontSize: 26, color: "var(--im-fg)", margin: "0 0 4px" }}>Toate evenimentele</h1>
-          <p style={{ color: "var(--im-fg-2)", fontSize: 13, margin: 0 }}>Ciorne, evenimentul activ și arhiva.</p>
+          <p style={{ color: "var(--im-fg-2)", fontSize: 13, margin: 0 }}>Ciorne, arhivă și {activeCount} din maximum 3 evenimente active.</p>
         </div>
 
         <div style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, overflow: "hidden", boxShadow: "var(--im-shadow)" }}>
@@ -88,8 +88,8 @@ export default async function EventsPage() {
                           <StatusControl
                             id={event.id}
                             status="active"
-                            label="Activează"
-                            swapEventTitle={activeEvent && activeEvent.id !== event.id ? activeEvent.title : null}
+                            label={activeCount >= 3 ? "Limită 3/3" : "Activează"}
+                            disabledReason={activeCount >= 3 ? "Arhivează un eveniment activ înainte să activezi altul." : null}
                           />
                         )}
                         {event.status === "active" && <StatusControl id={event.id} status="past" label="Arhivează" />}

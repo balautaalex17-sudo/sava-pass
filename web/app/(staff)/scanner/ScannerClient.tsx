@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Camera, CheckCircle, LayoutDashboard, RotateCcw, Video, Volume2, VolumeX, XCircle } from "lucide-react";
 import Link from "next/link";
-import { Logo } from "@/components/ui/Logo";
 import { scanTicket, scanTicketByCode, type ScanVerdict } from "./actions";
 
 type ScanState = "idle" | "scanning" | "result";
@@ -24,17 +23,19 @@ const VERDICT_COLORS: Record<string, string> = {
   already_used: "var(--warning)",
   void_ticket: "var(--danger)",
   invalid: "var(--danger)",
-  inactive_event: "var(--danger)",
+  inactive_event: "var(--warning)",
+  payment_pending: "var(--warning)",
   unauthorized: "var(--danger)",
 };
 
 const VERDICT_LABELS: Record<string, string> = {
-  ok: "Intrat",
-  already_in: "Deja înăuntru",
-  already_used: "Bilet folosit",
-  void_ticket: "Bilet anulat",
-  invalid: "Bilet invalid",
-  inactive_event: "Eveniment inactiv",
+  ok: "Valid",
+  already_in: "Deja scanat",
+  already_used: "Deja scanat",
+  void_ticket: "Anulat",
+  invalid: "Invalid",
+  inactive_event: "Verificare manuală",
+  payment_pending: "Plată cash neconfirmată",
   unauthorized: "Acces refuzat",
 };
 
@@ -167,11 +168,13 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
 
   // Persisted mute toggle for scan feedback (sound + haptic). Default ON.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("sp-scan-muted") === "1";
-      setMuted(saved);
-      mutedRef.current = saved;
-    } catch {}
+    queueMicrotask(() => {
+      try {
+        const saved = localStorage.getItem("sp-scan-muted") === "1";
+        setMuted(saved);
+        mutedRef.current = saved;
+      } catch {}
+    });
   }, []);
 
   // Release the AudioContext on unmount (browsers cap concurrent contexts ~6).
@@ -267,7 +270,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
       controlsRef.current = await reader.decodeFromConstraints(constraints, videoRef.current, async (result) => {
         if (!result || scanCooldownRef.current) return;
         const text = result.getText();
-        if (!text.startsWith("SP1.") || text === lastTokenRef.current) return;
+        if (!(text.startsWith("SPT2.") || text.startsWith("SP1.")) || text === lastTokenRef.current) return;
 
         scanCooldownRef.current = true;
         lastTokenRef.current = text;
@@ -330,7 +333,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
     scanCooldownRef.current = true;
 
     try {
-      const nextVerdict = code.toUpperCase().startsWith("SP1.")
+      const nextVerdict = code.toUpperCase().startsWith("SPT2.") || code.toUpperCase().startsWith("SP1.")
         ? await scanTicket(code)
         : await scanTicketByCode(code);
 
@@ -353,7 +356,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div style={{ minHeight: "100dvh", background: "var(--im-ink)", color: "white", display: "flex", flexDirection: "column" }}>
       <header style={{ padding: "16px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(2,6,23,0.88)" }}>
-        <Logo size={18} dark />
+        <div />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
             Scanner
@@ -523,7 +526,7 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
             <InfoRow label="Status" value={statusLabel} />
             <InfoRow label="Camera activă" value={activeDevice?.label ?? "Neselectată"} />
             <InfoRow label="Claritate" value={cameraHint} />
-            <InfoRow label="Cod acceptat" value="QR SavaPass SP1" />
+            <InfoRow label="Cod acceptat" value="QR SavaPass pentru bilet" />
           </div>
         </aside>
       </main>
@@ -536,13 +539,30 @@ export function ScannerClient({ isAdmin }: { isAdmin: boolean }) {
             padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
           }
 
-          aside {
-            order: -1;
-          }
-
           section {
             min-height: 62dvh !important;
           }
+
+          aside button,
+          aside select,
+          aside input {
+            min-height: 44px !important;
+            font-size: 16px !important;
+          }
+
+          header a {
+            min-height: 44px;
+            align-items: center;
+          }
+        }
+
+        @media (max-width: 860px) and (orientation: landscape) {
+          section { min-height: min(78dvh, 520px) !important; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .anim-scanline,
+          .anim-pulse-dot { animation: none !important; }
         }
       `}</style>
     </div>

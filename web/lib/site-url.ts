@@ -3,8 +3,8 @@ import "server-only";
 /**
  * Canonical public base URL (no trailing slash), resolved robustly so a missing
  * or stale `NEXT_PUBLIC_SITE_URL` can never silently fall back to localhost in
- * production. Used for Stripe success/cancel redirects, emailed ticket + QR
- * links, invite links, and OG `metadataBase`.
+ * production. Used for emailed ticket + QR links, invite links, and OG
+ * `metadataBase`.
  *
  * Resolution order:
  *  1. `NEXT_PUBLIC_SITE_URL` — honored UNLESS it's a localhost value while

@@ -20,9 +20,8 @@ export default async function SponsoriPage() {
   const hero = (
     <ClubHero
       variant="index"
-      kicker="Parteneri"
-      lines={[<>Cei care ne sprijină <span key="a" className="cl-hero__accent">să mergem mai departe.</span></>]}
-      lead="Proiectele noastre există datorită partenerilor care cred în puterea voluntariatului."
+      lines={[<>Partenerii proiectelor Interact.</>]}
+      lead="Organizațiile și oamenii care oferă resurse, spațiu sau experiență pentru ca ideile elevilor să ajungă în comunitate."
     />
   );
 

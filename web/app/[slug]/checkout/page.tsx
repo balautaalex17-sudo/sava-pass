@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getEventBySlug, getEventStats, priceRon, seatsLeft } from "@/lib/events";
+import { eventIsBookable, getEventBySlug, getEventStats, getEventTicketTypes, getTicketTypeSoldCounts, priceRon, seatsLeft } from "@/lib/events";
 import { CheckoutClient } from "./CheckoutClient";
 import type { Metadata } from "next";
 
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
   return {
-    title: event ? `Checkout ${event.title}` : "Checkout",
+    title: event ? `Rezervare ${event.title}` : "Rezervare",
     robots: { index: false, follow: false },
   };
 }
@@ -22,13 +22,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CheckoutPage({ params }: Props) {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
-  if (!event || event.status !== "active") notFound();
+  if (!event || !eventIsBookable(event)) notFound();
 
-  const stats = await getEventStats(event.id);
+  const [stats, ticketTypes, typeSold] = await Promise.all([
+    getEventStats(event.id),
+    getEventTicketTypes(event.id),
+    getTicketTypeSoldCounts(event.id),
+  ]);
   const left = seatsLeft(event, stats?.sold ?? 0);
+  const availableTypes = ticketTypes
+    .map((type) => ({
+      id: type.id,
+      name: type.name,
+      description: type.description,
+      priceRon: priceRon(type.price_bani),
+      seatsLeft: Math.max(0, type.capacity - (typeSold[type.id] ?? 0)),
+    }));
 
   return (
     <CheckoutClient
+      requestKey={crypto.randomUUID()}
       event={{
         slug: event.slug,
         title: event.title,
@@ -36,9 +49,9 @@ export default async function CheckoutPage({ params }: Props) {
         dateLabel: event.date_label,
         venue: event.venue,
         photoUrl: event.photo_url,
-        priceRon: priceRon(event.price_bani),
       }}
       seatsLeft={left}
+      ticketTypes={availableTypes}
     />
   );
 }

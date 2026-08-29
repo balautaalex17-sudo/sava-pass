@@ -6,6 +6,7 @@
 //   1. font tokens (--f-sans/--f-disp/--f-mono) point at the app's next/font CSS vars
 //   2. asset paths  assets/...  ->  /imersiv/...
 //   3. purchase/event CTAs (<button> "Cumpără bilet" / "Vezi evenimentul")  ->  <a href="__CTA_HREF__">
+//   4. the redundant top-left "SavaPass / Bilete digitale" intro label is removed
 //
 // Outputs:
 //   app/_immersive/content.ts        (IMMERSIVE_CSS + IMMERSIVE_MARKUP strings, route-scoped)
@@ -13,7 +14,6 @@
 //   public/imersiv/engine-motion.mjs (the Framer Motion module, verbatim)
 
 import fs from "node:fs";
-import path from "node:path";
 
 const SRC =
   process.argv[2] ||
@@ -58,17 +58,8 @@ let cssOut = css
   );
 cssOut = repoint(cssOut);
 
-// SavaPass force-on: the v3 stylesheet has `@media (prefers-reduced-motion:reduce)`
-// blocks that hard-kill motion (and override GSAP's inline transforms with
-// !important). Strip the killer rules so the homepage animates regardless of the
-// OS setting, matching the rest of the app. The brand-marquee + lightbox rules in
-// that block are left alone. (Toggle force-on by removing these replaces.)
-cssOut = cssOut
-  .replace("@media(prefers-reduced-motion:reduce){.gen-bar i{transform:none!important;}}", "")
-  .replace("*{animation:none!important;}", "")
-  .replace(".seam i{transform:translateX(-50%) scaleY(1)!important;}.seam b{transform:translate(-50%,50%) scale(1)!important;}", "")
-  .replace(".rv{opacity:1!important;transform:none!important;filter:none!important;}", "")
-  .replace(".hline>span{transform:none!important;}", "");
+// Keep the source's reduced-motion rules. The engine already checks the same
+// media query, so CSS and JavaScript now respect the visitor's OS preference.
 
 // SavaPass smoothness: the `.rv` scroll reveal animated `filter:blur` (+ scale + a
 // 48px travel) on ~38 elements — animating blur is GPU-heavy and made the reveals
@@ -150,6 +141,10 @@ cssOut = cssOut.replace(
 );
 
 let markupOut = repoint(markup);
+markupOut = markupOut.replace(
+  '  <div class="tele tl">SavaPass<br/><b>Bilete digitale</b></div>\n',
+  "",
+);
 const ctaRe =
   /<button class="(btn btn-p[^"]*)"((?:\s+[\w-]+="[^"]*")*)\s*>\s*((?:Cumpără bilet|Vezi evenimentul)[\s\S]*?)<\/button>/g;
 const ctaCount = (markupOut.match(ctaRe) || []).length;
@@ -363,6 +358,39 @@ const mhiBadge = (ic, label, sub) =>
 const mhiFeat = (ic, label, sub) =>
   `<div class="mhi-f"><span class="mhi-fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[ic]}</svg></span><b>${label}</b><i>${sub}</i></div>`;
 
+// This classic script can be executed again after a React development remount or
+// client-side navigation. Keep its constants private so a second run cannot
+// redeclare top-level names such as ICONS in the browser's global scope.
+const runtimeEngineOut = engineOut
+  .replace(
+    "if(lenis){if(window.gsap){gsap.ticker.add(t=>lenis.raf(t*1000));gsap.ticker.lagSmoothing(0);}else{function raf(t){lenis.raf(t);requestAnimationFrame(raf);}requestAnimationFrame(raf);}}",
+    "let __lenisTick=null,__lenisRaf=0;\nif(lenis){if(window.gsap){__lenisTick=t=>lenis.raf(t*1000);gsap.ticker.add(__lenisTick);gsap.ticker.lagSmoothing(0);}else{function raf(t){lenis.raf(t);__lenisRaf=requestAnimationFrame(raf);}__lenisRaf=requestAnimationFrame(raf);}}",
+  )
+  .replace(
+    "document.addEventListener('visibilitychange',()=>{if(!document.hidden)kickVideos();});",
+    "function __visibilityVideos(){if(!document.hidden)kickVideos();}\ndocument.addEventListener('visibilitychange',__visibilityVideos);",
+  );
+const engineCleanupOut = [
+  "function __cleanup(){",
+  "  removeEventListener('scroll',__chromeT);",
+  "  removeEventListener('pointerdown',kickVideos);",
+  "  removeEventListener('scroll',kickVideos);",
+  "  document.removeEventListener('visibilitychange',__visibilityVideos);",
+  "  if(typeof __vio!=='undefined'&&__vio)__vio.disconnect();",
+  "  if(__lenisTick&&window.gsap)gsap.ticker.remove(__lenisTick);",
+  "  if(__lenisRaf)cancelAnimationFrame(__lenisRaf);",
+  "  if(lenis)try{lenis.destroy();}catch{}",
+  "  if(window.__lenis===lenis)window.__lenis=null;",
+  "  document.body.style.overflow='';",
+  "  document.body.classList.remove('scrolled');",
+  "  if(window.__immersiveCleanup===__cleanup)window.__immersiveCleanup=null;",
+  "}",
+  "window.__immersiveCleanup=__cleanup;",
+].join("\n");
+const scopedEngineOut =
+  `(function immersiveEngineScope() {\ntry{window.__immersiveCleanup?.();}catch{}\n${runtimeEngineOut}\n` +
+  `${engineCleanupOut}\n})();\n`;
+
 const MHI_AMBIENT = '<video class="mhi-ambient" autoplay muted loop playsinline preload="metadata" aria-hidden="true" src="/imersiv/intro-ambient.mp4"></video>';
 const MHI_TOP = `<div class="mhi-row mhi-top">${mhiBadge('qr', 'QR Valid', 'Acces permis')}${mhiBadge('user', 'Utilizator', 'Identificat')}</div>`;
 const MHI_BOTTOM =
@@ -425,17 +453,20 @@ const assert = (cond, msg) => { if (!cond) { console.error("[extract] ASSERT FAI
 assert(ctaCount === 3, `expected 3 CTAs rewired, got ${ctaCount}`);
 assert(applyCount === 1, `expected 1 apply CTA rewired, got ${applyCount}`);
 assert(engineOut !== engine, "engine transforms did not apply (engineOut === raw engine)");
+assert(runtimeEngineOut !== engineOut, "engine cleanup transforms did not apply");
+assert(scopedEngineOut.startsWith("(function immersiveEngineScope()"), "engine scope wrapper missing");
 assert(cssOut.includes(".mhi-b"), "mobile intro CSS (.mhi-b) missing from cssOut");
 assert(markupOut.includes("mhi-row"), "mobile intro markup (mhi-row) not injected");
 assert(markupOut.includes("__CTA_HREF__"), "CTA placeholder missing from markupOut");
+assert(!markupOut.includes('class="tele tl"'), "top-left intro label was not removed");
 
 fs.writeFileSync("app/_immersive/content.ts", content, "utf8");
-fs.writeFileSync("public/imersiv/engine.js", engineOut, "utf8");
+fs.writeFileSync("public/imersiv/engine.js", scopedEngineOut, "utf8");
 fs.writeFileSync("public/imersiv/engine-motion.mjs", motionOut, "utf8");
 
 console.log("[extract] css chars      :", cssOut.length);
 console.log("[extract] markup chars   :", markupOut.length);
-console.log("[extract] engine chars   :", engineOut.length, "(was", engine.length + ")");
+console.log("[extract] engine chars   :", scopedEngineOut.length, "(was", engine.length + ")");
 console.log("[extract] motion chars   :", motionOut.length, "(was", motion.length + ")");
 console.log("[extract] CTAs rewired   :", ctaCount, "(expect 3)");
 console.log("[extract] apply rewired   :", applyCount, "(expect 1)");

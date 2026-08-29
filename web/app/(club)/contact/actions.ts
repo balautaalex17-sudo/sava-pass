@@ -3,11 +3,13 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
 import { escapeHtml } from "@/lib/escape-html";
+import { allowPublicAction } from "@/lib/public-rate-limit";
+import { logServerError } from "@/lib/server-log";
 
 const schema = z.object({
-  name: z.string().min(2, "Introdu numele"),
-  email: z.string().email("Email invalid"),
-  message: z.string().min(10, "Scrie un mesaj mai detaliat"),
+  name: z.string().trim().min(2, "Introdu numele").max(120, "Numele este prea lung"),
+  email: z.string().trim().email("Email invalid").max(254, "Emailul este prea lung"),
+  message: z.string().trim().min(10, "Scrie un mesaj mai detaliat").max(5000, "Mesajul este prea lung"),
 });
 
 export interface ContactState {
@@ -35,19 +37,29 @@ export async function submitContact(_prev: ContactState, form: FormData): Promis
   }
 
   const { name, email, message } = parsed.data;
+  const normalizedEmail = email.toLocaleLowerCase("ro");
+  const allowed = await allowPublicAction({
+    scope: "contact",
+    subject: normalizedEmail,
+    ipLimit: 5,
+    subjectLimit: 3,
+    windowSeconds: 60 * 60,
+  });
+  if (!allowed) {
+    return { errors: { general: "Prea multe mesaje trimise. Încearcă din nou mai târziu." } };
+  }
 
   const { error } = await supabaseAdmin.from("contact_messages").insert({
     name,
-    email: email.toLowerCase(),
+    email: normalizedEmail,
     message,
   });
   if (error) {
-    console.error("Contact message insert failed:", error);
+    logServerError("contact_message_insert_failed", error);
     return { errors: { general: "Ceva a mers greșit. Încearcă din nou." } };
   }
 
-  try {
-    await sendEmail({
+  const delivery = await sendEmail({
       to: "membri@interactsava.ro",
       replyTo: email,
       subject: `Mesaj nou de contact — ${name}`,
@@ -58,8 +70,8 @@ export async function submitContact(_prev: ContactState, form: FormData): Promis
         </div>
       `,
     });
-  } catch (err) {
-    console.error("Contact notify email failed:", err);
+  if (!delivery.ok) {
+    logServerError("contact_notification_failed", new Error(delivery.error ?? "email_failed"));
   }
 
   return { ok: true };

@@ -1,12 +1,11 @@
+import "server-only";
+
 import { createClient } from "@supabase/supabase-js";
+import { serverEnv } from "@/lib/env";
 import type { Database } from "@/lib/supabase/types";
 
-if (typeof window !== "undefined") {
-  throw new Error("lib/supabase/admin must only be used server-side");
-}
-
 export const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  serverEnv.NEXT_PUBLIC_SUPABASE_URL,
+  serverEnv.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );

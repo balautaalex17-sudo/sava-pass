@@ -27,8 +27,19 @@ page.on("requestfinished", async (req) => {
 
 await page.addInitScript(() => {
   window.__lcp = 0;
+  window.__lcpDetail = null;
   try {
-    new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__lcp = Math.round(e.startTime); })
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) {
+      window.__lcp = Math.round(e.startTime);
+      window.__lcpDetail = {
+        startTime: Math.round(e.startTime),
+        tag: e.element?.tagName ?? null,
+        className: typeof e.element?.className === "string" ? e.element.className : null,
+        id: e.element?.id ?? null,
+        url: e.url || null,
+        size: Math.round(e.size || 0),
+      };
+    } })
       .observe({ type: "largest-contentful-paint", buffered: true });
   } catch {}
 });
@@ -38,6 +49,10 @@ await page.goto(URL, { waitUntil: "networkidle" });
 await page.waitForTimeout(1500);
 const initialBytes = [...assets.values()].reduce((a, b) => a + b.bytes, 0);
 const initialCount = assets.size;
+// Freeze the load metric before the synthetic scroll. Programmatic scrolling is
+// not a trusted user interaction, so the browser would otherwise keep replacing
+// LCP with elements revealed later in the document.
+const initialPaint = await page.evaluate(() => ({ lcp: window.__lcp || 0, detail: window.__lcpDetail }));
 
 // scroll to bottom to trigger lazy media
 await page.evaluate(async () => {
@@ -54,12 +69,14 @@ const totalBytes = all.reduce((a, b) => a + b.bytes, 0);
 const byType = {};
 for (const a of all) byType[a.type] = (byType[a.type] || 0) + a.bytes;
 const top = all.sort((a, b) => b.bytes - a.bytes).slice(0, 14);
-const lcp = await page.evaluate(() => window.__lcp || 0);
+const lcp = initialPaint.lcp;
+const lcpDetail = initialPaint.detail;
 const mb = (n) => (n / 1048576).toFixed(2) + " MB";
 
 console.log("URL                :", URL);
 console.log("Load (networkidle) :", ((Date.now() - t0) / 1000).toFixed(1) + "s");
 console.log("LCP                :", lcp + "ms");
+console.log("LCP element        :", lcpDetail);
 console.log("Initial transfer   :", mb(initialBytes), `(${initialCount} requests, before scroll)`);
 console.log("Full transfer      :", mb(totalBytes), `(${all.length} requests, after full scroll)`);
 console.log("By type            :", Object.fromEntries(Object.entries(byType).map(([k, v]) => [k, mb(v)])));
@@ -76,4 +93,4 @@ if (totalBytes > BYTES_MAX) { console.error(`FAIL  full transfer ${mb(totalBytes
 
 await ctx.close();
 await browser.close();
-process.exit(failed ? 1 : 0);
+process.exit(process.argv.includes("--diagnostic") ? 0 : failed ? 1 : 0);

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { getActiveEvent } from "@/lib/events";
-import { getPublishedProjects } from "@/lib/club";
-import type { Project } from "@/lib/supabase/types";
+import { getManagedEventBySlug } from "@/lib/event-archive";
+import { getActiveEvent, getPastEvents } from "@/lib/events";
+import { GOLDEN_HOUR } from "@/lib/golden-hour";
+import { getPublicRecruitmentState } from "@/lib/recruitment-public";
 import { IMMERSIVE_CSS, IMMERSIVE_MARKUP } from "./_immersive/content";
-import { ImmersiveEngine } from "./_immersive/ImmersiveEngine";
-import { LandingTeasers } from "@/components/club/LandingTeasers";
+import { ImmersiveRuntime } from "./_immersive/ImmersiveRuntime";
+import { renderImmersiveMarkup, type LandingArchivedEvent, type LandingEvent } from "./_immersive/upgrade";
 import { HomeNav } from "./HomeNav";
 
 // Homepage = the v3 immersive port, served responsively at ALL widths. The phone
@@ -21,72 +22,223 @@ export const metadata: Metadata = {
 // ISR — the page has no per-request data, only the cached active-event read.
 export const revalidate = 300;
 
-// Never let a slow/paused Supabase block the static shell — fail fast to no slug.
-async function activeSlug(): Promise<string | null> {
+const LANDING_STYLESHEET = "/landing.css?v=20260819-mobile-marquee-13";
+const introCssEnd = IMMERSIVE_CSS.indexOf("/* scrolling brand marquee");
+
+if (introCssEnd < 0) {
+  throw new Error("Immersive intro CSS marker is missing");
+}
+
+// Both layouts need the intro rules before the external stylesheet arrives so
+// the first paint cannot shift. The complete stylesheet is ready before scroll.
+const LANDING_CRITICAL_CSS = `${IMMERSIVE_CSS.slice(0, introCssEnd)}
+.sp-immersive-root .mhi-ambient,
+.sp-immersive-root .mhi-row,
+.sp-immersive-root .mhi-features,
+.sp-immersive-root .mhi-church { display: none; }
+@media (max-width: 820px) {
+  :root {
+    --font-manrope: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-commissioner: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-jetbrains-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    --font-instrument-serif: Georgia, "Times New Roman", serif;
+  }
+  .sp-immersive-root { --im-gutter: clamp(16px, 5vw, 32px); }
+  .sp-immersive-root .intro {
+    position: relative;
+    top: auto;
+    min-height: 100svh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    place-items: center;
+    padding: max(96px, calc(72px + env(safe-area-inset-top))) var(--im-gutter) max(40px, env(safe-area-inset-bottom));
+  }
+  .sp-immersive-root .intro .glow { opacity: .28; filter: blur(72px); }
+  .sp-immersive-root .engine-stage { display: block !important; }
+  .sp-immersive-root .mhi-ambient,
+  .sp-immersive-root .mhi-row,
+  .sp-immersive-root .mhi-features,
+  .sp-immersive-root .mhi-church,
+  .sp-immersive-root .intro-video,
+  .sp-immersive-root .intro .tele,
+  .sp-immersive-root .intro .scrollhint,
+  .sp-immersive-root .dots,
+  .sp-immersive-root .lrail { display: none !important; }
+  .sp-immersive-root #logo-stage {
+    width: 100%;
+    height: auto;
+    min-height: 150px;
+    margin: 0;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: center;
+    justify-self: stretch;
+    gap: clamp(14px, 5vw, 28px);
+  }
+  .sp-immersive-root #logo-stage .ll-text {
+    width: auto;
+    min-width: 0;
+    flex: 0 1 180px;
+    align-items: center;
+  }
+  .sp-immersive-root #logo-stage .ll-interact { font-size: clamp(38px, 12vw, 58px); }
+  .sp-immersive-root #logo-stage .ll-sub { margin-top: 16px; padding-left: 0; }
+  .sp-immersive-root #logo-stage .ll-sub::before {
+    left: 50%;
+    margin-left: -54px;
+    transform-origin: center;
+  }
+  .sp-immersive-root #logo-stage .ll-wheel {
+    width: clamp(88px, 26vw, 132px);
+    height: auto;
+    flex: none;
+    aspect-ratio: 1;
+  }
+  .sp-immersive-root #logo-stage,
+  .sp-immersive-root #logo-stage * {
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .sp-immersive-root #logo-stage .ch,
+  .sp-immersive-root #logo-stage .sl,
+  .sp-immersive-root #logo-stage .ll-wheel {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    animation: none;
+  }
+  .sp-immersive-root .rv,
+  .sp-immersive-root .im-rv {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+}`;
+
+function homepageDateLabel(startDate?: string, startTime?: string) {
+  if (!startDate) return "Dată neconfirmată";
+  const date = new Date(`${startDate}T12:00:00Z`);
+  const weekday = new Intl.DateTimeFormat("ro-RO", { weekday: "short", timeZone: "Europe/Bucharest" })
+    .format(date).replace(".", "");
+  const calendarDate = new Intl.DateTimeFormat("ro-RO", { day: "numeric", month: "short", timeZone: "Europe/Bucharest" })
+    .format(date).replace(".", "");
+  const dayLabel = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+  return `${dayLabel} · ${calendarDate}${startTime ? ` · ${startTime}` : ""}`;
+}
+
+function priceLabelToBani(value?: string) {
+  const amount = Number(String(value ?? "").replace(",", ".").match(/\d+(?:\.\d+)?/)?.[0]);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+}
+
+async function getHomepageEvent(): Promise<LandingEvent | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
+
   try {
-    return await Promise.race([
-      getActiveEvent().then((e) => e?.slug ?? null),
-      new Promise<null>((resolve) => {
-        timer = setTimeout(() => resolve(null), 2000);
-      }),
+    const [event, importedFallback] = await Promise.all([
+      Promise.race([
+        getActiveEvent().catch(() => null),
+        new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), 2000);
+        }),
+      ]),
+      getManagedEventBySlug(GOLDEN_HOUR.slug).catch(() => null),
     ]);
-  } catch {
-    return null;
+
+    if (!event) {
+      if (!importedFallback) return null;
+      return {
+        title: importedFallback.title,
+        subtitle: importedFallback.subtitle ?? null,
+        about: importedFallback.shortDescription || importedFallback.fullDescription || null,
+        dateLabel: homepageDateLabel(importedFallback.startDate, importedFallback.startTime),
+        doors: importedFallback.startTime ?? "",
+        venue: importedFallback.venueName ?? "Locație în curs de confirmare",
+        venueLine: importedFallback.address ?? null,
+        capacity: null,
+        sold: null,
+        priceBani: priceLabelToBani(importedFallback.ticketPrice),
+        photoUrl: importedFallback.coverImage.src || null,
+        href: `/evenimente/${importedFallback.slug}`,
+        checkoutHref: importedFallback.internalTicketingUrl || importedFallback.registrationUrl || `/evenimente/${importedFallback.slug}`,
+        hasProgram: false,
+      };
+    }
+
+    return {
+      title: event.title,
+      subtitle: event.subtitle,
+      about: event.about,
+      dateLabel: event.date_label,
+      doors: event.doors,
+      venue: event.venue,
+      venueLine: event.venue_line,
+      capacity: event.capacity,
+      sold: null,
+      priceBani: event.price_bani,
+      photoUrl: event.photo_url,
+      href: `/${event.slug}`,
+      checkoutHref: `/${event.slug}/checkout`,
+      hasProgram: Array.isArray(event.program) && event.program.length > 0,
+    };
   } finally {
-    // Don't let the loser's timer hold the serverless function open ~2s per ISR revalidate.
     clearTimeout(timer);
   }
 }
 
-// Featured projects for the teaser band — same fail-fast posture as activeSlug so
-// a slow/paused DB never blocks the static shell (returns [] → the rail is hidden).
-async function featuredProjects(): Promise<Project[]> {
+async function getHomepageArchivedEvents(): Promise<LandingArchivedEvent[]> {
   let timer: ReturnType<typeof setTimeout> | undefined;
+
   try {
-    return await Promise.race([
-      getPublishedProjects(),
-      new Promise<Project[]>((resolve) => {
+    const events = await Promise.race([
+      getPastEvents().catch(() => []),
+      new Promise<Awaited<ReturnType<typeof getPastEvents>>>((resolve) => {
         timer = setTimeout(() => resolve([]), 2000);
       }),
     ]);
-  } catch {
-    return [];
+
+    return events.slice(0, 2).map((event) => ({
+      title: event.title,
+      subtitle: event.subtitle,
+      about: event.about,
+      dateLabel: event.date_label,
+      venue: event.venue,
+      priceBani: event.price_bani,
+      photoUrl: event.photo_url,
+      href: `/${event.slug}`,
+    }));
   } finally {
     clearTimeout(timer);
   }
 }
 
 export default async function Home() {
-  const [slug, projects] = await Promise.all([activeSlug(), featuredProjects()]);
-  const ctaHref = slug ? `/${slug}` : "#evenimente";
-  const markup = IMMERSIVE_MARKUP.split("__CTA_HREF__").join(ctaHref);
+  const [event, archivedEvents, recruitment] = await Promise.all([
+    getHomepageEvent(),
+    getHomepageArchivedEvents(),
+    getPublicRecruitmentState(),
+  ]);
+  return <LandingBody event={event} archivedEvents={archivedEvents} recruitment={recruitment} />;
+}
+
+function LandingBody({ event, archivedEvents, recruitment }: { event: LandingEvent | null; archivedEvents: LandingArchivedEvent[]; recruitment: Awaited<ReturnType<typeof getPublicRecruitmentState>> }) {
+  const ctaHref = event?.checkoutHref ?? "/evenimente";
+  const markup = renderImmersiveMarkup(IMMERSIVE_MARKUP, event, recruitment, archivedEvents).split("__CTA_HREF__").join(ctaHref);
 
   return (
     <>
-      {/* Mobile LCP image — discoverable in the initial document + high priority so it
-          wins the bandwidth race (perf: church.webp is the mobile LCP). Mobile-scoped so
-          desktop, whose LCP is a different element, is untouched. */}
-      <link rel="preload" as="image" href="/imersiv/church.webp" fetchPriority="high" media="(max-width: 760px)" />
-      {/* Warm the engine/vendor scripts on BOTH viewports so the engine inits without a
-          download stall. Desktop loads the engine immediately → default priority. Mobile loads
-          it on interaction/idle → fetchpriority=low so the scripts ride BEHIND the high-priority
-          LCP image (no competition) but are cached by the time the user scrolls — this removes
-          the "animations feel delayed" stall on the first scroll. Only one media query matches
-          per viewport, so each script is fetched once. */}
-      <link rel="preload" as="script" href="/imersiv/vendor/lenis.min.js" media="(min-width: 761px)" />
-      <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 761px)" />
-      <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 761px)" />
-      <link rel="preload" as="script" href="/imersiv/engine.js" media="(min-width: 761px)" />
-      <link rel="preload" as="script" href="/imersiv/vendor/lenis.min.js" fetchPriority="low" media="(max-width: 760px)" />
-      <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" fetchPriority="low" media="(max-width: 760px)" />
-      <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" fetchPriority="low" media="(max-width: 760px)" />
-      <link rel="preload" as="script" href="/imersiv/engine.js" fetchPriority="low" media="(max-width: 760px)" />
-      <style dangerouslySetInnerHTML={{ __html: IMMERSIVE_CSS }} />
-      <HomeNav eventHref={ctaHref} />
+      {/* The first mobile viewport uses the same non-photographic ticket-engine stage as desktop. */}
+      {/* The route stylesheet is discovered during HTML parsing instead of on the
+          first swipe. Desktop also warms its richer animation libraries. */}
+      <link rel="stylesheet" href={LANDING_STYLESHEET} precedence="high" data-immersive-css="" />
+      <link rel="preload" as="script" href="/imersiv/vendor/lenis.min.js" media="(min-width: 821px)" />
+      <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 821px)" />
+      <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 821px)" />
+      <style dangerouslySetInnerHTML={{ __html: LANDING_CRITICAL_CSS }} />
+      <HomeNav active="despre" immersive purchaseHref={ctaHref} />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
-      <LandingTeasers projects={projects} eventHref={ctaHref} />
-      <ImmersiveEngine />
+      <ImmersiveRuntime />
     </>
   );
 }

@@ -2,7 +2,7 @@ import { unstable_cache, updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireStaffRole } from "@/lib/roles";
-import type { Event, EventStats } from "@/lib/supabase/types";
+import type { Event, EventStats, EventTicketType } from "@/lib/supabase/types";
 
 // Perf (U5): public event reads are cached in the Next data cache so the homepage
 // and buyer pages don't hit Supabase on every request (also reduces how often a
@@ -13,12 +13,31 @@ import type { Event, EventStats } from "@/lib/supabase/types";
 export const EVENTS_TAG = "events";
 const CACHE = { tags: [EVENTS_TAG], revalidate: 300 };
 
-const cachedActiveEvent = unstable_cache(
-  async (): Promise<Event | null> => {
-    const { data } = await supabaseAdmin.from("events").select("*").eq("status", "active").single();
-    return data ?? null;
+const cachedActiveEvents = unstable_cache(
+  async (): Promise<Event[]> => {
+    const { data } = await supabaseAdmin
+      .from("events")
+      .select("*")
+      .eq("status", "active")
+      .gt("starts_at", new Date().toISOString())
+      .order("starts_at")
+      .limit(3);
+    return data ?? [];
   },
-  ["active-event"],
+  ["active-events"],
+  CACHE,
+);
+
+const cachedPublicEvents = unstable_cache(
+  async (): Promise<Event[]> => {
+    const { data } = await supabaseAdmin
+      .from("events")
+      .select("*")
+      .in("status", ["active", "past"])
+      .order("starts_at", { ascending: false });
+    return data ?? [];
+  },
+  ["public-events"],
   CACHE,
 );
 
@@ -50,7 +69,15 @@ const cachedPastEvents = unstable_cache(
 );
 
 export async function getActiveEvent(): Promise<Event | null> {
-  return cachedActiveEvent();
+  return (await cachedActiveEvents())[0] ?? null;
+}
+
+export async function getActiveEvents(): Promise<Event[]> {
+  return cachedActiveEvents();
+}
+
+export async function getPublicEvents(): Promise<Event[]> {
+  return cachedPublicEvents();
 }
 
 export async function getPastEvents(): Promise<Event[]> {
@@ -96,6 +123,38 @@ export async function getEventStats(eventId: string): Promise<EventStats | null>
   return data ?? null;
 }
 
+export async function getEventTicketTypes(eventId: string, includeHidden = false): Promise<EventTicketType[]> {
+  let query = supabaseAdmin
+    .from("event_ticket_types")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("sort")
+    .order("created_at");
+  if (!includeHidden) {
+    const now = new Date().toISOString();
+    query = query
+      .eq("status", "active")
+      .or(`sales_start_at.is.null,sales_start_at.lte.${now}`)
+      .or(`sales_end_at.is.null,sales_end_at.gte.${now}`);
+  }
+  const { data } = await query;
+  return data ?? [];
+}
+
+/** Live issued-ticket count per ticket type. Cancelled/expired tickets release their seat. */
+export async function getTicketTypeSoldCounts(eventId: string): Promise<Record<string, number>> {
+  const { data } = await supabaseAdmin
+    .from("tickets")
+    .select("ticket_type_id")
+    .eq("event_id", eventId)
+    .in("status", ["reserved", "paid", "checked_in"]);
+  const counts: Record<string, number> = {};
+  for (const ticket of data ?? []) {
+    if (ticket.ticket_type_id) counts[ticket.ticket_type_id] = (counts[ticket.ticket_type_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** Invalidate all cached event reads. Call from an event-mutation server action
  * (updateTag is server-action-scoped with read-your-own-writes semantics; the
  * 300s revalidate on each cache is the time-based backstop). */
@@ -109,4 +168,9 @@ export function seatsLeft(event: Event, sold: number): number {
 
 export function priceRon(priceBani: number): number {
   return Math.round(priceBani / 100);
+}
+
+/** One shared lifecycle rule prevents stale "active" records from accepting sales. */
+export function eventIsBookable(event: Pick<Event, "status" | "starts_at">): boolean {
+  return event.status === "active" && new Date(event.starts_at).getTime() > Date.now();
 }

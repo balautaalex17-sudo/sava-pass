@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { Logo } from "@/components/ui/Logo";
 import { GearWatermark } from "@/components/ui/GearWatermark";
 import { Button } from "@/components/ui/Button";
 
@@ -24,7 +23,6 @@ export default function GlobalError({ reset }: { error: Error; reset: () => void
         className="anim-fade"
         style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
       >
-        <div style={{ marginBottom: 32 }}><Logo size={22} /></div>
         <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--im-fg)", margin: "0 0 8px" }}>
           Ceva a mers greșit
         </h1>

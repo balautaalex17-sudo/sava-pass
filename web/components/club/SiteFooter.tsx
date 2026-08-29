@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
-import { Logo } from "@/components/ui/Logo";
 
 // lucide-react dropped brand icons; inline IG/FB at the lucide stroke style.
 function IgIcon() {
@@ -22,7 +21,7 @@ function FbIcon() {
 
 /**
  * Shared club-register footer (spec §6.5). The catch-all that lets the top nav
- * stay short — secondary identity links (Sponsori, District, Contul meu,
+ * stay short — secondary identity links (Sponsori, District, Biletele mele,
  * Check-in, Contact) live here. Dark, hairline dividers, mono © line.
  */
 export function SiteFooter({ eventHref }: { eventHref: string }) {
@@ -30,7 +29,6 @@ export function SiteFooter({ eventHref }: { eventHref: string }) {
     <footer className="cl-footer">
       <div className="cl-footer__inner">
         <div>
-          <Logo size={22} />
           <p className="cl-footer__desc">
             Clubul de voluntariat Interact Sf. Sava — proiecte, evenimente și oameni care schimbă comunitatea.
           </p>
@@ -45,9 +43,10 @@ export function SiteFooter({ eventHref }: { eventHref: string }) {
         </div>
         <div className="cl-footer__col">
           <h4>Acțiuni</h4>
-          <Link href={eventHref}>Evenimente</Link>
+          <Link href="/evenimente">Evenimente</Link>
+          <Link href={eventHref}>Bilete</Link>
           <Link href="/devino-membru">Devino membru</Link>
-          <Link href="/conta">Contul meu</Link>
+          <Link href="/conta">Biletele mele</Link>
           <Link href="/scanner">Check-in</Link>
           <Link href="/contact">Contact</Link>
         </div>

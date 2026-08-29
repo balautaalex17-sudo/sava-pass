@@ -8,7 +8,7 @@ export function SignOutButton() {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/");
+    router.push("/conta");
     router.refresh();
   }
 
@@ -33,7 +33,7 @@ export function SignOutButton() {
           padding: "4px 8px",
         }}
       >
-        Ieși din cont
+        Folosește alte date
       </button>
     </>
   );

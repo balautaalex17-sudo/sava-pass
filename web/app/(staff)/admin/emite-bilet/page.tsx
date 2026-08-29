@@ -14,15 +14,15 @@ export default async function IssueTicketPage() {
   const current = await requireStaffRole(["admin"]);
   if (!current) redirect("/conta");
 
-  const { data: events } = await supabaseAdmin
-    .from("events")
-    .select("id, title, status")
-    .order("status", { ascending: true })
-    .order("created_at", { ascending: false });
+  const [{ data: events }, { data: rawTicketTypes }] = await Promise.all([
+    supabaseAdmin.from("events").select("id, title, status").order("status", { ascending: true }).order("created_at", { ascending: false }),
+    supabaseAdmin.from("event_ticket_types").select("id, event_id, name, events(title)").neq("status", "hidden").order("sort"),
+  ]);
 
   const list = (events ?? []).map((e) => ({ id: e.id, title: e.title, status: e.status as string }));
   const defaultEventId = list.find((e) => e.status === "active")?.id ?? list[0]?.id ?? "";
-  const defaultEmail = (current as { email?: string | null }).email ?? "";
+  const defaultEmail = current.user.email ?? "";
+  const ticketTypes = (rawTicketTypes ?? []).map((type) => ({ id: type.id, eventId: type.event_id, label: `${type.events?.title ?? "Eveniment"} · ${type.name}` }));
 
   return (
     <>
@@ -42,14 +42,14 @@ export default async function IssueTicketPage() {
           </div>
           <h1 style={{ fontWeight: 800, fontSize: 26, color: "var(--im-fg)", margin: "6px 0 4px", letterSpacing: "-0.02em" }}>Emite bilet</h1>
           <p style={{ color: "var(--im-fg-2)", fontSize: 13, margin: 0, lineHeight: 1.55 }}>
-            Creează un bilet valid fără plată — pentru testarea scanării la ușă sau pentru bilete de invitație (comp). Biletul e identic cu unul cumpărat și se scanează la fel.
+            Creează un bilet gratuit de invitație sau test. Este înregistrat explicit ca bilet comp, cu valoare zero și acces confirmat, apoi se scanează la fel ca un bilet plătit.
           </p>
         </div>
 
         {list.length === 0 ? (
           <p style={{ color: "var(--im-fg-2)", fontSize: 14 }}>Niciun eveniment. Creează unul întâi.</p>
         ) : (
-          <IssueTicketForm events={list} defaultEventId={defaultEventId} defaultEmail={defaultEmail} />
+          <IssueTicketForm events={list} ticketTypes={ticketTypes} defaultEventId={defaultEventId} defaultEmail={defaultEmail} />
         )}
       </main>
     </>

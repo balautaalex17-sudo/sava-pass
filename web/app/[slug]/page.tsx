@@ -1,12 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, CheckCircle, Clock, Lock, MapPin } from "lucide-react";
+import { ArrowRight, Banknote, CheckCircle, Clock, MapPin } from "lucide-react";
 import { Chip } from "@/components/ui/Chip";
 import { FlowNav } from "@/components/ui/FlowNav";
-import { getEventBySlug, getEventStats, priceRon, seatsLeft } from "@/lib/events";
+import { eventIsBookable, getEventBySlug, getEventStats, getEventTicketTypes, getTicketTypeSoldCounts, priceRon, seatsLeft } from "@/lib/events";
 import type { Metadata } from "next";
-import { BuyCta } from "./BuyCta";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -34,16 +33,21 @@ export default async function EventPage({ params }: Props) {
   const event = await getEventBySlug(slug, { includeDraftForAdmin: true });
   if (!event) notFound();
 
-  const stats = await getEventStats(event.id);
+  const [stats, ticketTypes, typeSold] = await Promise.all([
+    getEventStats(event.id),
+    getEventTicketTypes(event.id),
+    getTicketTypeSoldCounts(event.id),
+  ]);
   const sold = stats?.sold ?? 0;
   const left = seatsLeft(event, sold);
-  const isSoldOut = left === 0;
-  const isActive = event.status === "active";
+  const availableTypes = ticketTypes;
+  const isSoldOut = left === 0 || !availableTypes.some((type) => (typeSold[type.id] ?? 0) < type.capacity);
+  const isActive = eventIsBookable(event);
   const accent = event.accent ?? "#009FE3";
-  const price = priceRon(event.price_bani);
+  const price = priceRon(availableTypes.length ? Math.min(...availableTypes.map((type) => type.price_bani)) : event.price_bani);
   const program = Array.isArray(event.program) ? (event.program as ProgramItem[]) : [];
   const perks = Array.isArray(event.perks) ? (event.perks as string[]) : [];
-  const statusLabel = event.status === "draft" ? "Schiță" : isActive ? "În vânzare" : "Arhivă";
+  const statusLabel = event.status === "draft" ? "Schiță" : isActive ? "În vânzare" : "Încheiat";
 
   return (
     <div className="sp-light event-page">
@@ -65,7 +69,7 @@ export default async function EventPage({ params }: Props) {
         </div>
       </div>
 
-      <main className="event-body">
+      <main className="event-body" id="detalii">
         {/* Left column */}
         <div className="event-main">
           <div className="event-facts">
@@ -81,7 +85,7 @@ export default async function EventPage({ params }: Props) {
           )}
 
           {program.length > 0 && (
-            <section className="event-copy">
+            <section className="event-copy" id="program">
               <h2>Programul serii</h2>
               <div className="event-program">
                 {program.map((item) => (
@@ -121,9 +125,12 @@ export default async function EventPage({ params }: Props) {
         <aside className="event-buy">
           <div className="event-buy__card">
             <div className="event-buy__price">
+              {availableTypes.length > 1 && <span className="event-buy__from">de la</span>}
               <span className="event-buy__amount">{price}</span>
               <span className="event-buy__unit">RON / bilet</span>
             </div>
+
+            {availableTypes.length > 0 && <div className="event-buy__types">{availableTypes.map((type) => <div key={type.id}><span><b>{type.name}</b><small>{Math.max(0, type.capacity - (typeSold[type.id] ?? 0))} locuri</small></span><strong>{priceRon(type.price_bani) === 0 ? "Gratuit" : `${priceRon(type.price_bani)} RON`}</strong></div>)}</div>}
 
             {isActive ? (
               isSoldOut ? (
@@ -145,13 +152,13 @@ export default async function EventPage({ params }: Props) {
             <div className="event-buy__divider" />
 
             <div className="event-buy__total">
-              <span>Total</span>
+              <span>Total cash</span>
               <strong>{price} RON</strong>
             </div>
 
             {isActive && !isSoldOut ? (
               <Link href={`/${event.slug}/checkout`} className="pressable hover-dim event-buy__btn">
-                Cumpără bilet <ArrowRight size={18} strokeWidth={2.2} />
+                Rezervă bilet <ArrowRight size={18} strokeWidth={2.2} />
               </Link>
             ) : (
               <div className="event-buy__btn event-buy__btn--disabled">
@@ -160,13 +167,12 @@ export default async function EventPage({ params }: Props) {
             )}
 
             <div className="event-buy__secure">
-              <Lock size={13} strokeWidth={1.75} /> Plată securizată · bilet pe email instant
+              <Banknote size={13} strokeWidth={1.75} /> Plată cash · QR pe email instant
             </div>
           </div>
         </aside>
       </main>
 
-      {isActive && <BuyCta slug={event.slug} priceRon={price} isSoldOut={isSoldOut} accent={accent} />}
     </div>
   );
 }
@@ -321,8 +327,15 @@ function EventStyles({ accent }: { accent: string }) {
         box-shadow: 0 30px 70px -30px rgba(15,23,42,0.22);
       }
       .event-buy__price { display: flex; align-items: baseline; gap: 8px; }
+      .event-buy__from { color: var(--slate-500); font-size: 12px; font-weight: 700; }
       .event-buy__amount { font-size: 38px; font-weight: 800; color: var(--slate-900); letter-spacing: -0.02em; }
       .event-buy__unit { font-size: 16px; font-weight: 700; color: var(--slate-500); }
+      .event-buy__types { display: grid; gap: 7px; margin-top: 15px; }
+      .event-buy__types>div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 11px; border: 1px solid var(--slate-200); border-radius: 10px; background: var(--slate-50); }
+      .event-buy__types span { display: grid; }
+      .event-buy__types b { color: var(--slate-900); font-size: 12px; }
+      .event-buy__types small { color: var(--slate-500); font-size: 9px; }
+      .event-buy__types strong { color: ${accent}; font-size: 11px; }
       .event-buy__stock {
         margin-top: 8px;
         display: inline-flex; align-items: center; gap: 7px;
@@ -354,9 +367,8 @@ function EventStyles({ accent }: { accent: string }) {
 
       @media (max-width: 900px) {
         .event-hero { height: 280px; }
-        .event-body { display: block; padding: 28px 0 132px; }
+        .event-body { display: block; padding: 28px 0 72px; }
         .event-buy { position: static; margin-top: 36px; }
-        .event-buy__btn { display: none; }
         .event-buy__secure { margin-top: 16px; }
       }
       @media (max-width: 480px) {

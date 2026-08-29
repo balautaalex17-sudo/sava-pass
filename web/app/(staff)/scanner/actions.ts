@@ -1,10 +1,19 @@
 "use server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
-import { verifyTicket } from "@/lib/qr-token";
+
+import { requirePermission } from "@/lib/dashboard/auth";
+import { qrTokenFingerprint, verifyTicket } from "@/lib/qr-token";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { SCANNER_ROLES, hasStaffRole } from "@/lib/roles";
 import type { Database } from "@/lib/supabase/types";
+
+type LegacyResult =
+  | "ok"
+  | "already_in"
+  | "already_used"
+  | "void_ticket"
+  | "invalid"
+  | "inactive_event"
+  | "payment_pending"
+  | "unauthorized";
 
 export interface ScanTicketInfo {
   holder_name: string;
@@ -14,145 +23,117 @@ export interface ScanTicketInfo {
 }
 
 export interface ScanVerdict {
-  result: Database["public"]["Enums"]["scan_result"] | "invalid" | "inactive_event" | "unauthorized";
+  result: LegacyResult;
   ticket?: ScanTicketInfo;
 }
 
 type TicketWithEvent = Database["public"]["Tables"]["tickets"]["Row"] & {
-  events?: { title: string | null; status: Database["public"]["Enums"]["event_status"] | null } | null;
+  events?: {
+    title: string | null;
+    status: Database["public"]["Enums"]["event_status"] | null;
+  } | null;
+  orders?: {
+    status: Database["public"]["Enums"]["order_status"];
+    amount_bani: number;
+  } | null;
 };
 
-type ScannerAuth =
-  | { ok: true; userId: string }
-  | { ok: false; result: "invalid" | "unauthorized" };
-
-const ticketSelect = "id, status, holder_name, holder_email, code, event_id, events(title, status)";
+const ticketSelect =
+  "id, status, holder_name, holder_email, code, event_id, events(title, status), orders(status, amount_bani)";
 
 function normalizeTicketCode(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
-async function getScannerAuth(): Promise<ScannerAuth> {
-  const cookieStore = await cookies();
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll() {},
-      },
-    }
-  );
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, result: "invalid" };
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!hasStaffRole(profile?.role, SCANNER_ROLES)) {
-    return { ok: false, result: "unauthorized" };
-  }
-
-  return { ok: true, userId: user.id };
-}
-
 async function getTicketById(ticketId: string) {
-  const { data: ticket } = await supabaseAdmin
+  const { data } = await supabaseAdmin
     .from("tickets")
     .select(ticketSelect)
     .eq("id", ticketId)
     .maybeSingle();
-
-  return ticket as TicketWithEvent | null;
+  return data as TicketWithEvent | null;
 }
 
 async function getTicketByCode(code: string) {
   const normalized = normalizeTicketCode(code);
   if (!normalized) return null;
-
-  const { data: ticket } = await supabaseAdmin
+  const { data } = await supabaseAdmin
     .from("tickets")
     .select(ticketSelect)
     .eq("code", normalized)
     .maybeSingle();
-
-  return ticket as TicketWithEvent | null;
+  return data as TicketWithEvent | null;
 }
 
 export async function scanTicket(token: string): Promise<ScanVerdict> {
-  const auth = await getScannerAuth();
-  if (!auth.ok) return { result: auth.result };
-
-  const ticketId = verifyTicket(token);
-  if (!ticketId) return { result: "invalid" };
-
-  const ticket = await getTicketById(ticketId);
-  if (!ticket) return { result: "invalid" };
-
-  return checkInTicket(ticket, auth.userId);
+  try {
+    const viewer = await requirePermission("scan_event_tickets");
+    const ticketId = verifyTicket(token);
+    if (!ticketId) return { result: "invalid" };
+    const ticket = await getTicketById(ticketId);
+    if (!ticket) return { result: "invalid" };
+    return checkInTicket(ticket, viewer.profile.id, qrTokenFingerprint(token));
+  } catch {
+    return { result: "unauthorized" };
+  }
 }
 
 export async function scanTicketByCode(code: string): Promise<ScanVerdict> {
-  const auth = await getScannerAuth();
-  if (!auth.ok) return { result: auth.result };
-
-  const ticket = await getTicketByCode(code);
-  if (!ticket) return { result: "invalid" };
-
-  return checkInTicket(ticket, auth.userId);
+  try {
+    const viewer = await requirePermission("scan_event_tickets");
+    const ticket = await getTicketByCode(code);
+    if (!ticket) return { result: "invalid" };
+    return checkInTicket(
+      ticket,
+      viewer.profile.id,
+      qrTokenFingerprint(`manual:${normalizeTicketCode(code)}`),
+    );
+  } catch {
+    return { result: "unauthorized" };
+  }
 }
 
-async function checkInTicket(ticket: TicketWithEvent, userId: string): Promise<ScanVerdict> {
-  const eventTitle = ticket.events?.title ?? "Eveniment";
-  const eventStatus = ticket.events?.status ?? null;
+async function checkInTicket(
+  ticket: TicketWithEvent,
+  userId: string,
+  fingerprint: string,
+): Promise<ScanVerdict> {
   const info: ScanTicketInfo = {
     holder_name: ticket.holder_name,
     holder_email: ticket.holder_email,
     code: ticket.code,
-    event_title: eventTitle,
+    event_title: ticket.events?.title ?? "Eveniment",
   };
 
-  if (eventStatus !== "active") {
+  if (ticket.events?.status !== "active") {
     return { result: "inactive_event", ticket: info };
   }
 
-  const scanResult = async (result: Database["public"]["Enums"]["scan_result"]) => {
-    await logScan(ticket.event_id, ticket.id, userId, result);
-    return { result, ticket: info } satisfies ScanVerdict;
-  };
-
-  if (ticket.status === "void") return await scanResult("void_ticket");
-  if (ticket.status === "used") return await scanResult("already_used");
-  if (ticket.status === "in") return await scanResult("already_in");
-
-  const { data: updated } = await supabaseAdmin
-    .from("tickets")
-    .update({ status: "in", checked_in_at: new Date().toISOString() })
-    .eq("id", ticket.id)
-    .eq("status", "valid")
-    .select("id");
-
-  if (!updated || updated.length === 0) {
-    return await scanResult("already_in");
-  }
-
-  return await scanResult("ok");
-}
-
-async function logScan(
-  eventId: string,
-  ticketId: string,
-  userId: string,
-  result: Database["public"]["Enums"]["scan_result"]
-) {
-  await supabaseAdmin.from("scans").insert({
-    event_id: eventId,
-    ticket_id: ticketId,
-    scanned_by: userId,
-    result,
+  const { data } = await supabaseAdmin.rpc("check_in_ticket", {
+    p_ticket_id: ticket.id,
+    p_actor_id: userId,
+    p_token_fingerprint: fingerprint,
+    p_device_metadata: { surface: "legacy_scanner" },
   });
+  const result =
+    data && typeof data === "object" && !Array.isArray(data) && "result" in data
+      ? String(data.result)
+      : "error";
+
+  const mapped: LegacyResult =
+    result === "accepted"
+      ? "ok"
+      : result === "already_checked_in"
+        ? "already_in"
+        : result === "payment_required"
+          ? "payment_pending"
+          : result === "cancelled" || result === "expired"
+            ? "void_ticket"
+            : result === "inactive_event"
+              ? "inactive_event"
+              : result === "unauthorized"
+                ? "unauthorized"
+                : "invalid";
+
+  return { result: mapped, ticket: info };
 }

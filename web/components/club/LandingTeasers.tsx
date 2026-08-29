@@ -16,16 +16,16 @@ export function LandingTeasers({ projects, eventHref }: { projects: Project[]; e
         <div className="cl-teasers__intro anim-rise">
           <div className="cl-label">Interact Sf. Sava</div>
           <h2 className="cl-teasers__h">
-            Mai mult decât bilete — un club care <span className="cl-hero__accent">construiește comunitate.</span>
+            Concerte în Curtea Veche, proiecte în oraș și o echipă formată la Sf. Sava.
           </h2>
           <p className="cl-text">
-            Suntem clubul de voluntariat al elevilor de la „Sfântul Sava”. Organizăm evenimente, dar mai ales
-            proiecte care lasă urme.
+            SavaPass ține biletele și accesul în ordine. Interact Sf. Sava alege cauza, construiește proiectul și
+            aduce oamenii împreună.
           </p>
           <div className="cl-teasers__links">
-            <Link href="/despre" className="cl-link">Despre noi <ArrowRight size={16} strokeWidth={2} /></Link>
-            <Link href="/proiecte" className="cl-link">Proiecte <ArrowRight size={16} strokeWidth={2} /></Link>
-            <Link href="/echipa" className="cl-link">Echipa <ArrowRight size={16} strokeWidth={2} /></Link>
+            <Link href="/despre" className="cl-link">Despre noi <ArrowRight size={16} strokeWidth={1.75} /></Link>
+            <Link href="/proiecte" className="cl-link">Proiecte <ArrowRight size={16} strokeWidth={1.75} /></Link>
+            <Link href="/echipa" className="cl-link">Echipa <ArrowRight size={16} strokeWidth={1.75} /></Link>
           </div>
         </div>
 
@@ -33,7 +33,7 @@ export function LandingTeasers({ projects, eventHref }: { projects: Project[]; e
           <div className="cl-teasers__feat">
             <div className="cl-teasers__feat-head anim-rise">
               <h3 className="cl-h3">Proiecte recente</h3>
-              <Link href="/proiecte" className="cl-link">Toate proiectele <ArrowUpRight size={15} strokeWidth={2} /></Link>
+              <Link href="/proiecte" className="cl-link">Toate proiectele <ArrowUpRight size={15} strokeWidth={1.75} /></Link>
             </div>
             <div className="cl-proj-grid">
               {projects.slice(0, 3).map((p) => (
@@ -45,18 +45,19 @@ export function LandingTeasers({ projects, eventHref }: { projects: Project[]; e
 
         <div className="cl-teasers__join anim-rise">
           <div>
-            <h3 className="cl-teasers__join-h">Vrei să fii de partea cealaltă a serii?</h3>
+            <h3 className="cl-teasers__join-h">Vrei să organizezi următoarea ediție?</h3>
             <p className="cl-text">
-              Aplică pentru noua generație de membri Interact și organizează tu următorul eveniment.
+              Intră în echipă și învață cum se construiește un eveniment, de la prima schiță până la accesul din sală.
             </p>
           </div>
           <div className="cl-teasers__join-cta">
             <Link href="/devino-membru" className="cl-btn pressable hover-dim">
-              Devino membru <ArrowRight size={18} strokeWidth={2} />
+              Devino membru <ArrowRight size={18} strokeWidth={1.75} />
             </Link>
-            <Link href={eventHref} className="cl-link">Vezi evenimentul <ArrowRight size={16} strokeWidth={2} /></Link>
+            <Link href={eventHref} className="cl-link">Vezi evenimentul <ArrowRight size={16} strokeWidth={1.75} /></Link>
           </div>
         </div>
+
       </div>
     </section>
   );

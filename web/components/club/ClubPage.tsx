@@ -1,38 +1,35 @@
-import { getActiveEvent } from "@/lib/events";
 import { HomeNav } from "@/app/HomeNav";
+import { GOLDEN_HOUR } from "@/lib/golden-hour";
 import { SiteFooter } from "./SiteFooter";
 
 /**
  * The one shell every public club page shares (spec §6.3): nav → ONE hero moment
  * → calm content body → optional CTA band → footer, plus a single faint gear
  * watermark ("same building" cue). Dark immersive register (inherits
- * `.theme-immersive` from <body>). Async: resolves the active-event href for the
- * nav + footer.
+ * `.theme-immersive` from <body>). The nav + footer point to the current public
+ * event checkout.
  */
-export async function ClubPage({
+export function ClubPage({
   active,
   hero,
   cta,
+  showWatermark = true,
   children,
 }: {
   /** nav key of the current page (despre/proiecte/echipa/…) for active highlight */
   active?: string;
   hero: React.ReactNode;
   cta?: React.ReactNode;
+  /** Keeps the shared ambient motif opt-in per page without duplicating the shell. */
+  showWatermark?: boolean;
   children: React.ReactNode;
 }) {
-  let eventHref = "#event";
-  try {
-    const ev = await getActiveEvent();
-    if (ev?.slug) eventHref = `/${ev.slug}`;
-  } catch {
-    /* keep fallback */
-  }
+  const eventHref = GOLDEN_HOUR.checkoutHref;
 
   return (
     <div className="cl-shell">
-      <GearWatermark />
-      <HomeNav eventHref={eventHref} active={active} />
+      {showWatermark ? <GearWatermark /> : null}
+      <HomeNav active={active} immersive dark />
       {hero}
       <div className="cl-body">{children}</div>
       {cta}

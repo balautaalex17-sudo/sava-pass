@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { authorizeCronRequest } from "@/lib/cron-auth";
+import { logServerError } from "@/lib/server-log";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 // Keep-warm endpoint (perf U4). A scheduled GET runs one trivial indexed query so
@@ -7,21 +9,20 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  // Optional lock-down: if CRON_SECRET is set, require Vercel Cron's bearer header.
-  // Left open by default so it works without extra setup (it leaks nothing).
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ ok: false }, { status: 401 });
-    }
+  const authorization = authorizeCronRequest(request);
+  if (authorization === "unconfigured") {
+    return NextResponse.json({ ok: false, error: "Cron is not configured." }, { status: 503 });
   }
+  if (authorization === "unauthorized") return NextResponse.json({ ok: false }, { status: 401 });
 
   try {
+    const { error: maintenanceError } = await supabaseAdmin.rpc("run_security_maintenance");
+    if (maintenanceError) throw maintenanceError;
     const { error } = await supabaseAdmin.from("events").select("id").limit(1);
     if (error) throw error;
-    return NextResponse.json({ ok: true, ts: Date.now() });
-  } catch {
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    logServerError("keep_warm_failed", error);
     // DB unreachable/paused — report the miss so the cron log shows it.
     return NextResponse.json({ ok: false }, { status: 503 });
   }

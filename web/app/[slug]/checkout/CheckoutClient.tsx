@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Lock, ShieldCheck, Ticket } from "lucide-react";
+import { Banknote, ShieldCheck, Ticket } from "lucide-react";
 import { FlowNav } from "@/components/ui/FlowNav";
 import { createCheckout, type CheckoutState } from "./actions";
 
@@ -16,11 +16,22 @@ interface CheckoutEvent {
   dateLabel: string;
   venue: string;
   photoUrl: string | null;
-  priceRon: number;
 }
 
-export function CheckoutClient({ event, seatsLeft }: { event: CheckoutEvent; seatsLeft: number }) {
+interface CheckoutTicketType {
+  id: string;
+  name: string;
+  description: string | null;
+  priceRon: number;
+  seatsLeft: number;
+}
+
+export function CheckoutClient({ event, requestKey, seatsLeft, ticketTypes }: { event: CheckoutEvent; requestKey: string; seatsLeft: number; ticketTypes: CheckoutTicketType[] }) {
   const [state, action, pending] = useActionState(createCheckout, initial);
+  const firstAvailable = ticketTypes.find((type) => type.seatsLeft > 0);
+  const [selectedId, setSelectedId] = useState(firstAvailable?.id ?? ticketTypes[0]?.id ?? "");
+  const selected = ticketTypes.find((type) => type.id === selectedId) ?? firstAvailable ?? ticketTypes[0];
+  const canSubmit = Boolean(selected && selected.seatsLeft > 0 && seatsLeft > 0);
 
   return (
     <div className="sp-light checkout-page">
@@ -30,20 +41,46 @@ export function CheckoutClient({ event, seatsLeft }: { event: CheckoutEvent; sea
       <main className="checkout-shell">
         <div className="checkout-head">
           <div>
-            <h1>Finalizează comanda</h1>
-            <p>Pasul 2 din 2 · Plată</p>
+            <h1>Rezervă biletul</h1>
+            <p>Pasul 2 din 2 · Date și confirmare</p>
           </div>
           <div className="checkout-secure-badge">
-            <Lock size={14} strokeWidth={2} color="var(--success)" />
-            <span>Plată securizată</span>
+            <ShieldCheck size={14} strokeWidth={2} color="var(--success)" />
+            <span>Rezervare securizată</span>
           </div>
         </div>
 
         <form action={action} className="checkout-grid">
           <input type="hidden" name="slug" value={event.slug} />
+          <input type="hidden" name="ticket_type_id" value={selectedId} />
+          <input type="hidden" name="request_key" value={requestKey} />
 
           {/* Left: contact + consent */}
           <div className="checkout-left">
+            <section className="checkout-card">
+              <span className="checkout-card__eyebrow">Tip de bilet</span>
+              <div className="checkout-ticket-types" role="radiogroup" aria-label="Tip de bilet">
+                {ticketTypes.map((type) => {
+                  const active = type.id === selectedId;
+                  const soldOut = type.seatsLeft === 0;
+                  return <button
+                    key={type.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    disabled={soldOut}
+                    className={`checkout-ticket-type pressable${active ? " is-active" : ""}`}
+                    onClick={() => setSelectedId(type.id)}
+                  >
+                    <span><b>{type.name}</b><small>{type.description ?? (soldOut ? "Epuizat" : `${type.seatsLeft} locuri rămase`)}</small></span>
+                    <strong>{type.priceRon === 0 ? "Gratuit" : `${type.priceRon} RON`}</strong>
+                  </button>;
+                })}
+              </div>
+              {!ticketTypes.length ? <p className="checkout-error">Nu există încă un tip de bilet disponibil.</p> : null}
+              {state.errors?.ticket_type_id ? <p className="checkout-field__error">{state.errors.ticket_type_id}</p> : null}
+            </section>
+
             <section className="checkout-card">
               <span className="checkout-card__eyebrow">Contact</span>
               <FormField
@@ -63,17 +100,27 @@ export function CheckoutClient({ event, seatsLeft }: { event: CheckoutEvent; sea
                 error={state.errors?.email}
                 help="Aici îți trimitem chitanța și codul QR."
               />
+              <FormField
+                label="Numărul de telefon"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                placeholder="0722 123 456"
+                autoComplete="tel"
+                error={state.errors?.phone}
+                help="Îl poți folosi apoi pentru a-ți găsi biletele."
+              />
             </section>
 
             <section className="checkout-card">
-              <span className="checkout-card__eyebrow">Plată</span>
-              <div className="checkout-stripe">
-                <ShieldCheck size={20} strokeWidth={1.75} />
-                <div>
-                  <strong>Plata e procesată de Stripe</strong>
-                  <small>După „Continuă la plată” introduci datele cardului pe pagina securizată Stripe. Noi nu vedem și nu stocăm cardul.</small>
-                </div>
-              </div>
+              <span className="checkout-card__eyebrow">{selected?.priceRon === 0 ? "Rezervare" : "Plată cash"}</span>
+              {selected?.priceRon === 0 ? <div className="checkout-payment"><Ticket size={20} strokeWidth={1.75} /><div><strong>Rezervare gratuită</strong><small>Primești imediat biletul cu QR, valid pentru acces.</small></div></div> : <div className="checkout-payment">
+                  <Banknote size={20} strokeWidth={1.75} />
+                  <div>
+                    <strong>Plată cash</strong>
+                    <small>Biletul este rezervat acum. Devine valid pentru acces după ce organizatorul confirmă plata cash.</small>
+                  </div>
+                </div>}
 
               <label className="pressable checkout-consent">
                 <input type="checkbox" name="gdpr" />
@@ -104,28 +151,30 @@ export function CheckoutClient({ event, seatsLeft }: { event: CheckoutEvent; sea
 
               <div className="checkout-summary__divider" />
 
-              <SumRow k="1 × Bilet acces" v={`${event.priceRon} RON`} />
+              <SumRow k={`1 × ${selected?.name ?? "Bilet"}`} v={selected ? (selected.priceRon === 0 ? "0 RON" : `${selected.priceRon} RON`) : "—"} />
               <SumRow k="Comision platformă" v="0 RON" sub />
 
               <div className="checkout-summary__divider" />
 
-              <SumRow k="Total" v={`${event.priceRon} RON`} bold />
+              <SumRow k={selected?.priceRon === 0 ? "Total" : "Total de plată cash"} v={selected ? `${selected.priceRon} RON` : "—"} bold />
 
               {state.errors?.general && (
                 <div className="checkout-error anim-shake anim-fade">{state.errors.general}</div>
               )}
 
-              <button type="submit" className="pressable hover-dim checkout-pay" disabled={pending}>
+              <button type="submit" className="pressable hover-dim checkout-pay" disabled={pending || !canSubmit}>
                 {pending ? (
                   <>
-                    <span className="checkout-spinner" /> Se procesează…
+                    <span className="checkout-spinner" /> Se rezervă…
                   </>
                 ) : (
                   <>
-                    <Lock size={16} strokeWidth={2} /> Continuă la plată
+                    {selected?.priceRon === 0 ? <Ticket size={16} strokeWidth={2} /> : <Banknote size={16} strokeWidth={2} />} Rezervă biletul
                   </>
                 )}
               </button>
+
+              <p className="checkout-summary__online-note">Nu vei fi taxat online.</p>
 
               <div className="checkout-summary__terms">
                 Continuând, ești de acord cu{" "}
@@ -134,12 +183,8 @@ export function CheckoutClient({ event, seatsLeft }: { event: CheckoutEvent; sea
               </div>
             </div>
 
-            <div className="checkout-summary__brands">
-              <span>VISA</span><span>MASTERCARD</span><span>APPLE PAY</span>
-            </div>
-
             <div className="checkout-footnote">
-              <ArrowRight size={13} strokeWidth={1.75} />
+              <ShieldCheck size={13} strokeWidth={1.75} />
               <span>{seatsLeft > 0 ? `${seatsLeft} locuri disponibile acum.` : "Evenimentul apare ca sold out."}</span>
             </div>
           </aside>
@@ -150,9 +195,16 @@ export function CheckoutClient({ event, seatsLeft }: { event: CheckoutEvent; sea
 }
 
 function FormField({
-  label, name, type, placeholder, autoComplete, error, help,
+  label, name, type, inputMode, placeholder, autoComplete, error, help,
 }: {
-  label: string; name: string; type: string; placeholder: string; autoComplete?: string; error?: string; help?: string;
+  label: string;
+  name: string;
+  type: string;
+  inputMode?: React.InputHTMLAttributes<HTMLInputElement>["inputMode"];
+  placeholder: string;
+  autoComplete?: string;
+  error?: string;
+  help?: string;
 }) {
   return (
     <label className="checkout-field">
@@ -160,8 +212,10 @@ function FormField({
       <input
         name={name}
         type={type}
+        inputMode={inputMode}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        required
         className="input"
         style={{
           borderColor: error ? "var(--danger)" : undefined,
@@ -227,6 +281,18 @@ function CheckoutStyles() {
         font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
         color: var(--brand-cyan-700);
       }
+      .checkout-ticket-types { display: grid; gap: 9px; }
+      .checkout-ticket-type {
+        width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+        padding: 14px; border: 1px solid var(--slate-200); border-radius: var(--radius-md);
+        background: var(--slate-50); color: var(--slate-900); text-align: left; cursor: pointer;
+      }
+      .checkout-ticket-type.is-active { border-color: var(--brand-cyan); background: var(--brand-cyan-50); box-shadow: 0 0 0 2px rgba(0,159,227,.1); }
+      .checkout-ticket-type:disabled { opacity: .46; cursor: not-allowed; }
+      .checkout-ticket-type > span { display: grid; gap: 3px; }
+      .checkout-ticket-type b { font-size: 14px; }
+      .checkout-ticket-type small { color: var(--slate-500); font-size: 11px; line-height: 1.4; }
+      .checkout-ticket-type strong { flex-shrink: 0; color: var(--brand-cyan-700); font-size: 13px; }
 
       .checkout-field { display: grid; gap: 7px; }
       .checkout-field > span { color: var(--slate-900); font-size: 13px; font-weight: 800; }
@@ -246,15 +312,15 @@ function CheckoutStyles() {
       .checkout-field small { color: var(--slate-500); font-size: 12px; }
       .checkout-field__error { color: var(--danger) !important; font-weight: 600; }
 
-      .checkout-stripe {
+      .checkout-payment {
         display: flex; gap: 14px; align-items: flex-start;
         padding: 16px;
         border-radius: var(--radius-md);
         background: var(--brand-cyan-50);
         color: var(--brand-cyan-700);
       }
-      .checkout-stripe strong { display: block; font-size: 14px; color: var(--slate-900); }
-      .checkout-stripe small { display: block; margin-top: 4px; font-size: 12.5px; line-height: 1.5; color: var(--slate-600); }
+      .checkout-payment strong { display: block; font-size: 14px; color: var(--slate-900); }
+      .checkout-payment small { display: block; margin-top: 4px; font-size: 12.5px; line-height: 1.5; color: var(--slate-600); }
 
       .checkout-consent {
         display: flex; align-items: flex-start; gap: 10px;
@@ -316,11 +382,7 @@ function CheckoutStyles() {
       @keyframes checkout-spin { to { transform: rotate(360deg); } }
 
       .checkout-summary__terms { margin-top: 16px; font-size: 11px; color: var(--slate-500); text-align: center; line-height: 1.5; }
-      .checkout-summary__brands {
-        display: flex; align-items: center; justify-content: center; gap: 18px;
-        margin-top: 18px; opacity: 0.7;
-      }
-      .checkout-summary__brands span { font-size: 11px; font-weight: 700; color: var(--slate-500); letter-spacing: 0.08em; }
+      .checkout-summary__online-note { margin: 10px 0 0; color: var(--slate-600); font-size: 12px; font-weight: 600; text-align: center; }
 
       .checkout-error {
         margin-top: 16px;
@@ -343,8 +405,13 @@ function CheckoutStyles() {
       }
       @media (max-width: 480px) {
         .checkout-shell { width: calc(100% - 32px); padding-top: 28px; }
+        .checkout-head { align-items: flex-start; flex-direction: column; }
         .checkout-head h1 { font-size: 26px; }
         .checkout-card { padding: 20px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .checkout-spinner { animation: none; }
       }
     `}</style>
   );

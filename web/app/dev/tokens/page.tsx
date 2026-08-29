@@ -1,4 +1,8 @@
+import { notFound } from "next/navigation";
+
 export default function TokensPage() {
+  if (process.env.NODE_ENV !== "development") notFound();
+
   const colors = [
     { name: "brand-cyan", val: "#009FE3" },
     { name: "brand-cyan-600", val: "#0089C4" },

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { Logo } from "@/components/ui/Logo";
 
 /**
  * Light sticky top nav for the buy + recruiting flows ("Desktop Flow" design).
@@ -12,9 +11,6 @@ export function FlowNav({ backHref = "/", right }: { backHref?: string; right?: 
     <header className="flow-nav">
       <Link href={backHref} className="pressable flow-nav__back" aria-label="Înapoi">
         <ChevronLeft size={20} strokeWidth={1.75} />
-      </Link>
-      <Link href="/" className="logo-spin flow-nav__logo">
-        <Logo size={18} />
       </Link>
       <div className="flow-nav__right">{right}</div>
       <style>{`
@@ -29,7 +25,7 @@ export function FlowNav({ backHref = "/", right }: { backHref?: string; right?: 
           background: rgba(255,255,255,0.97);
           border-bottom: 1px solid var(--slate-200);
         }
-        .flow-nav__back, .flow-nav__logo { text-decoration: none; }
+        .flow-nav__back { text-decoration: none; }
         .flow-nav__back {
           width: 36px;
           height: 36px;
@@ -41,6 +37,11 @@ export function FlowNav({ backHref = "/", right }: { backHref?: string; right?: 
           color: var(--slate-900);
         }
         .flow-nav__right { min-width: 36px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+        @media (max-width: 820px) {
+          .flow-nav { padding: max(8px, env(safe-area-inset-top)) 16px 8px; }
+          .flow-nav__back { width: 44px; height: 44px; }
+          .flow-nav__right { min-width: 44px; }
+        }
       `}</style>
     </header>
   );

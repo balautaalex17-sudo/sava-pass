@@ -1,0 +1,136 @@
+.detailPage {
+  --event-detail-space: clamp(36px, 3.5vw, 48px);
+  --event-detail-space-lg: clamp(48px, 5vw, 64px);
+}
+
+.detailPage .hero {
+  padding-top: var(--event-detail-space-lg);
+  padding-bottom: var(--event-detail-space);
+}
+
+.story {
+  padding: var(--event-detail-space) 0;
+  border-top: 1px solid var(--ev-line);
+}
+
+.article {
+  width: min(100%, 760px);
+  margin-inline: 0 auto;
+}
+
+.title,
+.relatedTitle {
+  margin: 0;
+  color: var(--ev-paper);
+  font-family: var(--font-brand);
+  font-size: clamp(2.2rem, 4.2vw, 3.8rem);
+  font-variation-settings: "FLAR" 34, "VOLM" 10;
+  font-weight: 730;
+  letter-spacing: -.04em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.copy {
+  max-width: 66ch;
+  margin: 12px 0 0;
+  color: #bdcbd5;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.cause {
+  display: grid;
+  grid-template-columns: minmax(132px, .35fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--ev-line);
+  border-bottom: 1px solid var(--ev-line);
+}
+
+.causeTitle {
+  margin: 0;
+  color: var(--ev-muted);
+  font-family: var(--font-sans);
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.causeText {
+  margin: 0;
+  color: var(--ev-paper);
+  font-size: .98rem;
+  line-height: 1.5;
+}
+
+.info {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ev-line);
+}
+
+.info h3 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 1.25rem;
+}
+
+.info p {
+  margin: 8px 0 0;
+  color: var(--ev-muted);
+  line-height: 1.65;
+}
+
+.info a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ev-cyan);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.related {
+  padding: var(--event-detail-space) 0 var(--event-detail-space-lg);
+  border-top: 1px solid var(--ev-line);
+}
+
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 32px;
+}
+
+@media (max-width: 620px) {
+  .detailPage {
+    --event-detail-space: 36px;
+    --event-detail-space-lg: 48px;
+  }
+
+  .detailPage .hero {
+    padding-top: 24px;
+    padding-bottom: var(--event-detail-space);
+  }
+
+  .copy {
+    margin-top: 10px;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .cause {
+    grid-template-columns: minmax(112px, .42fr) minmax(0, 1fr);
+    gap: 16px;
+    margin-top: 20px;
+    padding: 14px 0;
+  }
+
+  .relatedGrid {
+    grid-template-columns: 1fr;
+  }
+}

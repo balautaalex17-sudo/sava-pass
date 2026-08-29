@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { AlertTriangle, CheckCircle, Download, XCircle } from "lucide-react";
 import { Chip } from "@/components/ui/Chip";
+import { csvCell } from "@/lib/csv";
 import type { Database } from "@/lib/supabase/types";
 
 type ScanRow = {
@@ -33,9 +34,19 @@ interface Props {
 
 const RESULT_LABELS: Record<string, { text: string; icon: "ok" | "warn" | "err" }> = {
   ok:           { text: "OK",              icon: "ok" },
+  accepted:     { text: "Intrare confirmată", icon: "ok" },
   already_in:   { text: "Deja înăuntru",   icon: "warn" },
   already_used: { text: "Folosit",         icon: "warn" },
+  already_checked_in: { text: "Deja intrat", icon: "warn" },
+  reservation_found: { text: "Rezervare găsită", icon: "warn" },
+  valid_ticket: { text: "Bilet plătit", icon: "ok" },
+  payment_required: { text: "Plată necesară", icon: "warn" },
+  payment_confirmed: { text: "Plată confirmată", icon: "ok" },
+  already_paid: { text: "Deja plătit", icon: "warn" },
+  cancelled:    { text: "Anulat", icon: "err" },
+  expired:      { text: "Expirat", icon: "err" },
   invalid:      { text: "Invalid",         icon: "err" },
+  invalid_token:{ text: "QR invalid",      icon: "err" },
   void_ticket:  { text: "Anulat",          icon: "err" },
 };
 
@@ -59,11 +70,20 @@ function VerdictLabel({ result }: { result: string }) {
   );
 }
 
-const STATUS_TONE: Record<string, "brand" | "success" | "used" | "danger"> = {
-  valid: "brand",
-  in:    "success",
-  used:  "used",
-  void:  "danger",
+const STATUS_TONE: Record<string, "brand" | "success" | "warning" | "used" | "danger"> = {
+  reserved: "warning",
+  paid: "brand",
+  checked_in: "success",
+  cancelled: "danger",
+  expired: "danger",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  reserved: "Rezervat",
+  paid: "Plătit",
+  checked_in: "Intrat",
+  cancelled: "Anulat",
+  expired: "Expirat",
 };
 
 export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) {
@@ -103,7 +123,7 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
   }, [eventId]);
 
   function downloadCsv() {
-    const content = csvRows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const content = csvRows.map(row => row.map(csvCell).join(",")).join("\n");
     const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -217,7 +237,7 @@ export function AdminClient({ eventId, initialScans, tickets, csvRows }: Props) 
                     <td style={{ padding: "9px 14px", fontSize: 12, color: "var(--im-fg-2)" }}>{t.holder_email}</td>
                     <td style={{ padding: "9px 14px" }}>
                       <Chip size="sm" tone={STATUS_TONE[t.status] ?? "used"} dot>
-                        {t.status}
+                        {STATUS_LABELS[t.status] ?? t.status}
                       </Chip>
                     </td>
                     <td style={{ padding: "9px 14px", fontSize: 12, color: "var(--im-fg-2)", fontVariantNumeric: "tabular-nums" }}>

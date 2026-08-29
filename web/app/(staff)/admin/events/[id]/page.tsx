@@ -19,9 +19,13 @@ export default async function EventEditorPage({ params }: { params: Promise<{ id
   const event = isNew ? null : await supabaseAdmin.from("events").select("*").eq("id", id).single();
   if (!isNew && !event?.data) notFound();
 
-  const { count } = isNew
-    ? { count: 0 }
-    : await supabaseAdmin.from("orders").select("id", { count: "exact", head: true }).eq("event_id", id);
+  const [{ count }, { data: ticketTypes }, { data: mediaAssets }] = isNew
+    ? [{ count: 0 }, { data: [] }, await supabaseAdmin.from("media_assets").select("id, file_name, public_url, source_kind").eq("archived", false).eq("excluded", false).order("quality_score", { ascending: false })]
+    : await Promise.all([
+        supabaseAdmin.from("orders").select("id", { count: "exact", head: true }).eq("event_id", id),
+        supabaseAdmin.from("event_ticket_types").select("*").eq("event_id", id).order("sort").order("created_at"),
+        supabaseAdmin.from("media_assets").select("id, file_name, public_url, source_kind").eq("archived", false).eq("excluded", false).order("quality_score", { ascending: false }),
+      ]);
 
   return (
     <>
@@ -44,7 +48,7 @@ export default async function EventEditorPage({ params }: { params: Promise<{ id
           </p>
         </div>
 
-        <EventEditor event={event?.data ?? null} hasOrders={(count ?? 0) > 0} />
+        <EventEditor event={event?.data ?? null} ticketTypes={ticketTypes ?? []} mediaAssets={mediaAssets ?? []} hasOrders={(count ?? 0) > 0} />
       </main>
     </>
   );

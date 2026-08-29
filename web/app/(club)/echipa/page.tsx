@@ -17,10 +17,14 @@ export default async function EchipaPage() {
 
   const hero = (
     <ClubHero
-      variant="index"
-      kicker="Echipa"
-      lines={[<>Oamenii din spatele <span key="a" className="cl-hero__accent">fiecărui proiect.</span></>]}
-      lead="Un board care își asumă răspunderea și membri care transformă ideile în acțiune."
+      variant="cinematic"
+      lines={[<>Board-ul și membrii</>, <>Interact Sf. Sava.</>]}
+      lead="Echipa care propune proiectele, împarte responsabilitățile și le duce până la capăt."
+      media={{
+        src: "/imersiv/team-interact.webp",
+        alt: "Echipa Interact Sf. Sava la un eveniment al clubului",
+        mobilePosition: "50% 56%",
+      }}
     />
   );
 

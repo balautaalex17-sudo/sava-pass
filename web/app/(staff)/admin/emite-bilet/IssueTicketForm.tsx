@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { CheckCircle, ExternalLink, Ticket } from "lucide-react";
 import { issueCompTicket, type IssueState } from "./actions";
 
@@ -12,14 +13,22 @@ interface EventOption {
   status: string;
 }
 
+interface TicketTypeOption {
+  id: string;
+  eventId: string;
+  label: string;
+}
+
 const STATUS_LABEL: Record<string, string> = { active: "activ", draft: "schiță", past: "arhivă" };
 
 export function IssueTicketForm({
   events,
+  ticketTypes,
   defaultEventId,
   defaultEmail,
 }: {
   events: EventOption[];
+  ticketTypes: TicketTypeOption[];
   defaultEventId: string;
   defaultEmail: string;
 }) {
@@ -44,9 +53,9 @@ export function IssueTicketForm({
           Deschide biletul
         </a>
         <div style={{ marginTop: 14 }}>
-          <a href="/admin/emite-bilet" style={{ fontSize: 13, color: "var(--im-cyan-light)", textDecoration: "none", fontWeight: 700 }}>
+          <Link href="/admin/emite-bilet" style={{ fontSize: 13, color: "var(--im-cyan-light)", textDecoration: "none", fontWeight: 700 }}>
             Emite încă unul
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -61,6 +70,12 @@ export function IssueTicketForm({
               {e.title} · {STATUS_LABEL[e.status] ?? e.status}
             </option>
           ))}
+        </select>
+      </Field>
+
+      <Field label="Tip de bilet" error={state.errors?.ticket_type_id}>
+        <select name="ticket_type_id" defaultValue={ticketTypes.find((type) => type.eventId === defaultEventId)?.id ?? ticketTypes[0]?.id} style={inputStyle}>
+          {ticketTypes.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
         </select>
       </Field>
 

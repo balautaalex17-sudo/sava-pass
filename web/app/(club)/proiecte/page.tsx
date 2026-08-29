@@ -18,9 +18,8 @@ export default async function ProiectePage() {
   const hero = (
     <ClubHero
       variant="index"
-      kicker="Proiecte"
-      lines={[<>Fapte, nu <span key="a" className="cl-hero__accent">vorbe.</span></>]}
-      lead="Fiecare proiect pornește de la o nevoie reală din comunitate și se termină cu un rezultat pe care îl poți măsura."
+      lines={[<>Proiecte făcute la Sf. Sava.</>]}
+      lead="Aici documentăm campaniile, evenimentele și acțiunile pe care membrii clubului le-au dus de la idee la rezultat."
       count={projects.length ? `${projects.length} proiecte` : undefined}
     />
   );

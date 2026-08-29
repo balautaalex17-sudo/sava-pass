@@ -7,30 +7,20 @@ export function StatusControl({
   id,
   status,
   label,
-  swapEventTitle,
+  disabledReason,
 }: {
   id: string;
   status: "active" | "past";
   label: string;
-  swapEventTitle?: string | null;
+  disabledReason?: string | null;
 }) {
   const [state, action, pending] = useActionState(setEventStatus, {} as EventActionState);
-  const requiresSwap = status === "active" && !!swapEventTitle;
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    if (!requiresSwap) return;
-    const ok = window.confirm(
-      `Activezi acest eveniment și arhivezi "${swapEventTitle}". Continui?`
-    );
-    if (!ok) event.preventDefault();
-  }
 
   return (
-    <form action={action} onSubmit={handleSubmit} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+    <form action={action} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="status" value={status} />
-      {requiresSwap && <input type="hidden" name="confirm_swap" value="on" />}
-      <button type="submit" disabled={pending} className="pressable" style={smallButtonStyle}>
+      <button type="submit" disabled={pending || !!disabledReason} title={disabledReason ?? undefined} className="pressable" style={smallButtonStyle}>
         {pending ? (
           <span
             className="anim-spin-slow"

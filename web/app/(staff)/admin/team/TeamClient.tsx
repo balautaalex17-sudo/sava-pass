@@ -16,20 +16,22 @@ type Member = {
 
 const roleLabels: Record<StaffRole, string> = {
   admin: "Admin",
-  scanner: "Scanner",
+  board: "Board",
+  scanner: "Scanner bilete",
   statistici: "Statistici",
+  interviewer: "Intervievator",
 };
 
-const roles: StaffRole[] = ["admin", "scanner", "statistici"];
+const roles: StaffRole[] = ["admin", "board", "scanner", "interviewer", "statistici"];
 
 export function TeamClient({ members }: { members: Member[] }) {
   const [inviteState, inviteAction, invitePending] = useActionState(inviteStaff, {});
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
-      <form action={inviteAction} style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, padding: 18, boxShadow: "var(--im-shadow)" }}>
+    <div className="staff-team-root" style={{ display: "grid", gap: 20 }}>
+      <form className="staff-invite-form" action={inviteAction} style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, padding: 18, boxShadow: "var(--im-shadow)" }}>
         <h2 style={{ margin: "0 0 14px", color: "var(--im-fg)", fontSize: 18 }}>Invită membru</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 180px auto", gap: 10, alignItems: "start" }}>
+        <div className="staff-invite-grid" style={{ display: "grid", gridTemplateColumns: "1fr 180px auto", gap: 10, alignItems: "start" }}>
           <Field label="Email" error={inviteState.errors?.email}>
             <input name="email" className="input" type="email" required placeholder="email@example.com" style={inputStyle} />
           </Field>
@@ -45,7 +47,7 @@ export function TeamClient({ members }: { members: Member[] }) {
         <ActionMessage state={inviteState} />
       </form>
 
-      <div style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, overflow: "auto", WebkitOverflowScrolling: "touch", boxShadow: "var(--im-shadow)" }}>
+      <div className="staff-team-table" style={{ background: "var(--im-ink-2)", border: "1px solid var(--im-line)", borderRadius: 20, overflow: "auto", WebkitOverflowScrolling: "touch", boxShadow: "var(--im-shadow)" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
           <thead>
             <tr style={{ background: "var(--im-ink-3)", borderBottom: "1px solid var(--im-line)" }}>
@@ -59,6 +61,13 @@ export function TeamClient({ members }: { members: Member[] }) {
           </tbody>
         </table>
       </div>
+      <style>{`
+        .staff-team-root, .staff-invite-form, .staff-team-table { min-width: 0; max-width: 100%; }
+        @media (max-width: 720px) {
+          .staff-invite-grid { grid-template-columns: 1fr !important; }
+          .staff-invite-grid button { width: 100%; }
+        }
+      `}</style>
     </div>
   );
 }

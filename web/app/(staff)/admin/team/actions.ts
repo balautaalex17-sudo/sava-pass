@@ -5,6 +5,8 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireStaffRole, STAFF_ROLES, type StaffRole } from "@/lib/roles";
 import { resolveSiteUrl } from "@/lib/site-url";
+import { prepareAuthEmail, sendPreparedAuthEmail, type PreparedAuthEmail } from "@/lib/auth-email";
+import { logServerError } from "@/lib/server-log";
 
 const roleSchema = z.enum(STAFF_ROLES);
 
@@ -72,20 +74,27 @@ export async function inviteStaff(_prev: TeamActionState, form: FormData): Promi
   const { email, role } = parsed.data;
   const siteUrl = resolveSiteUrl();
 
-  const invited = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/invite/confirm`,
-  });
+  const existing = await findUserByEmail(email);
+  let userId = existing?.id;
+  let preparedEmail: PreparedAuthEmail | null = null;
+  let message = "Exista deja cont, rol acordat direct.";
+  const authUserWasCreated = !existing;
 
-  let userId = invited.data.user?.id;
-  let message = "Invitația a fost trimisă.";
-
-  if (invited.error) {
-    const existing = await findUserByEmail(email);
-    if (!existing) {
+  if (!existing?.confirmed_at) {
+    const prepared = await prepareAuthEmail({
+      kind: "invite",
+      email,
+      redirectTo: `${siteUrl}/invite/confirm`,
+    });
+    if (!prepared.ok) {
       return { errors: { general: "Invitația nu a putut fi trimisă." } };
     }
-    userId = existing.id;
-    message = "Exista deja cont, rol acordat direct.";
+    if (existing && prepared.email.userId !== existing.id) {
+      return { errors: { general: "Invitația a generat un cont diferit. Nu am salvat rolul." } };
+    }
+    preparedEmail = prepared.email;
+    userId = prepared.email.userId;
+    message = "Invitația a fost trimisă.";
   }
 
   if (!userId) return { errors: { general: "Nu am putut găsi utilizatorul." } };
@@ -94,7 +103,20 @@ export async function inviteStaff(_prev: TeamActionState, form: FormData): Promi
     .from("profiles")
     .upsert({ id: userId, email, full_name: email.split("@")[0], role }, { onConflict: "id" });
 
-  if (error) return { errors: { general: "Rolul nu a putut fi salvat." } };
+  if (error) {
+    if (preparedEmail && authUserWasCreated) {
+      await supabaseAdmin.auth.admin.deleteUser(preparedEmail.userId);
+    }
+    return { errors: { general: "Rolul nu a putut fi salvat." } };
+  }
+
+  if (preparedEmail) {
+    const delivery = await sendPreparedAuthEmail(preparedEmail);
+    if (!delivery.ok) {
+      logServerError("staff_invitation_email_failed", new Error(delivery.error ?? "email_failed"), { userId });
+      return { errors: { general: "Rolul a fost salvat, dar emailul nu a plecat. Retrimite invitația." } };
+    }
+  }
 
   revalidatePath("/admin/team");
   return { ok: true, message };

@@ -1,3 +1,8 @@
+-- HISTORICAL REFERENCE ONLY. DO NOT EXECUTE THIS FILE.
+-- Canonical, rebuildable schema changes live in supabase/migrations/. This 2026-06-28
+-- snapshot is wrapped in a block comment because it contains superseded enums,
+-- functions, and Storage policies that are unsafe to restore.
+/*
 -- =============================================================================
 -- SavaPass — full public-schema SNAPSHOT (disaster recovery / onboarding)
 -- Captured 2026-06-28 from the live project (ref shzyvrojbtbczqqoilip) via the
@@ -79,6 +84,7 @@ create table public.orders (
   event_id              uuid not null references public.events(id),
   buyer_name            text not null,
   buyer_email           text not null,
+  buyer_phone           text check (buyer_phone is null or buyer_phone ~ '^\+40[0-9]{9}$'),
   quantity              integer not null default 1 check (quantity >= 1 and quantity <= 4),
   amount_bani           integer not null,
   currency              text not null default 'ron',
@@ -99,12 +105,15 @@ create table public.tickets (
   qr_token      text not null unique,
   holder_name   text not null,
   holder_email  text not null,
+  holder_phone  text check (holder_phone is null or holder_phone ~ '^\+40[0-9]{9}$'),
   status        public.ticket_status not null default 'valid',
   issued_at     timestamptz not null default now(),
   checked_in_at timestamptz,
   user_id       uuid references auth.users(id) on delete set null
 );
 create index tickets_event_idx on public.tickets (event_id, status);
+create index tickets_holder_email_idx on public.tickets (holder_email);
+create index tickets_holder_phone_idx on public.tickets (holder_phone) where holder_phone is not null;
 
 -- ── scans ────────────────────────────────────────────────────────────────────
 create table public.scans (
@@ -126,6 +135,7 @@ create table public.membership_applications (
   phone        text not null,
   grade        text,
   motivation   text not null,
+  answers      jsonb not null default '{}'::jsonb,
   strength     text,
   availability text,
   status       text not null default 'new' check (status = any (array['new','reviewing','interview','accepted','declined'])),
@@ -211,7 +221,7 @@ create policy applicants_update on public.applicants for update to public using 
 
 -- NOTE: orders/tickets/events writes are intentionally NOT exposed via RLS to
 -- anon/authenticated — every write goes through the service-role admin client
--- (checkout action, stripe webhook, admin tools), which bypasses RLS by design.
+-- (checkout reservation action and admin tools), which bypasses RLS by design.
 
 -- ── Club content layer (Phase 9 U2): team / projects / sponsors / contact / prose ──
 -- Applied via MCP migrations club_content_tables + club_media_storage.
@@ -304,3 +314,4 @@ create policy "media public read"  on storage.objects for select to public      
 create policy "media staff insert" on storage.objects for insert to authenticated with check (bucket_id = 'media' and is_staff());
 create policy "media staff update" on storage.objects for update to authenticated using (bucket_id = 'media' and is_staff()) with check (bucket_id = 'media' and is_staff());
 create policy "media staff delete" on storage.objects for delete to authenticated using (bucket_id = 'media' and is_staff());
+*/

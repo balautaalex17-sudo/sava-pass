@@ -25,9 +25,8 @@ export default function ContactPage() {
   const hero = (
     <ClubHero
       variant="index"
-      kicker="Contact"
-      lines={[<>Hai să <span key="a" className="cl-hero__accent">vorbim.</span></>]}
-      lead="Pentru colaborări, parteneriate sau orice întrebare despre club — îți răspundem repede."
+      lines={[<>Scrie-ne despre un proiect.</>]}
+      lead="Spune-ne dacă ai o idee de colaborare, vrei să susții un eveniment sau ai o întrebare despre club."
     />
   );
 

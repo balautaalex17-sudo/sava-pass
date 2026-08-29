@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import { Banknote } from "lucide-react";
 import { verifyTicket } from "@/lib/qr-token";
 import { resolveSiteUrl } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -22,7 +23,7 @@ export default async function TicketPage({ params }: Props) {
 
   const { data: ticket } = await supabaseAdmin
     .from("tickets")
-    .select("*, events(*)")
+    .select("*, events(*), orders(status, amount_bani, paid_at)")
     .eq("id", ticketId)
     .single();
 
@@ -30,21 +31,28 @@ export default async function TicketPage({ params }: Props) {
 
   const ticketWithEvent = ticket as typeof ticket & {
     events?: Database["public"]["Tables"]["events"]["Row"] | null;
+    orders?: Pick<Database["public"]["Tables"]["orders"]["Row"], "status" | "amount_bani" | "paid_at"> | null;
   };
   const event = ticketWithEvent.events;
+  const order = ticketWithEvent.orders;
   const accent = event?.accent ?? "#009FE3";
-  const isUsed = ticket.status === "used" || ticket.status === "in";
-  const isVoid = ticket.status === "void";
+  const isUsed = ticket.status === "checked_in";
+  const isCancelled = ticket.status === "cancelled";
+  const isExpired = ticket.status === "expired";
+  const isVoid = isCancelled || isExpired;
+  const isAwaitingPayment = ticket.status === "reserved";
 
   const bandGradient = isUsed
     ? "linear-gradient(150deg, var(--slate-500), var(--slate-700))"
     : `linear-gradient(150deg, ${accent} 0%, #2563EB 100%)`;
 
   const statusChip = isVoid
-    ? <Chip tone="danger" dot>Anulat</Chip>
+    ? <Chip tone="danger" dot>{isExpired ? "Expirat" : "Anulat"}</Chip>
     : isUsed
       ? <Chip tone="used" dot>Folosit</Chip>
-      : <Chip tone="success" dot>Valid</Chip>;
+      : isAwaitingPayment
+        ? <Chip tone="warning" dot>În așteptarea plății</Chip>
+        : <Chip tone="success" dot>Valid</Chip>;
 
   const siteUrl = resolveSiteUrl();
   const qrSrc = `${siteUrl}/api/qr/${token}`;
@@ -57,7 +65,7 @@ export default async function TicketPage({ params }: Props) {
       <main className="ticket-shell">
         <div className="ticket-head">
           <span className="ticket-head__eyebrow">BILETUL TĂU</span>
-          <h1>{isUsed ? "Bilet folosit" : isVoid ? "Bilet anulat" : "Ești gata de intrare"}</h1>
+          <h1>{isUsed ? "Bilet folosit" : isExpired ? "Bilet expirat" : isCancelled ? "Bilet anulat" : isAwaitingPayment ? "Rezervarea este confirmată" : "Ești gata de intrare"}</h1>
         </div>
 
         {/* Wallet ticket */}
@@ -109,7 +117,7 @@ export default async function TicketPage({ params }: Props) {
               />
               {isVoid && (
                 <div className="ticket-stub__void">
-                  <span className="anim-shake">ANULAT</span>
+                  <span className="anim-shake">{isExpired ? "EXPIRAT" : "ANULAT"}</span>
                 </div>
               )}
             </div>
@@ -119,10 +127,21 @@ export default async function TicketPage({ params }: Props) {
           </div>
         </div>
 
+        {isAwaitingPayment && (
+          <div className="ticket-payment-note" role="status">
+            <Banknote size={22} strokeWidth={1.75} />
+            <div>
+              <strong>Plata cash nu este încă confirmată</strong>
+              <p>Acest QR identifică rezervarea. Prezintă-l când plătești, dar accesul la eveniment este permis numai după confirmarea organizatorului.</p>
+            </div>
+          </div>
+        )}
+
         {/* Holder details */}
         <div className="ticket-details">
           <DetailRow k="Titular" v={ticket.holder_name} />
           <DetailRow k="Email" v={ticket.holder_email} />
+          {order && <DetailRow k="Plată" v={order.amount_bani === 0 ? "Gratuit" : order.status === "paid" ? "Cash confirmat" : `${(order.amount_bani / 100).toLocaleString("ro-RO")} RON · de achitat cash`} />}
           {ticket.checked_in_at && (
             <DetailRow
               k="Check-in"
@@ -133,7 +152,7 @@ export default async function TicketPage({ params }: Props) {
         </div>
 
         <p className="ticket-foot">
-          Arată codul QR la intrare. Un bilet, o singură folosire. · Interact Sf. Sava
+          {isAwaitingPayment ? "Prezintă codul QR când efectuezi plata și la intrarea în eveniment." : "Arată codul QR la intrare. Un bilet, o singură folosire."} · Interact Sf. Sava
         </p>
       </main>
     </div>
@@ -219,6 +238,15 @@ function TicketStyles({ bandGradient }: { bandGradient: string }) {
         border-radius: var(--radius-lg);
         overflow: hidden;
       }
+      .ticket-payment-note {
+        display: flex; align-items: flex-start; gap: 14px;
+        margin-top: 24px; padding: 18px 20px;
+        border: 1px solid #F5C66A; border-radius: var(--radius-lg);
+        background: var(--warning-100); color: #78350F;
+      }
+      .ticket-payment-note svg { flex-shrink: 0; margin-top: 1px; }
+      .ticket-payment-note strong { display: block; color: #5F2C0B; font-size: 14px; }
+      .ticket-payment-note p { max-width: 70ch; margin: 5px 0 0; font-size: 13px; line-height: 1.55; }
       .ticket-detail {
         display: flex; align-items: center; justify-content: space-between;
         padding: 15px 22px; border-bottom: 1px solid var(--slate-100);
@@ -238,6 +266,13 @@ function TicketStyles({ bandGradient }: { bandGradient: string }) {
         .ticket-perf__hole--a { left: -8px; }
         .ticket-perf__hole--b { left: auto; right: -8px; }
         .ticket-stub { width: 100%; padding: 28px 24px; }
+        .ticket-stub__void { position: static; min-height: 44px; margin-top: 12px; background: var(--danger-100); }
+      }
+
+      @media (max-width: 480px) {
+        .ticket-shell { width: calc(100% - 32px); padding-top: 32px; }
+        .ticket-detail { align-items: flex-start; flex-direction: column; gap: 5px; padding: 14px 18px; }
+        .ticket-detail strong { max-width: 100%; overflow-wrap: anywhere; }
       }
     `}</style>
   );

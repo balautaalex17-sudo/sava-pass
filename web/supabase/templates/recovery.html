@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Creează sau resetează parola SavaPass</title>
+  </head>
+  <body style="margin:0;padding:0;background:#F8FAFC;color:#0F172A;font-family:Manrope,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Alege o parolă sigură pentru contul tău SavaPass.</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#F8FAFC;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:560px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="height:5px;background:#009FE3;font-size:0;line-height:0;">&nbsp;</td>
+            </tr>
+            <tr>
+              <td style="padding:24px 28px;background:#0F172A;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="color:#FFFFFF;font-size:20px;font-weight:800;letter-spacing:-0.03em;">SavaPass</td>
+                    <td align="right" style="color:#BAE6FD;font-size:12px;font-weight:700;">Interact Sf. Sava</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 28px 12px;">
+                <div style="margin-bottom:12px;color:#006FA1;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">Securitatea contului</div>
+                <h1 style="margin:0;color:#0F172A;font-size:27px;line-height:1.2;letter-spacing:-0.025em;">Alege parola contului tău</h1>
+                <p style="margin:12px 0 0;color:#334155;font-size:16px;line-height:1.65;">Apasă butonul de mai jos pentru a crea sau schimba parola folosită la autentificarea în SavaPass.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 28px 12px;">
+                <a href="{{ .ConfirmationURL }}" style="display:block;padding:14px 20px;background:#009FE3;border-radius:14px;color:#FFFFFF;font-size:16px;font-weight:800;line-height:1.2;text-align:center;text-decoration:none;">Creează parola</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:12px 28px 28px;color:#475569;font-size:13px;line-height:1.7;">
+                Linkul este temporar și poate fi folosit o singură dată. Dacă butonul nu funcționează, copiază această adresă în browser:<br>
+                <a href="{{ .ConfirmationURL }}" style="color:#0077B6;word-break:break-all;">{{ .ConfirmationURL }}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 28px;background:#F8FAFC;border-top:1px solid #E2E8F0;color:#475569;font-size:12px;line-height:1.6;">
+                Dacă nu ai cerut acest link, ignoră emailul. Parola contului tău nu va fi schimbată.
+              </td>
+            </tr>
+          </table>
+          <div style="max-width:560px;padding:18px 12px 0;color:#64748B;font-size:11px;line-height:1.5;text-align:center;">SavaPass · Interact Sf. Sava · București</div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

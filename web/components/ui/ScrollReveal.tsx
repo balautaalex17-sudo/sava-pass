@@ -3,30 +3,13 @@
 import { useEffect } from "react";
 
 /**
- * App-wide scroll reveal with per-element variants for a layered feel.
- *
- * `.anim-rise` / `.anim-rise-fast` start hidden (via the `html.sr-on` gate) and
- * are eased in as they enter the viewport. The *type* of motion is picked per
- * element so the page reveals in layers instead of one uniform fade:
- *   - scale  → images / posters / QR / media (subtle zoom-settle)
- *   - pop    → chips, badges, pills, perks, stat numbers (scale + tiny overshoot)
- *   - row    → table rows (small quick rise, cascades down the table)
- *   - rise   → everything else: cards, sections, headings (fade-and-rise)
- *
- * Tuned to feel locked to the scroll: triggers a touch before the element is fully
- * in view, short durations, small staggers. `.sr-shown` alone guarantees the final
- * visible state, so an interrupted animation can't strand an element off-screen.
- *
- * Motion is forced on (the matchMedia shim in layout.tsx reports no reduce-motion);
- * the `reduce` branch is only a fallback if that shim is ever removed.
- *
- * The homepage immersive landing (`.sp-immersive-root`) runs its own engine and is
- * skipped here.
+ * Progressive scroll reveal for non-immersive pages. Server-rendered content is
+ * visible by default; after hydration, only elements below the fold are prepared
+ * for a short entrance. Reduced-motion visitors see everything immediately.
  */
 
 const SELECTOR = ".anim-rise, .anim-rise-fast";
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-const BACK = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
 type Variant = "rise" | "pop" | "scale" | "row";
 
@@ -58,36 +41,34 @@ function variantFor(el: HTMLElement): Variant {
   return "rise";
 }
 
-// from-keyframe + tuning per variant. Layered = different travel + speed so
-// elements move at visibly different rates.
 function keyframesFor(v: Variant): { from: Keyframe; to: Keyframe; duration: number; easing: string } {
   switch (v) {
     case "scale":
       return {
-        from: { opacity: 0, transform: "scale(1.06) translateY(10px)" },
+        from: { opacity: 0, transform: "scale(0.985) translateY(8px)" },
         to: { opacity: 1, transform: "scale(1) translateY(0)" },
-        duration: 820,
+        duration: 520,
         easing: EASE,
       };
     case "pop":
       return {
-        from: { opacity: 0, transform: "scale(0.9)" },
+        from: { opacity: 0, transform: "scale(0.97)" },
         to: { opacity: 1, transform: "scale(1)" },
-        duration: 460,
-        easing: BACK,
+        duration: 360,
+        easing: EASE,
       };
     case "row":
       return {
-        from: { opacity: 0, transform: "translateY(14px)" },
+        from: { opacity: 0, transform: "translateY(8px)" },
         to: { opacity: 1, transform: "translateY(0)" },
-        duration: 460,
+        duration: 380,
         easing: EASE,
       };
     default:
       return {
-        from: { opacity: 0, transform: "translateY(26px)" },
+        from: { opacity: 0, transform: "translateY(12px)" },
         to: { opacity: 1, transform: "translateY(0)" },
-        duration: 620,
+        duration: 460,
         easing: EASE,
       };
   }
@@ -95,15 +76,15 @@ function keyframesFor(v: Variant): { from: Keyframe; to: Keyframe; duration: num
 
 export function ScrollReveal() {
   useEffect(() => {
-    window.__srReady = true;
-    if (!document.documentElement.classList.contains("sr-on")) return;
-
     const inImmersive = (el: Element) => !!el.closest(".sp-immersive-root");
-    const eligible = (el: Element): el is HTMLElement =>
-      el instanceof HTMLElement && !el.classList.contains("sr-shown") && !inImmersive(el);
-
     const reduce =
       typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const revealed = new WeakSet<HTMLElement>();
+
+    const eligible = (el: Element): el is HTMLElement =>
+      el instanceof HTMLElement &&
+      !revealed.has(el) &&
+      !inImmersive(el);
 
     // Stagger index = position among reveal-target siblings in the same parent.
     const staggerIndex = (el: HTMLElement): number => {
@@ -115,30 +96,25 @@ export function ScrollReveal() {
     };
 
     const reveal = (el: HTMLElement) => {
-      if (el.classList.contains("sr-shown")) return;
+      if (revealed.has(el)) return;
       observer.unobserve(el);
-      el.classList.add("sr-shown"); // final visible state, independent of the animation
-
-      if (reduce) return;
+      revealed.add(el);
+      if (el.hasAttribute("data-reveal-sequence")) el.dataset.srRevealed = "true";
 
       const v = variantFor(el);
       const k = keyframesFor(v);
-      const delay = staggerIndex(el) * 55;
+      const delay = staggerIndex(el) * 38;
+
+      if (typeof el.animate !== "function") return;
+
       const anim = el.animate([k.from, k.to], {
         duration: k.duration,
         delay,
         easing: k.easing,
         fill: "both",
       });
-      // Commit the end state to inline style then release the animation so held
-      // WAAPI animations don't accumulate (keeps long pages smooth).
       anim.onfinish = () => {
-        try {
-          anim.commitStyles();
-        } catch {}
-        try {
-          anim.cancel();
-        } catch {}
+        anim.cancel();
       };
     };
 
@@ -151,23 +127,41 @@ export function ScrollReveal() {
       { threshold: 0, rootMargin: "0px 0px -10% 0px" }
     );
 
+    const prepare = (el: HTMLElement) => {
+      if (!eligible(el)) return;
+      if (reduce) {
+        revealed.add(el);
+        return;
+      }
+
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.95 && rect.bottom > 0) reveal(el);
+      else observer.observe(el);
+    };
+
     const observeAll = (scope: ParentNode) =>
       scope.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
-        if (eligible(el)) observer.observe(el);
+        prepare(el);
       });
 
     observeAll(document);
 
-    // Safety net: anything already within the viewport that the observer hasn't
-    // fired for yet (edge timing, zero-size-at-mount) gets revealed shortly after.
+    // The pre-paint gate is only needed until visible targets have their WAAPI
+    // animations. Removing one class from <html> does not mutate React-owned
+    // page elements, so hydration remains stable.
+    document.documentElement.classList.remove("sr-on");
+    window.__srReady = true;
+
+    // Covers elements already in view if the observer misses an edge during
+    // hydration, font swapping, or a fast client-side route change.
     const sweep = () => {
       document.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
-        if (!eligible(el)) return;
-        const r = el.getBoundingClientRect();
-        if (r.top < window.innerHeight * 0.95 && r.bottom > 0) reveal(el);
+        if (revealed.has(el) || inImmersive(el)) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight * 0.95 && rect.bottom > 0) reveal(el);
       });
     };
-    const sweepT = window.setTimeout(sweep, 900);
+    const sweepTimer = window.setTimeout(sweep, 250);
     window.addEventListener("load", sweep);
 
     // Catch elements added after first paint: client-nav routes, realtime rows,
@@ -176,7 +170,7 @@ export function ScrollReveal() {
       for (const m of muts)
         for (const node of m.addedNodes) {
           if (!(node instanceof HTMLElement) || inImmersive(node)) continue;
-          if (node.matches?.(SELECTOR) && eligible(node)) observer.observe(node);
+          if (node.matches?.(SELECTOR)) prepare(node);
           if (node.querySelector?.(SELECTOR)) observeAll(node);
         }
     });
@@ -185,7 +179,7 @@ export function ScrollReveal() {
     return () => {
       observer.disconnect();
       mo.disconnect();
-      window.clearTimeout(sweepT);
+      window.clearTimeout(sweepTimer);
       window.removeEventListener("load", sweep);
     };
   }, []);

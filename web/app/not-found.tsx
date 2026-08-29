@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Logo } from "@/components/ui/Logo";
 import { GearWatermark } from "@/components/ui/GearWatermark";
 
 export default function NotFound() {
@@ -22,7 +21,6 @@ export default function NotFound() {
         className="anim-rise"
         style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
       >
-        <div style={{ marginBottom: 32 }}><Logo size={22} /></div>
         <div style={{
           fontFamily: "var(--font-display)",
           fontStyle: "italic",

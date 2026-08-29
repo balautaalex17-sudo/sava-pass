@@ -5,16 +5,44 @@ import type { Database } from "@/lib/supabase/types";
 import { hasStaffRole, type StaffRole } from "@/lib/roles";
 import { staffHomeForRole, staffRedirectForRole } from "@/lib/staff-routes";
 
+const MAX_PUBLIC_ACTION_BYTES = 128 * 1024;
+
+function isPublicActionPath(pathname: string) {
+  return pathname === "/contact"
+    || pathname === "/devino-membru"
+    || pathname === "/conta"
+    || pathname === "/login"
+    || /^\/[^/]+\/checkout$/.test(pathname);
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/dev/") && process.env.NODE_ENV !== "development") {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
+  if (
+    request.method === "POST"
+    && request.headers.has("next-action")
+    && isPublicActionPath(pathname)
+  ) {
+    const contentLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > MAX_PUBLIC_ACTION_BYTES) {
+      return NextResponse.json({ error: "Request body too large." }, { status: 413 });
+    }
+  }
+
   const isLoginRoute = pathname === "/login";
   const isAdminRoute = pathname.startsWith("/admin");
   const isScannerRoute = pathname.startsWith("/scanner");
   const isStatsRoute = pathname.startsWith("/statistici");
   const isStaffRoute = isScannerRoute || isAdminRoute || isStatsRoute;
   const isBuyerRoute = pathname.startsWith("/conta");
+  const isMemberDashboardRoute = pathname.startsWith("/membru");
+  const isBoardDashboardRoute = pathname.startsWith("/board");
+  const isDashboardRoute = isMemberDashboardRoute || isBoardDashboardRoute;
 
-  if (!isStaffRoute && !isBuyerRoute && !isLoginRoute) return NextResponse.next();
+  if (!isStaffRoute && !isBuyerRoute && !isLoginRoute && !isDashboardRoute) return NextResponse.next();
 
   const response = NextResponse.next({ request });
 
@@ -34,26 +62,44 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
   // Buyer routes only refresh the session cookie. Page components decide redirects.
   if (isBuyerRoute) return response;
 
-  if (isLoginRoute && !session) return response;
+  if (isLoginRoute && !user) return response;
 
-  if (!session) {
-    const loginUrl = new URL("/login", request.url);
+  if (!user) {
+    const loginUrl = new URL(isDashboardRoute ? "/conta/login" : "/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .maybeSingle();
+  // Dashboard layouts and every action/handler perform the authoritative
+  // permission check. The proxy only refreshes cookies and redirects guests.
+  if (isDashboardRoute) return response;
 
-  const role = profile?.role as StaffRole | null | undefined;
+  const [profileResult, operationalRolesResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("role, membership_status")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("profile_roles")
+      .select("role")
+      .eq("profile_id", user.id),
+  ]);
+
+  const profile = profileResult.data;
+  const roles = profile?.membership_status === "active"
+    ? [
+        ...(profile.role ? [profile.role as StaffRole] : []),
+        ...(operationalRolesResult.data ?? []).map((assignment) => assignment.role),
+      ]
+    : [];
+
+  const role = roles[0] ?? null;
 
   if (isLoginRoute) {
     const next = request.nextUrl.searchParams.get("next");
@@ -64,10 +110,10 @@ export async function proxy(request: NextRequest) {
 
   if (role === "admin") return response;
 
-  if (isScannerRoute && hasStaffRole(role, ["scanner"])) return response;
+  if (isScannerRoute && roles.includes("scanner")) return response;
   if (isStatsRoute && hasStaffRole(role, ["statistici"])) return response;
 
-  if (role === "scanner") {
+  if (roles.includes("scanner")) {
     return NextResponse.redirect(new URL("/scanner", request.url));
   }
 
@@ -79,5 +125,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/scanner/:path*", "/admin/:path*", "/statistici/:path*", "/conta/:path*"],
+  matcher: ["/dev/:path*", "/login", "/contact", "/devino-membru", "/:slug/checkout", "/scanner/:path*", "/admin/:path*", "/statistici/:path*", "/conta/:path*", "/membru/:path*", "/board/:path*"],
 };

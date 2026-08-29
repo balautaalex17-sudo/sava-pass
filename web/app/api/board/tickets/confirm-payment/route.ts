@@ -1,0 +1,86 @@
+import { z } from "zod";
+import { dashboardAccessResponse, privateJson } from "@/lib/dashboard/api";
+import { requirePermission } from "@/lib/dashboard/auth";
+import { consumeDashboardRateLimit } from "@/lib/dashboard/rate-limit";
+import { resultObject, TICKET_MESSAGES } from "@/lib/dashboard/scan-results";
+import {
+  resolveTicketInput,
+  ticketDto,
+} from "@/lib/dashboard/ticket-scanning";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export const runtime = "nodejs";
+
+const reasonSchema = z.string().trim().min(3).max(500).optional();
+const bodySchema = z.union([
+  z.object({ token: z.string().trim().min(8).max(4096), reason: reasonSchema }).strict(),
+  z.object({ code: z.string().trim().min(4).max(64), reason: reasonSchema }).strict(),
+]);
+
+export async function POST(request: Request) {
+  try {
+    const viewer = await requirePermission("confirm_cash_payments");
+    const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return privateJson(
+        { result: "invalid_token", message: TICKET_MESSAGES.invalid_token },
+        { status: 400 },
+      );
+    }
+    if (
+      !(await consumeDashboardRateLimit(
+        viewer.profile.id,
+        "ticket_confirm_cash",
+        40,
+      ))
+    ) {
+      return privateJson(
+        { result: "rate_limited", message: TICKET_MESSAGES.rate_limited },
+        { status: 429 },
+      );
+    }
+
+    const input = "token" in parsed.data
+      ? { token: parsed.data.token }
+      : { code: parsed.data.code };
+    const resolved = await resolveTicketInput(input);
+    if (!resolved.ok) {
+      return privateJson({
+        result: resolved.code,
+        message: TICKET_MESSAGES[resolved.code],
+      });
+    }
+
+    const { data, error } = await supabaseAdmin.rpc("confirm_cash_payment", {
+      p_ticket_id: resolved.ticket.id,
+      p_actor_id: viewer.profile.id,
+      p_token_fingerprint: resolved.fingerprint,
+      p_reason:
+        parsed.data.reason ?? "Plată cash confirmată la punctul de acces",
+      p_device_metadata: {
+        user_agent: request.headers.get("user-agent")?.slice(0, 300) ?? null,
+      },
+    });
+    if (error) throw error;
+    const result = resultObject(data);
+    const resultCode = String(result.result ?? "error");
+    if (resultCode === "payment_confirmed") {
+      resolved.ticket.status = "paid";
+      resolved.ticket.payment_confirmed_at = new Date().toISOString();
+    }
+    return privateJson({
+      ...result,
+      result: resultCode,
+      message: TICKET_MESSAGES[resultCode] ?? TICKET_MESSAGES.error,
+      ticket: ticketDto(resolved.ticket),
+    });
+  } catch (error) {
+    const accessResponse = dashboardAccessResponse(error);
+    if (accessResponse) return accessResponse;
+    console.error("ticket_cash_confirmation_failed");
+    return privateJson(
+      { result: "error", message: TICKET_MESSAGES.error },
+      { status: 500 },
+    );
+  }
+}

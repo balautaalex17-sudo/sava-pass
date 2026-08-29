@@ -4,30 +4,31 @@ type ClubHeroVariant = "editorial" | "cinematic" | "index";
 
 export interface ClubHeroProps {
   variant: ClubHeroVariant;
-  /** Optional mono metadata word (a year, a count) — never an eyebrow taxonomy. */
+  /** Optional context label, such as a district or beneficiary. */
   kicker?: string;
   /** Headline lines; each rises out of its own mask. A line may include <span className="cl-hero__accent">…</span>. */
   lines: React.ReactNode[];
   lead?: string;
-  /** index variant: inline mono count of what's below, e.g. "12 proiecte · 4 ani". */
+  /** Index variant: inline count of what appears below. */
   count?: string;
   /** cinematic variant: full-bleed background image. */
-  media?: { src: string; alt: string };
+  media?: { src: string; alt: string; mobilePosition?: string };
   cta?: React.ReactNode;
 }
 
 /**
- * The one hero component for the club register. Variant controls layout so heroes
- * vary within a shared grammar (spec §6.3). One mount entrance: masked headline
- * rise (`.line-mask`) + a Ken-Burns settle on the cinematic image; kicker/lead/cta
- * fade in after. No scroll-jacking, no parallax (that's the landing's job).
+ * Shared hero structure for the club pages. Each route chooses an editorial,
+ * image-led, or compact index composition without forcing the same headline trick.
  */
 export function ClubHero({ variant, kicker, lines, lead, count, media, cta }: ClubHeroProps) {
   return (
     <header className={`cl-hero cl-hero--${variant}`}>
       {variant === "cinematic" && media && (
         <>
-          <div className="cl-hero__media">
+          <div
+            className="cl-hero__media"
+            style={media.mobilePosition ? { "--cl-mobile-position": media.mobilePosition } as React.CSSProperties : undefined}
+          >
             <Image src={media.src} alt={media.alt} fill priority sizes="100vw" className="anim-zoom-settle" style={{ objectFit: "cover" }} />
           </div>
           <div className="cl-hero__scrim" />

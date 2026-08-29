@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored, minified runtime files are checked upstream, not as app source.
+    "public/imersiv/vendor/**",
   ]),
 ]);
 
