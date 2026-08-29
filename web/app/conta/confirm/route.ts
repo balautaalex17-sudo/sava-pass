@@ -4,11 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
+  const tokenHash = request.nextUrl.searchParams.get("token_hash");
   const safeNext = safeLocalPath(request.nextUrl.searchParams.get("next"), "/conta");
 
-  if (code) {
+  if (tokenHash || code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = tokenHash
+      ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "email" })
+      : await supabase.auth.exchangeCodeForSession(code!);
     if (!error) {
       return NextResponse.redirect(new URL(safeNext, request.url));
     }

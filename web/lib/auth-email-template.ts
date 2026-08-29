@@ -10,11 +10,11 @@ interface AuthEmailTemplateInput {
 
 const COPY: Record<AuthEmailKind, { subject: string; eyebrow: string; title: string; body: string; cta: string }> = {
   magiclink: {
-    subject: "Linkul tău de acces SavaPass",
-    eyebrow: "Acces securizat",
-    title: "Intră în contul tău SavaPass",
-    body: "Folosește butonul de mai jos pentru a intra în cont. Linkul este personal și poate fi folosit o singură dată.",
-    cta: "Intră în cont",
+    subject: "Biletele tale SavaPass",
+    eyebrow: "Biletele tale",
+    title: "Deschide biletele tale",
+    body: "Ai cerut să vezi biletele asociate acestei adrese. Folosește butonul de mai jos pentru a deschide pagina SavaPass.",
+    cta: "Vezi biletele",
   },
   recovery: {
     subject: "Alege o parolă nouă pentru SavaPass",

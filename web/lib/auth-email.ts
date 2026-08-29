@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
+import { buildAuthActionUrl } from "@/lib/auth-email-link";
 import { renderAuthLinkEmail, type AuthEmailKind } from "@/lib/auth-email-template";
 import { sendEmail, type SendEmailResult } from "@/lib/email";
 import { logServerError } from "@/lib/server-log";
@@ -41,17 +42,16 @@ export async function prepareAuthEmail(input: PrepareAuthEmailInput): Promise<Pr
     return { ok: false, error: "Linkul securizat nu a putut fi generat." };
   }
 
-  let actionUrl = data.properties.action_link;
-  if (input.kind === "invite") {
-    const inviteUrl = new URL(input.redirectTo);
-    inviteUrl.searchParams.set("token_hash", data.properties.hashed_token);
-    actionUrl = inviteUrl.toString();
-  }
-
-  if (!actionUrl) {
+  if (!data.properties.hashed_token) {
     logServerError("auth_email_link_missing", new Error("missing_action_url"), { kind: input.kind });
     return { ok: false, error: "Linkul securizat nu a putut fi generat." };
   }
+
+  const actionUrl = buildAuthActionUrl(
+    input.redirectTo,
+    data.properties.hashed_token,
+    input.kind,
+  );
 
   return {
     ok: true,
