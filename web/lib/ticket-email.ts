@@ -8,6 +8,7 @@ export const TICKET_QR_CONTENT_ID = "savapass-ticket-qr";
 interface TicketEmailDetails {
   ticketUrl: string;
   qrToken: string;
+  accessUrl?: string;
 }
 
 interface TicketEmailCopy {
@@ -24,7 +25,21 @@ export function extractTicketEmailDetails(body: string): TicketEmailDetails | nu
   try {
     const ticketUrl = new URL(match[0]);
     if (ticketUrl.protocol !== "https:" && ticketUrl.protocol !== "http:") return null;
-    return { ticketUrl: ticketUrl.toString(), qrToken: match[1] };
+
+    const accessMatch = body.match(/Vezi toate biletele:\s*(https?:\/\/[^\s<>"']+)/i);
+    let accessUrl: string | undefined;
+    if (accessMatch) {
+      const parsedAccessUrl = new URL(accessMatch[1]);
+      if (parsedAccessUrl.protocol === "https:" || parsedAccessUrl.protocol === "http:") {
+        accessUrl = parsedAccessUrl.toString();
+      }
+    }
+
+    return {
+      ticketUrl: ticketUrl.toString(),
+      qrToken: match[1],
+      ...(accessUrl ? { accessUrl } : {}),
+    };
   } catch {
     return null;
   }
@@ -109,6 +124,7 @@ function emailDocument(content: string, preheader: string) {
 function renderTicketEmail(body: string, ticket: TicketEmailDetails, inlineQrContentId?: string) {
   const copy = ticketEmailCopy(body, ticket.ticketUrl);
   const ticketUrl = escapeHtml(ticket.ticketUrl);
+  const accessUrl = ticket.accessUrl ? escapeHtml(ticket.accessUrl) : null;
   const eventTitle = escapeHtml(copy.eventTitle);
   const headline = escapeHtml(copy.headline);
   const supportingText = escapeHtml(copy.supportingText);
@@ -158,6 +174,7 @@ function renderTicketEmail(body: string, ticket: TicketEmailDetails, inlineQrCon
                     ${qrBlock}
                     <div style="margin:0 auto 24px;max-width:360px;font-size:12px;line-height:1.55;color:#64748b">Poți folosi și biletul online dacă imaginea QR nu se încarcă.</div>
                     <a class="sp-button" href="${ticketUrl}" style="display:inline-block;min-width:220px;padding:14px 24px;border-radius:12px;background:#0f172a;color:#ffffff;font-size:14px;line-height:1.2;font-weight:800;text-align:center;text-decoration:none;mso-padding-alt:0">Deschide biletul</a>
+                    ${accessUrl ? `<div style="margin-top:12px"><a class="sp-button" href="${accessUrl}" style="display:inline-block;min-width:220px;padding:14px 24px;border-radius:12px;background:#009fe3;color:#ffffff;font-size:14px;line-height:1.2;font-weight:800;text-align:center;text-decoration:none;mso-padding-alt:0">Vezi toate biletele</a></div>` : ""}
                     <div style="margin-top:18px;font-size:12px;line-height:1.5;color:#64748b">Butonul nu funcționează? <a href="${ticketUrl}" style="color:#006fa1;font-weight:700;text-decoration:underline">Deschide linkul direct</a>.</div>
                   </td>
                 </tr>

@@ -34,6 +34,22 @@ test("ticket email HTML embeds the QR and keeps a safe ticket-link fallback", ()
   assert.doesNotMatch(html, new RegExp(`>${ticketUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<`));
 });
 
+test("ticket access emails include the private all-tickets action", () => {
+  const accessUrl = "https://www.interactsfsava.com/conta/confirm?token_hash=secret&amp;type=email";
+  const bodyAccessUrl = accessUrl.replace("&amp;", "&");
+  const details = extractTicketEmailDetails(
+    `Biletul pentru Echoes este gata: ${ticketUrl}\nVezi toate biletele: ${bodyAccessUrl}`,
+  );
+  const html = renderNotificationEmail(
+    `Biletul pentru Echoes este gata: ${ticketUrl}\nVezi toate biletele: ${bodyAccessUrl}`,
+    TICKET_QR_CONTENT_ID,
+  );
+
+  assert.deepEqual(details, { ticketUrl, qrToken, accessUrl: bodyAccessUrl });
+  assert.match(html, /Vezi toate biletele/);
+  assert.match(html, new RegExp(`href="${accessUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+});
+
 test("ticket QR attachment is a real inline PNG", async () => {
   const attachment = await createTicketQrAttachment(qrToken);
 

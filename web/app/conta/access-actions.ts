@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 
-import { sendAuthEmail } from "@/lib/auth-email";
+import { prepareAuthEmail, sendPreparedAuthEmail } from "@/lib/auth-email";
+import { createNotification } from "@/lib/notifications";
 import { normalizeRomanianPhone } from "@/lib/phone";
 import { allowPublicAction } from "@/lib/public-rate-limit";
 import { logServerError, logServerInfo } from "@/lib/server-log";
@@ -71,7 +72,7 @@ export async function requestTicketAccess(
 
   const query = supabaseAdmin
     .from("tickets")
-    .select("holder_email")
+    .select("id, order_id, holder_email, holder_name, qr_token, events(title)")
     .order("issued_at", { ascending: false })
     .limit(1);
 
@@ -98,14 +99,51 @@ export async function requestTicketAccess(
   const callback = new URL("/conta/confirm", resolveSiteUrl());
   callback.searchParams.set("next", "/conta");
 
-  const emailResult = await sendAuthEmail({
+  const prepared = await prepareAuthEmail({
     kind: "magiclink",
     email: ticket.holder_email,
     redirectTo: callback.toString(),
   });
 
-  if (!emailResult.ok) {
-    logServerError("ticket_access_email_failed", new Error(emailResult.error ?? "email_failed"), { method });
+  if (!prepared.ok) {
+    logServerError("ticket_access_link_failed", new Error(prepared.error), { method });
+  }
+
+  const siteUrl = resolveSiteUrl();
+  const ticketUrl = new URL(`/bilet/${ticket.qr_token}`, siteUrl).toString();
+  const eventTitle = ticket.events?.title ?? "evenimentul tău";
+  const body = [
+    `Biletul pentru ${eventTitle} este gata: ${ticketUrl}`,
+    ...(prepared.ok ? [`Vezi toate biletele: ${prepared.email.actionUrl}`] : []),
+  ].join("\n");
+
+  const ticketEmail = await createNotification({
+    recipientEmail: ticket.holder_email,
+    recipientName: ticket.holder_name,
+    channel: "email",
+    subject: "Biletul tău SavaPass",
+    body,
+    orderId: ticket.order_id,
+    ticketId: ticket.id,
+    metadata: { purpose: "ticket_access" },
+  });
+
+  if (!ticketEmail.ok && prepared.ok) {
+    logServerError("ticket_access_email_failed", new Error(ticketEmail.error), { method });
+    const fallback = await sendPreparedAuthEmail(prepared.email);
+    if (fallback.ok) {
+      logServerInfo("ticket_access_completed", {
+        method,
+        emailAccepted: true,
+        providerMessageId: fallback.id ?? "unknown",
+        delivery: "auth_fallback",
+      });
+      return { status: "sent" };
+    }
+  }
+
+  if (!ticketEmail.ok) {
+    logServerError("ticket_access_email_failed", new Error(ticketEmail.error), { method });
     return {
       status: "error",
       message: "Linkul nu a putut fi trimis. Încearcă din nou în câteva minute.",
@@ -115,7 +153,8 @@ export async function requestTicketAccess(
   logServerInfo("ticket_access_completed", {
     method,
     emailAccepted: true,
-    providerMessageId: emailResult.id ?? "unknown",
+    notificationId: ticketEmail.id,
+    delivery: "ticket_with_access",
   });
   return { status: "sent" };
 }
