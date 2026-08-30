@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logAudit } from "@/lib/audit";
 import { revalidateClub } from "@/lib/club";
@@ -49,11 +50,32 @@ const archiveEventSchema = z.object({
   image_position: z.enum(["center", "top", "bottom"]),
 });
 
+const archiveEventIdentitySchema = archiveEventSchema.pick({ slug: true });
+
 export type ArchiveEventActionState = {
   ok?: boolean;
   message?: string;
   error?: string;
 };
+
+async function persistArchiveEventOverride(slug: string, override: EventOverride) {
+  const { error } = await supabaseAdmin.from("site_content").upsert({
+    key: `${BOARD_EVENT_OVERRIDE_PREFIX}${slug}`,
+    value: override as unknown as Json,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "key" });
+
+  return error;
+}
+
+function revalidateArchiveEvent(slug: string) {
+  revalidateClub();
+  revalidatePath("/");
+  revalidatePath("/evenimente");
+  revalidatePath(`/evenimente/${slug}`);
+  revalidatePath("/board/evenimente");
+  revalidatePath(`/board/evenimente/arhiva/${slug}`);
+}
 
 export async function saveArchiveEvent(
   _previous: ArchiveEventActionState,
@@ -101,11 +123,7 @@ export async function saveArchiveEvent(
     publish: form.get("published") === "on",
   };
 
-  const { error } = await supabaseAdmin.from("site_content").upsert({
-    key: `${BOARD_EVENT_OVERRIDE_PREFIX}${parsed.data.slug}`,
-    value: override as unknown as Json,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "key" });
+  const error = await persistArchiveEventOverride(parsed.data.slug, override);
 
   if (error) return { error: "Modificările nu au putut fi salvate." };
 
@@ -117,12 +135,41 @@ export async function saveArchiveEvent(
     metadata: { published: override.publish, category: override.category },
   });
 
-  revalidateClub();
-  revalidatePath("/");
-  revalidatePath("/evenimente");
-  revalidatePath(`/evenimente/${parsed.data.slug}`);
-  revalidatePath("/board/evenimente");
-  revalidatePath(`/board/evenimente/arhiva/${parsed.data.slug}`);
+  revalidateArchiveEvent(parsed.data.slug);
 
   return { ok: true, message: "Evenimentul a fost actualizat pe site." };
+}
+
+export async function archiveImportedEvent(
+  _previous: ArchiveEventActionState,
+  form: FormData,
+): Promise<ArchiveEventActionState> {
+  const actor = await requirePermission("manage_public_events").catch(() => null);
+  if (!actor) return { error: "Nu ai acces la această acțiune." };
+
+  const parsed = archiveEventIdentitySchema.safeParse(Object.fromEntries(form.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Date invalide." };
+
+  const source = await getManagedEventBySlug(parsed.data.slug, true);
+  if (!source) return { error: "Evenimentul importat nu mai există." };
+
+  const currentOverrides = await getBoardEventOverrides();
+  const override: EventOverride = {
+    ...currentOverrides[parsed.data.slug],
+    publish: false,
+  };
+
+  const error = await persistArchiveEventOverride(parsed.data.slug, override);
+  if (error) return { error: "Evenimentul nu a putut fi arhivat." };
+
+  await logAudit({
+    actorId: actor.user.id,
+    action: "event.archive.hide",
+    entityType: "event_archive",
+    entityId: parsed.data.slug,
+    metadata: { published: false },
+  });
+
+  revalidateArchiveEvent(parsed.data.slug);
+  redirect("/board/evenimente");
 }

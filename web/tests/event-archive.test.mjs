@@ -125,6 +125,15 @@ test("aplică override-uri fără să schimbe datele-sursă", () => {
   assert.equal(original.title, "Eveniment Test");
 });
 
+test("arhivarea ascunde evenimentul fără să piardă modificările sau sursa", () => {
+  const original = event({ publishingStatus: "published" });
+  const [archived] = applyOverrides([original], { events: { "eveniment-test": { publish: false, title: "Titlu păstrat" } } });
+  assert.equal(archived.publishingStatus, "draft");
+  assert.equal(archived.title, "Titlu păstrat");
+  assert.equal(original.publishingStatus, "published");
+  assert.equal(original.title, "Eveniment Test");
+});
+
 test("override-urile structurale pot uni și separa surse fără a publica automat draftul separat", () => {
   const target = event({ slug: "eveniment-tinta", title: "Eveniment Țintă", instagramPostIds: ["a"], instagramPostUrls: ["https://www.instagram.com/p/a/"] });
   const source = event({ slug: "anunt-separat", title: "Anunț separat", instagramPostIds: ["b"], instagramPostUrls: ["https://www.instagram.com/p/b/"] });

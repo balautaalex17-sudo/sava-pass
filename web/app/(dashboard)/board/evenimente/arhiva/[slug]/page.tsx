@@ -31,8 +31,10 @@ export default async function ArchiveEventEditorPage({ params }: { params: Promi
     <div className="dash-page" style={{ maxWidth: 980 }}>
       <header className="dash-page-head">
         <div>
-          <Link href="/board/evenimente" className="dash-back-link"><ChevronLeft size={16} /> Evenimente</Link>
-          <span className="dash-eyebrow">Eveniment importat</span>
+          <div className="dash-editor-context">
+            <Link href="/board/evenimente" className="dash-back-link"><ChevronLeft size={16} /> Evenimente</Link>
+            <span className="dash-eyebrow">Eveniment importat</span>
+          </div>
           <h1>{event.title}</h1>
           <p>Editezi cardul și pagina publică. Evenimentul original importat rămâne păstrat ca sursă.</p>
         </div>
