@@ -1015,7 +1015,7 @@ body:has(.dashboard-shell) {
 .board-event-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
 .board-event-actions > a { display: inline-grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--dash-line-strong); border-radius: 8px; background: #fff; color: var(--dash-green-dark); }
 .board-event-actions a:focus-visible { outline: 3px solid rgba(0,159,227,.2); }
-.dash-back-link { display: inline-flex; align-items: center; gap: 5px; margin-bottom: 12px; color: var(--dash-green-dark); font-size: 11px; font-weight: 750; text-decoration: none; }
+.dash-back-link { display: flex; width: fit-content; align-items: center; gap: 5px; margin-bottom: 12px; color: var(--dash-green-dark); font-size: 11px; font-weight: 750; text-decoration: none; }
 .board-event-editor { --im-ink-2: #fff; --im-ink-3: var(--slate-50); --im-line: var(--dash-line-strong); --im-line-soft: var(--dash-line); --im-fg: var(--dash-ink); --im-fg-2: var(--slate-600); --im-fg-3: var(--dash-muted); --im-grad: var(--dash-green-dark); --im-shadow: none; --im-glow: none; max-width: 920px; }
 .board-event-editor form > section { border-radius: 12px !important; }
 .board-event-editor input,.board-event-editor textarea,.board-event-editor select { color-scheme: light; }
