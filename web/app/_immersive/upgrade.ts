@@ -350,10 +350,7 @@ function applyArchiveContent(markup: string, events: LandingArchivedEvent[]) {
 }
 
 function applyEventContent(markup: string, event: LandingEvent | null) {
-  const featuredMarkup = renderFeaturedEvent(event).replace(
-    'src="/media/story-event.webp"',
-    'src="/imersiv/echoes-unplugged.webp"',
-  );
+  const featuredMarkup = renderFeaturedEvent(event);
   let next = markup.replace(/<article class="ev-feat">[\s\S]*?<\/article>\n\n    <div class="ev-map">/, `${featuredMarkup}\n\n    <div class="ev-map">`);
 
   if (event) {
@@ -371,7 +368,15 @@ function applyEventContent(markup: string, event: LandingEvent | null) {
       )
       .replace('href="https://maps.google.com/?q=Curtea+Veche+Bucuresti"', `href="${mapsHref}"`);
   } else {
-    next = next.replace('<div class="ev-map">', '<div class="ev-map" hidden>');
+    next = next
+      .replace(
+        '<div><div class="e">Bilet activ</div><h3>Echoes<br/>Unplugged</h3></div>',
+        '<div><div class="e">Model SavaPass</div><h3>Bilet<br/>digital</h3></div>',
+      )
+      .replace('<span class="tk-stat"><span class="tk-live"></span>Valid</span>', '<span class="tk-stat"><span class="tk-live"></span>Demo</span>')
+      .replace('<div>Locul<b>Curtea Veche</b></div>', '<div>Locul<b>De anunțat</b></div>')
+      .replace('<div style="text-align:right;">Data<b>Vin · 14 Nov</b></div>', '<div style="text-align:right;">Data<b>În curând</b></div>')
+      .replace('<div class="ev-map">', '<div class="ev-map" hidden>');
   }
 
   const footerCopy = event
