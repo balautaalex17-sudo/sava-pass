@@ -26,6 +26,8 @@ test("CSV cells remain text when opened in spreadsheet software", () => {
 test("security boundaries stay present in configuration and migrations", () => {
   const nextConfig = projectFile("next.config.ts");
   const proxy = projectFile("proxy.ts");
+  const accountPage = projectFile("app/conta/page.tsx");
+  const dashboardAuth = projectFile("lib/dashboard/auth.ts");
   const baseline = projectFile("supabase/migrations/20260610000000_initial_ticketing_schema.sql");
   const migration = projectFile("supabase/migrations/20260819143420_security_audit_remediation.sql");
   const devTokens = projectFile("app/dev/tokens/page.tsx");
@@ -36,7 +38,12 @@ test("security boundaries stay present in configuration and migrations", () => {
   assert.match(nextConfig, /eetuijxhkpaqggegppek\.supabase\.co/);
   assert.match(nextConfig, /Content-Security-Policy/);
   assert.match(nextConfig, /X-Content-Type-Options/);
-  assert.match(proxy, /auth\.getUser\(\)/);
+  assert.match(proxy, /auth\.getClaims\(\)/);
+  assert.doesNotMatch(proxy, /auth\.getSession\(\)/);
+  assert.match(accountPage, /auth\.getClaims\(\)/);
+  assert.doesNotMatch(accountPage, /auth\.getUser\(\)/);
+  assert.match(dashboardAuth, /auth\.getClaims\(\)/);
+  assert.doesNotMatch(dashboardAuth, /auth\.getUser\(\)/);
   assert.match(proxy, /MAX_PUBLIC_ACTION_BYTES/);
   assert.match(proxy, /pathname\.startsWith\("\/dev\/"\)/);
   assert.match(migration, /drop policy if exists "media staff insert"/);

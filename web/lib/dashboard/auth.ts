@@ -2,7 +2,6 @@ import "server-only";
 
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Profile } from "@/lib/supabase/types";
@@ -29,7 +28,10 @@ export type DashboardProfile = Pick<
 >;
 
 export interface DashboardViewer {
-  user: User;
+  user: {
+    id: string;
+    email?: string;
+  };
   profile: DashboardProfile;
   roles: readonly StaffRole[];
   isAdminEquivalent: boolean;
@@ -48,11 +50,14 @@ export class DashboardAccessError extends Error {
 
 export const getDashboardViewer = cache(async (): Promise<DashboardViewer | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
+  if (!claims?.sub) return null;
 
-  if (!user) return null;
+  const user = {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : undefined,
+  };
 
   // Profile, operational roles and permission overrides are all keyed by the
   // same user id, so they can be fetched in one parallel round trip.

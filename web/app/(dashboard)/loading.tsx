@@ -1,6 +1,22 @@
-// The dashboard keeps its sidebar and current page visible while the next
-// protected screen streams in. The global loader is useful for public pages,
-// but replacing the whole member area on every menu click feels like a reset.
 export default function DashboardLoading() {
-  return null;
+  return (
+    <div
+      className="dash-page dash-page--member"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <header className="dash-page-head">
+        <div>
+          <span className="dash-eyebrow">Portal membri</span>
+          <h1>Pregătim spațiul tău…</h1>
+          <p>Încărcăm întâlnirile, codul QR și prezența.</p>
+        </div>
+      </header>
+      <section className="dash-card dash-empty">
+        <strong>Doar un moment</strong>
+        Datele tale sunt verificate în siguranță.
+      </section>
+    </div>
+  );
 }

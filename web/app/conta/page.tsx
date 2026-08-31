@@ -44,12 +44,13 @@ export default async function ContaPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const supabase = await createClient();
-  const [{ data: { user } }, params] = await Promise.all([
-    supabase.auth.getUser(),
+  const [{ data: claimsData }, params] = await Promise.all([
+    supabase.auth.getClaims(),
     searchParams,
   ]);
+  const claims = claimsData?.claims;
 
-  if (!user) {
+  if (!claims?.sub) {
     return <TicketLookupPage initialError={params.error === "1"} />;
   }
 
@@ -68,7 +69,7 @@ export default async function ContaPage({
         <header className={styles.walletHeader}>
           <div>
             <h1>Biletele tale</h1>
-            <p>{user.email}</p>
+            <p>{typeof claims.email === "string" ? claims.email : ""}</p>
           </div>
           <SignOutButton />
         </header>

@@ -62,14 +62,17 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // This project uses an asymmetric ES256 signing key, so getClaims() verifies
+  // the signed session locally instead of making an Auth network request.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims.sub ?? null;
 
   // Buyer routes only refresh the session cookie. Page components decide redirects.
   if (isBuyerRoute) return response;
 
-  if (isLoginRoute && !user) return response;
+  if (isLoginRoute && !userId) return response;
 
-  if (!user) {
+  if (!userId) {
     const loginUrl = new URL(isDashboardRoute ? "/conta/login" : "/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
@@ -83,12 +86,12 @@ export async function proxy(request: NextRequest) {
     supabase
       .from("profiles")
       .select("role, membership_status")
-      .eq("id", user.id)
+      .eq("id", userId)
       .maybeSingle(),
     supabase
       .from("profile_roles")
       .select("role")
-      .eq("profile_id", user.id),
+      .eq("profile_id", userId),
   ]);
 
   const profile = profileResult.data;
