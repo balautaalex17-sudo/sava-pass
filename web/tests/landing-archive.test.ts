@@ -94,10 +94,12 @@ test("board and public page use only the SavaPass event source", () => {
   assert.match(boardPage, /label="Încheie"/);
   assert.doesNotMatch(boardPage, /getManagedArchiveEvents|Arhivă importată|view=homepage|view=events/);
 
-  assert.match(publicPage, /getPublicEvents/);
-  assert.match(publicPage, /Active/);
-  assert.match(publicPage, /Încheiate/);
-  assert.doesNotMatch(publicPage, /getManagedPublishedEvents|importedEvents/);
+  assert.match(publicPage, /getActiveEvents/);
+  assert.match(publicPage, /getManagedPublishedEvents/);
+  assert.match(publicPage, /const events = ticketingRows/);
+  assert.match(publicPage, /<EventsExplorer events=\{events\}/);
+  assert.match(publicPage, /historicalEvents\.filter/);
+  assert.doesNotMatch(publicPage, /\.\.\.historicalEvents|pastEvents|evenimente-incheiate/);
 
   assert.match(homepage, /getActiveEvent/);
   assert.doesNotMatch(homepage, /getManagedEventBySlug|GOLDEN_HOUR|getPastEvents/);

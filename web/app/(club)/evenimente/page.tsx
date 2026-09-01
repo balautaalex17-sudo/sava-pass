@@ -1,25 +1,54 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown } from "lucide-react";
+import { Suspense } from "react";
+import { ArrowDown, ArrowRight, ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import { ClubPage } from "@/components/club/ClubPage";
-import { ticketingEventToArchiveEvent } from "@/lib/event-archive";
-import { getPublicEvents } from "@/lib/events";
-import { CompactEventCard } from "./CompactEventCard";
+import { getManagedPublishedEvents, ticketingEventToArchiveEvent } from "@/lib/event-archive";
+import { academicYearForDate, formatEventDate } from "@/lib/event-display";
+import type { EventRecord } from "@/lib/event-types";
+import { getActiveEvents } from "@/lib/events";
+import { EventVisual } from "./EventVisual";
+import { EventsExplorer } from "./EventsExplorer";
+import causeStyles from "./cause-wall.module.css";
 import styles from "./events-index.module.css";
 
 export const metadata: Metadata = {
   title: "Evenimente · Interact Sf. Sava",
-  description: "Evenimentele active și edițiile încheiate organizate de Interact Sf. Sava.",
+  description: "Descoperă evenimentele culturale și caritabile organizate de Interact Sf. Sava – Curtea Veche.",
 };
 
 export const revalidate = 300;
+
+const CAUSE_ORGANIZATIONS = [
+  { name: "Touched Romania", match: "Touched Romania", logo: "/causes/touched-romania.jpg", website: "https://touchedromania.org/", tone: "light" },
+  { name: "SOS Satele Copiilor", match: "SOS Satele Copiilor", logo: "/causes/sos-satele-copiilor.svg", website: "https://www.sos-satelecopiilor.ro/", tone: "red" },
+  { name: "Ajungem MARI", match: "Ajungem MARI", logo: "/causes/ajungem-mari.png", website: "https://www.ajungemmari.ro/", tone: "light" },
+  { name: "Asociația Casa Bună", match: "Asociația Casa Bună", logo: "/causes/casa-buna.png", website: "https://asociatiacasabuna.ro/", tone: "dark" },
+  { name: "Dăruiește Aripi", match: "Dăruiește Aripi", logo: "/causes/daruieste-aripi.svg", website: "https://www.daruiestearipi.ro/", tone: "light" },
+  { name: "Asociația P.A.V.E.L.", match: "Asociația P.A.V.E.L.", logo: "/causes/pavel.png", website: "https://asociatiapavel.ro/", tone: "light" },
+] as const;
+
+function featuredLabel(event: EventRecord) {
+  if (event.eventStatus === "ongoing") return "În desfășurare";
+  return "Activ";
+}
+
+function ExplorerFallback() {
+  return (
+    <section className={styles.archiveLoading} aria-label="Se pregătesc evenimentele">
+      <div /><div /><div />
+      <p>Se pregătesc filtrele și evenimentele…</p>
+    </section>
+  );
+}
 
 async function ticketingEventsWithTimeout() {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
-      getPublicEvents().catch(() => []),
-      new Promise<Awaited<ReturnType<typeof getPublicEvents>>>((resolve) => {
+      getActiveEvents().catch(() => []),
+      new Promise<Awaited<ReturnType<typeof getActiveEvents>>>((resolve) => {
         timer = setTimeout(() => resolve([]), 2000);
       }),
     ]);
@@ -29,31 +58,61 @@ async function ticketingEventsWithTimeout() {
 }
 
 export default async function EventsPage() {
-  const rows = await ticketingEventsWithTimeout();
-  const events = rows.map(ticketingEventToArchiveEvent);
-  const activeEvents = events
-    .filter((event) => event.eventStatus === "upcoming" || event.eventStatus === "ongoing")
-    .sort((a, b) => (a.startDate || "9999-12-31").localeCompare(b.startDate || "9999-12-31"));
-  const pastEvents = events
-    .filter((event) => event.eventStatus === "past")
-    .sort((a, b) => (b.startDate || "").localeCompare(a.startDate || ""));
-  const firstSectionHref = activeEvents.length > 0 ? "#evenimente-active" : "#evenimente-incheiate";
+  const [ticketingRows, historicalEvents] = await Promise.all([
+    ticketingEventsWithTimeout(),
+    getManagedPublishedEvents(),
+  ]);
+  const events = ticketingRows.map(ticketingEventToArchiveEvent);
+  const featured = events[0] || null;
+  const charitableCount = historicalEvents.filter((event) => event.charitableCause).length;
+  const causeOrganizations = CAUSE_ORGANIZATIONS.map((cause) => ({
+    ...cause,
+    editions: historicalEvents.filter((event) => event.charitableCause?.includes(cause.match)).length,
+  })).filter((cause) => cause.editions > 0);
 
   const hero = (
     <header className={styles.hero}>
-      <div className={`${styles.heroInner} ${styles.heroInnerSimple}`}>
+      <div className={styles.heroInner}>
         <div className={styles.heroCopy}>
-          <p className={styles.kicker}>Calendarul clubului</p>
-          <h1>Evenimente</h1>
+          <p className={styles.kicker}>Evenimente Interact</p>
+          <h1>Evenimente cu scop. Experiențe care rămân.</h1>
           <p className={styles.heroLead}>
-            Evenimentele active apar primele. După încheiere, rămân aici ca arhivă a clubului.
+            Organizăm și susținem evenimente care inspiră, educă și aduc oamenii împreună. Fiecare participare contribuie la binele comunității.
           </p>
           <div className={styles.heroActions}>
-            <Link href={firstSectionHref} className={styles.primaryButton}>
-              Vezi evenimentele <ArrowDown size={17} aria-hidden="true" />
+            <Link href="#toate-evenimentele" className={styles.primaryButton}>
+              Vezi evenimentele active <ArrowDown size={17} aria-hidden="true" />
+            </Link>
+            <Link href="#impact" className={styles.textLink}>
+              Descoperă cauzele noastre <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
         </div>
+
+        {featured && (
+          <Link
+            href={featured.internalTicketingUrl || `/evenimente/${featured.slug}`}
+            className={styles.featuredCard}
+            aria-label={`Vezi evenimentul ${featured.title}`}
+          >
+            <EventVisual
+              event={featured}
+              priority
+              sizes="(max-width: 760px) calc(100vw - 40px), 500px"
+              className={styles.featuredMedia}
+            />
+            <div className={styles.featuredBody}>
+              <span className={styles.featuredStatus}><i aria-hidden="true" />{featuredLabel(featured)}</span>
+              <h2>{featured.title}</h2>
+              <div className={styles.featuredMeta}>
+                <span><CalendarDays size={14} aria-hidden="true" />{formatEventDate(featured)}</span>
+                {featured.venueName && <span><MapPin size={14} aria-hidden="true" />{featured.venueName}</span>}
+              </div>
+              <p>{featured.shortDescription}</p>
+              <span className={styles.featuredLink}>Detalii și galerie <ArrowUpRight size={16} aria-hidden="true" /></span>
+            </div>
+          </Link>
+        )}
       </div>
     </header>
   );
@@ -61,47 +120,52 @@ export default async function EventsPage() {
   return (
     <ClubPage active="evenimente" hero={hero} showWatermark={false}>
       <main className={styles.main} id="continut-principal">
-        <section className={styles.eventsSection} id="evenimente-active" aria-labelledby="active-events-title">
-          <div className={styles.sectionHeading}>
-            <div>
-              <h2 id="active-events-title">Active</h2>
-              <p>{activeEvents.length > 0 ? "Rezervările sunt deschise pentru aceste evenimente." : "Nu există momentan un eveniment activ."}</p>
-            </div>
-            {activeEvents.length > 0 && <span className={styles.sectionCount}>{activeEvents.length}/3 publicate</span>}
-          </div>
+        <Suspense fallback={<ExplorerFallback />}>
+          <EventsExplorer events={events} years={Array.from(new Set(events.map((event) => academicYearForDate(event.startDate)).filter((year): year is string => Boolean(year))))} />
+        </Suspense>
 
-          {activeEvents.length > 0 ? (
-            <div className={styles.eventsGrid}>
-              {activeEvents.map((event) => <CompactEventCard event={event} key={event.id} />)}
+        {causeOrganizations.length > 0 && (
+          <section className={styles.impactSection} id="impact" aria-labelledby="impact-title">
+            <div className={styles.impactIntro}>
+              <p className={styles.kicker}>Cauze reale</p>
+              <h2 id="impact-title">Evenimentele noastre susțin cauze reale.</h2>
+              <p>Dincolo de fiecare afiș există o organizație sau o comunitate pe care am ales să o susținem.</p>
+              <div className={styles.impactNumber}><strong>{charitableCount}</strong><span>ediții din arhivă au o cauză publică asociată</span></div>
+              <Link href="/proiecte" className={styles.textLink}>Vezi proiectele noastre <ArrowRight size={16} aria-hidden="true" /></Link>
             </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <strong>Următorul eveniment este în pregătire.</strong>
-              <p>Când echipa îl publică, va apărea aici și pe homepage.</p>
-            </div>
-          )}
-        </section>
 
-        <section className={`${styles.eventsSection} ${styles.pastEventsSection}`} id="evenimente-incheiate" aria-labelledby="past-events-title">
-          <div className={styles.sectionHeading}>
-            <div>
-              <h2 id="past-events-title">Încheiate</h2>
-              <p>Evenimentele trecute rămân publice aici.</p>
-            </div>
-            {pastEvents.length > 0 && <span className={styles.sectionCount}>{pastEvents.length} {pastEvents.length === 1 ? "ediție" : "ediții"}</span>}
-          </div>
+            <ul className={causeStyles.causeList} aria-label="Organizații și cauze susținute">
+              {causeOrganizations.map((cause) => {
+                const toneClass = cause.tone === "red"
+                  ? causeStyles.causeLogoRed
+                  : cause.tone === "dark"
+                    ? causeStyles.causeLogoDark
+                    : causeStyles.causeLogoLight;
 
-          {pastEvents.length > 0 ? (
-            <div className={styles.eventsGrid}>
-              {pastEvents.map((event) => <CompactEventCard event={event} key={event.id} />)}
-            </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <strong>Arhiva este goală.</strong>
-              <p>Un eveniment ajunge aici după ce îl marchezi „Încheiat” în Board.</p>
-            </div>
-          )}
-        </section>
+                return (
+                  <li className={causeStyles.causeItem} key={cause.name}>
+                    <a href={cause.website} target="_blank" rel="noopener noreferrer" className={causeStyles.causeLink}>
+                      <span className={`${causeStyles.causeLogo} ${toneClass}`}>
+                        <Image
+                          src={cause.logo}
+                          alt={`Logo ${cause.name}`}
+                          fill
+                          sizes="(max-width: 560px) 104px, (max-width: 1180px) 120px, 100px"
+                          className={causeStyles.causeImage}
+                        />
+                      </span>
+                      <span className={causeStyles.causeCopy}>
+                        <strong>{cause.name}</strong>
+                        <span>{cause.editions} {cause.editions === 1 ? "ediție susținută" : "ediții susținute"}</span>
+                      </span>
+                      <ArrowUpRight className={causeStyles.causeArrow} size={17} aria-hidden="true" />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
       </main>
     </ClubPage>
   );

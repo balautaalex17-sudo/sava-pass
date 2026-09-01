@@ -77,8 +77,8 @@ export function EventsExplorer({ events, years }: { events: EventRecord[]; years
     <section className={styles.eventsSection} id="toate-evenimentele" aria-labelledby="events-title">
       <div className={styles.sectionHeading}>
         <div>
-          <h2 id="events-title">Toate evenimentele</h2>
-          <p>Explorează arhiva reală a evenimentelor Interact Sf. Sava.</p>
+          <h2 id="events-title">Evenimente active</h2>
+          <p>Explorează evenimentele publicate acum de Interact Sf. Sava.</p>
         </div>
       </div>
 
@@ -97,7 +97,6 @@ export function EventsExplorer({ events, years }: { events: EventRecord[]; years
             <option value="all">Toate datele</option>
             <option value="upcoming">Urmează</option>
             <option value="ongoing">În desfășurare</option>
-            <option value="past">Încheiate</option>
             {years.map((year) => <option value={`year:${year}`} key={year}>Anul {year.replace("-", "–")}</option>)}
           </select>
         </label>

@@ -23,7 +23,7 @@ const SITE_LINKS = [
 ];
 
 const LANDING_LINKS = [
-  { label: "Despre", href: "/despre", key: "despre" },
+  { label: "Despre", href: "/", key: "despre" },
   { label: "Evenimente", href: "/evenimente", key: "evenimente" },
   { label: "Devino membru", href: "/devino-membru", key: "membru" },
   { label: "Biletele mele", href: "/conta", key: "bilete" },

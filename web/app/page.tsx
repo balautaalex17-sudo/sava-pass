@@ -169,7 +169,7 @@ function LandingBody({ event, recruitment }: { event: LandingEvent | null; recru
       <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 821px)" />
       <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 821px)" />
       <style dangerouslySetInnerHTML={{ __html: LANDING_CRITICAL_CSS }} />
-      <HomeNav immersive purchaseHref={ctaHref} />
+      <HomeNav active="despre" immersive purchaseHref={ctaHref} />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
       <ImmersiveRuntime />
     </>

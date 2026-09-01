@@ -114,24 +114,29 @@ if (mode === "audit") {
   });
   try {
     await waitForPage(page);
-    await page.getByRole("heading", { level: 1, name: "Evenimente", exact: true }).waitFor({ state: "visible" });
-    const activeSection = page.locator("#evenimente-active");
-    const pastSection = page.locator("#evenimente-incheiate");
-    await activeSection.getByRole("heading", { level: 2, name: "Active", exact: true }).waitFor({ state: "visible" });
-    await pastSection.getByRole("heading", { level: 2, name: "Încheiate", exact: true }).waitFor({ state: "visible" });
+    await page.getByRole("heading", { level: 1, name: "Evenimente cu scop. Experiențe care rămân.", exact: true }).waitFor({ state: "visible" });
+    const activeSection = page.locator("#toate-evenimentele");
+    await activeSection.getByRole("heading", { level: 2, name: "Evenimente active", exact: true }).waitFor({ state: "visible" });
 
     const activeCards = await activeSection.locator("[data-event-card]").count();
-    const pastCards = await pastSection.locator("[data-event-card]").count();
     const activeTitles = (await activeSection.locator("[data-event-card] h3").allTextContents()).map((title) => title.trim());
     const activeLabels = await activeSection.getByText("Activ", { exact: true }).count();
-    const pastLabels = await pastSection.getByText("Încheiat", { exact: true }).count();
-    if (activeCards > 3) throw new Error(`Sunt publicate ${activeCards} evenimente active, peste limita de 3.`);
+    const pastLabels = await activeSection.getByText("Încheiat", { exact: true }).count();
+    if (activeCards !== 3) throw new Error(`Trebuie afișate exact 3 evenimente active, nu ${activeCards}.`);
     if (activeLabels !== activeCards) throw new Error(`Eticheta Activ lipsește: ${activeLabels} etichete pentru ${activeCards} carduri.`);
-    if (pastLabels !== pastCards) throw new Error(`Eticheta Încheiat lipsește: ${pastLabels} etichete pentru ${pastCards} carduri.`);
+    if (pastLabels !== 0) throw new Error(`Lista activă conține ${pastLabels} etichete Încheiat.`);
 
-    const filters = await page.getByRole("button", { name: /Filtrează evenimentele/ }).count();
+    const filters = await page.locator("#event-filter-controls select").count();
     const searchboxes = await page.getByRole("searchbox").count();
-    if (filters || searchboxes) throw new Error("Interfața veche de filtre este încă prezentă.");
+    if (filters !== 2 || searchboxes !== 1) throw new Error(`Layoutul vechi de filtre lipsește: ${filters} selectoare și ${searchboxes} căutări.`);
+
+    const featuredCard = page.locator('header a[aria-label^="Vezi evenimentul "]');
+    if (await featuredCard.count() !== 1) throw new Error("Cardul principal din hero lipsește.");
+    const featuredTitle = (await featuredCard.getAttribute("aria-label"))?.replace("Vezi evenimentul ", "") || "";
+    if (!activeTitles.includes(featuredTitle)) throw new Error(`Hero-ul afișează un eveniment care nu este activ: ${featuredTitle}.`);
+
+    const eventNavAboutHref = await page.locator("nav a").filter({ hasText: /^Despre$/ }).first().getAttribute("href");
+    if (eventNavAboutHref !== "/") throw new Error(`Legătura Despre duce la ${eventNavAboutHref || "nicăieri"}.`);
 
     let focusVisible = true;
     const firstDetailLink = page.getByRole("link", { name: /Vezi detaliile evenimentului/ }).first();
@@ -153,15 +158,12 @@ if (mode === "audit") {
     if (activeCards > 0 && homepageActiveLabels !== 1) throw new Error("Homepage nu marchează evenimentul principal ca Activ.");
     if (activeCards > 0 && !activeTitles.includes(homepageEventTitle)) throw new Error(`Homepage afișează un eveniment care nu este activ: ${homepageEventTitle}.`);
 
-    const aboutUrl = new URL("/despre", targetUrl).toString();
-    await page.goto(aboutUrl, { waitUntil: "networkidle", timeout: 45_000 });
-    await page.getByRole("heading", { level: 2, name: "Cine suntem", exact: true }).waitFor({ state: "visible" });
-    const aboutNavHref = await page.getByRole("link", { name: "Despre", exact: true }).first().getAttribute("href");
-    if (aboutNavHref !== "/despre") throw new Error(`Legătura Despre duce la ${aboutNavHref || "nicăieri"}.`);
+    const aboutNavHref = await page.locator("nav a").filter({ hasText: /^Despre$/ }).first().getAttribute("href");
+    if (aboutNavHref !== "/") throw new Error(`Legătura Despre de pe homepage duce la ${aboutNavHref || "nicăieri"}.`);
 
     if (criticalConsole.length) throw new Error(`Erori critice în consolă: ${criticalConsole.join("; ")}`);
     if (failedRequests.length) throw new Error(`Cereri eșuate în audit: ${failedRequests.join("; ")}`);
-    results.push({ audit: { activeCards, pastCards, activeLabels, pastLabels, filters, searchboxes, focusVisible, homepageFeaturedEvents, homepageArchiveCards, homepageActiveLabels, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
+    results.push({ audit: { activeCards, activeLabels, pastLabels, filters, searchboxes, featuredTitle, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageArchiveCards, homepageActiveLabels, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
   } finally {
     await context.close();
   }
