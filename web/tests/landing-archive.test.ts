@@ -73,6 +73,28 @@ test("homepage uses the saved image for the active event and archived cards", ()
   assert.match(html, /https:\/\/example\.com\/archived-poster\.webp/);
 });
 
+test("homepage labels secondary active events as active", () => {
+  const secondaryEvents: LandingArchivedEvent[] = [{
+    title: "Easter Egg Hunt",
+    subtitle: "Vânătoare de ouă",
+    about: "Eveniment activ.",
+    dateLabel: "19 aprilie 2025",
+    venue: "Curtea Veche",
+    priceBani: 2500,
+    photoUrl: "https://example.com/easter.webp",
+    href: "/easter-egg-hunt",
+    status: "active",
+  }];
+
+  const html = renderImmersiveMarkup(IMMERSIVE_MARKUP, null, null, secondaryEvents);
+
+  assert.match(html, /Alte evenimente active/);
+  assert.match(html, /Activ · 25 RON/);
+  assert.match(html, /href="\/easter-egg-hunt"/);
+  assert.match(html, /Toate evenimentele/);
+  assert.doesNotMatch(html, /Ediție încheiată · 25 RON/);
+});
+
 test("homepage hides the archive when only one active event should be promoted", () => {
   const html = renderImmersiveMarkup(IMMERSIVE_MARKUP, null, null);
 
@@ -81,7 +103,7 @@ test("homepage hides the archive when only one active event should be promoted",
   assert.doesNotMatch(html, /Arhiva va apărea aici/);
 });
 
-test("board and public page use only the SavaPass event source", () => {
+test("board and public surfaces use the intended event sources", () => {
   const boardPage = readFileSync(new URL("../app/(dashboard)/board/evenimente/page.tsx", import.meta.url), "utf8");
   const publicPage = readFileSync(new URL("../app/(club)/evenimente/page.tsx", import.meta.url), "utf8");
   const homepage = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
@@ -94,14 +116,16 @@ test("board and public page use only the SavaPass event source", () => {
   assert.match(boardPage, /label="Încheie"/);
   assert.doesNotMatch(boardPage, /getManagedArchiveEvents|Arhivă importată|view=homepage|view=events/);
 
-  assert.match(publicPage, /getActiveEvents/);
+  assert.match(publicPage, /getPublicEvents/);
   assert.match(publicPage, /getManagedPublishedEvents/);
-  assert.match(publicPage, /const events = ticketingRows/);
+  assert.match(publicPage, /const activeEvents = ticketingEvents/);
+  assert.match(publicPage, /const inactiveEvents = \[/);
+  assert.match(publicPage, /const events = \[\.\.\.activeEvents, \.\.\.inactiveEvents\]/);
   assert.match(publicPage, /<EventsExplorer events=\{events\}/);
   assert.match(publicPage, /historicalEvents\.filter/);
-  assert.doesNotMatch(publicPage, /\.\.\.historicalEvents|pastEvents|evenimente-incheiate/);
 
-  assert.match(homepage, /getActiveEvent/);
+  assert.match(homepage, /getActiveEvents/);
+  assert.match(homepage, /secondaryEvents: events\.slice\(1, 3\)/);
   assert.doesNotMatch(homepage, /getManagedEventBySlug|GOLDEN_HOUR|getPastEvents/);
 
   assert.match(eventsSource, /prioritizeActiveEvents/);

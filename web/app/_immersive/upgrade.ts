@@ -90,6 +90,7 @@ export type LandingArchivedEvent = {
   priceBani: number;
   photoUrl: string | null;
   href: string;
+  status?: "active" | "past";
 };
 
 export type LandingRecruitment = {
@@ -329,15 +330,17 @@ function renderArchivedEvents(events: LandingArchivedEvent[]) {
   return events.slice(0, 2).map((event) => {
     const description = event.about ?? event.subtitle ?? "Detaliile acestei ediții sunt disponibile în arhiva evenimentelor.";
     const price = event.priceBani > 0 ? `${Math.round(event.priceBani / 100)} RON` : "Acces gratuit";
+    const isActive = event.status === "active";
+    const statusLabel = isActive ? `Activ · ${price}` : `Ediție încheiată · ${price}`;
 
-    return `<article class="ev-past ev-past--managed">
+    return `<a href="${escapeHtml(event.href)}" class="ev-past ev-past--managed${isActive ? " ev-past--active" : ""}">
         <div class="ev-past-poster"><img src="${safePhotoUrl(event.photoUrl)}" loading="lazy" decoding="async" alt="Afișul evenimentului ${escapeHtml(event.title)}" /></div>
         <div class="ev-past-body">
-          <div class="ev-past-tags"><span class="ev-cat">${escapeHtml(event.dateLabel)}</span><span class="ev-sold">Ediție încheiată · ${escapeHtml(price)}</span></div>
+          <div class="ev-past-tags"><span class="ev-cat">${escapeHtml(event.dateLabel)}</span><span class="ev-sold${isActive ? " ev-sold--active" : ""}">${escapeHtml(statusLabel)}</span></div>
           <h4 class="ev-past-title">${escapeHtml(event.title)}</h4>
           <p class="ev-past-desc"><strong>${escapeHtml(event.venue)}</strong> · ${escapeHtml(description)}</p>
         </div>
-      </article>`;
+      </a>`;
   }).join("\n      ");
 }
 
@@ -350,10 +353,13 @@ function applyArchiveContent(markup: string, events: LandingArchivedEvent[]) {
   }
 
   const cards = renderArchivedEvents(events);
-  return markup.replace(
+  const next = markup.replace(
     /    <div class="ev-arch">[\s\S]*?    <\/div>\r?\n  <\/div>\r?\n<\/section>/,
     `    <div class="ev-arch">\n      ${cards}\n    </div>\n  </div>\n</section>`,
   );
+  return events.some((event) => event.status === "active")
+    ? next.replace('<span class="t">Din arhivă</span>', '<span class="t">Alte evenimente active</span>')
+    : next;
 }
 
 function applyEventContent(markup: string, event: LandingEvent | null) {
@@ -561,6 +567,7 @@ export function renderImmersiveMarkup(
   recruitment: LandingRecruitment | null = null,
   archivedEvents: LandingArchivedEvent[] = [],
 ) {
+  const hasActiveSecondaryEvents = archivedEvents.some((item) => item.status === "active");
   const heroHref = escapeHtml(event?.href ?? "/evenimente");
   const heroAction = event ? "Vezi detaliile" : "Vezi evenimentele";
   const heroSecondaryHref = event ? "/evenimente#toate-evenimentele" : "/echipa";
@@ -580,7 +587,9 @@ export function renderImmersiveMarkup(
     )
     .replace(
       '<button class="ev-all rv" style="--d:.12s;">Toate edițiile <span class="ar" data-i="arrow"></span></button>',
-      '<a href="/evenimente?period=past#toate-evenimentele" class="ev-all rv" style="--d:.12s;">Ediții încheiate <span class="ar" data-i="arrow"></span></a>',
+      hasActiveSecondaryEvents
+        ? '<a href="/evenimente#toate-evenimentele" class="ev-all rv" style="--d:.12s;">Toate evenimentele <span class="ar" data-i="arrow"></span></a>'
+        : '<a href="/evenimente?period=past#toate-evenimentele" class="ev-all rv" style="--d:.12s;">Ediții încheiate <span class="ar" data-i="arrow"></span></a>',
     )
     .replace(
       '<button class="ev-ghost maps rv" style="--d:.24s">Deschide în Maps <span class="ar" data-i="arrow"></span></button>',
@@ -619,6 +628,7 @@ export const LANDING_REFINEMENT_CSS = `
 .sp-immersive-root .ev-past--managed{color:inherit;text-decoration:none}
 .sp-immersive-root .ev-past--managed:hover{transform:none;border-color:var(--line-l);box-shadow:none}
 .sp-immersive-root .ev-past--managed:hover .ev-past-poster img{transform:none}
+.sp-immersive-root .ev-past--active .ev-sold--active{color:var(--cyan)}
 .sp-immersive-root .ev-archive-empty{grid-column:1/-1;color:var(--mut-d);font-size:14px;line-height:1.6;margin:0}
 .sp-immersive-root .h2 em,
 .sp-immersive-root .feat-media .ov .ti em,

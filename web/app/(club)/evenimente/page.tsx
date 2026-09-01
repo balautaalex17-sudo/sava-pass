@@ -7,7 +7,7 @@ import { ClubPage } from "@/components/club/ClubPage";
 import { getManagedPublishedEvents, ticketingEventToArchiveEvent } from "@/lib/event-archive";
 import { academicYearForDate, formatEventDate } from "@/lib/event-display";
 import type { EventRecord } from "@/lib/event-types";
-import { getActiveEvents } from "@/lib/events";
+import { getPublicEvents } from "@/lib/events";
 import { EventVisual } from "./EventVisual";
 import { EventsExplorer } from "./EventsExplorer";
 import causeStyles from "./cause-wall.module.css";
@@ -47,8 +47,8 @@ async function ticketingEventsWithTimeout() {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
-      getActiveEvents().catch(() => []),
-      new Promise<Awaited<ReturnType<typeof getActiveEvents>>>((resolve) => {
+      getPublicEvents().catch(() => []),
+      new Promise<Awaited<ReturnType<typeof getPublicEvents>>>((resolve) => {
         timer = setTimeout(() => resolve([]), 2000);
       }),
     ]);
@@ -62,8 +62,15 @@ export default async function EventsPage() {
     ticketingEventsWithTimeout(),
     getManagedPublishedEvents(),
   ]);
-  const events = ticketingRows.map(ticketingEventToArchiveEvent);
-  const featured = events[0] || null;
+  const ticketingEvents = ticketingRows.map(ticketingEventToArchiveEvent);
+  const ticketingSlugs = new Set(ticketingEvents.map((event) => event.slug));
+  const activeEvents = ticketingEvents.filter((event) => event.eventStatus === "upcoming" || event.eventStatus === "ongoing");
+  const inactiveEvents = [
+    ...ticketingEvents.filter((event) => event.eventStatus === "past"),
+    ...historicalEvents.filter((event) => !ticketingSlugs.has(event.slug)),
+  ].sort((a, b) => (b.startDate || "").localeCompare(a.startDate || ""));
+  const events = [...activeEvents, ...inactiveEvents];
+  const featured = activeEvents[0] || events[0] || null;
   const charitableCount = historicalEvents.filter((event) => event.charitableCause).length;
   const causeOrganizations = CAUSE_ORGANIZATIONS.map((cause) => ({
     ...cause,

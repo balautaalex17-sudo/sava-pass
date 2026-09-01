@@ -115,16 +115,22 @@ if (mode === "audit") {
   try {
     await waitForPage(page);
     await page.getByRole("heading", { level: 1, name: "Evenimente cu scop. Experiențe care rămân.", exact: true }).waitFor({ state: "visible" });
-    const activeSection = page.locator("#toate-evenimentele");
-    await activeSection.getByRole("heading", { level: 2, name: "Evenimente active", exact: true }).waitFor({ state: "visible" });
+    const eventsSection = page.locator("#toate-evenimentele");
+    await eventsSection.getByRole("heading", { level: 2, name: "Toate evenimentele", exact: true }).waitFor({ state: "visible" });
 
-    const activeCards = await activeSection.locator("[data-event-card]").count();
-    const activeTitles = (await activeSection.locator("[data-event-card] h3").allTextContents()).map((title) => title.trim());
-    const activeLabels = await activeSection.getByText("Activ", { exact: true }).count();
-    const pastLabels = await activeSection.getByText("Încheiat", { exact: true }).count();
+    const eventCards = eventsSection.locator("[data-event-card]");
+    const visibleEventCards = await eventCards.count();
+    const activeTitles = await eventCards.evaluateAll((cards) => cards
+      .filter((card) => [...card.querySelectorAll("span")].some((span) => span.textContent?.trim() === "Activ"))
+      .map((card) => card.querySelector("h3")?.textContent?.trim() || "")
+      .filter(Boolean));
+    const activeCards = activeTitles.length;
+    const activeLabels = await eventsSection.getByText("Activ", { exact: true }).count();
+    const pastLabels = await eventsSection.getByText("Încheiat", { exact: true }).count();
     if (activeCards !== 3) throw new Error(`Trebuie afișate exact 3 evenimente active, nu ${activeCards}.`);
     if (activeLabels !== activeCards) throw new Error(`Eticheta Activ lipsește: ${activeLabels} etichete pentru ${activeCards} carduri.`);
-    if (pastLabels !== 0) throw new Error(`Lista activă conține ${pastLabels} etichete Încheiat.`);
+    if (pastLabels < 1) throw new Error("Evenimentele inactive nu apar în pagina Evenimente.");
+    if (visibleEventCards <= activeCards) throw new Error("Pagina afișează doar evenimentele active.");
 
     const filters = await page.locator("#event-filter-controls select").count();
     const searchboxes = await page.getByRole("searchbox").count();
@@ -150,11 +156,16 @@ if (mode === "audit") {
     await page.goto(homepageUrl, { waitUntil: "networkidle", timeout: 45_000 });
     await page.locator("#event").waitFor({ state: "visible" });
     const homepageFeaturedEvents = await page.locator("#event .ev-feat").count();
-    const homepageArchiveCards = await page.locator("#event .ev-arch [data-event-card], #event .ev-past").count();
+    const homepageSecondaryCards = await page.locator("#event .ev-arch .ev-past").count();
+    const homepageSecondaryActiveLabels = await page.locator("#event .ev-arch .ev-sold--active").count();
+    const homepageSecondaryTitles = (await page.locator("#event .ev-arch .ev-past-title").allTextContents()).map((title) => title.trim());
+    const homepagePastLabels = await page.locator("#event .ev-arch .ev-sold").filter({ hasText: /Ediție încheiată/ }).count();
     const homepageActiveLabels = await page.locator("#event .pbadge").getByText("Activ", { exact: true }).count();
     const homepageEventTitle = (await page.locator("#event .ev-title").innerText()).trim();
     if (homepageFeaturedEvents !== 1) throw new Error(`Homepage trebuie să aibă exact un eveniment principal, nu ${homepageFeaturedEvents}.`);
-    if (homepageArchiveCards !== 0) throw new Error("Homepage încă afișează carduri din arhiva veche.");
+    if (homepageSecondaryCards !== 2) throw new Error(`Homepage trebuie să aibă celelalte 2 evenimente active, nu ${homepageSecondaryCards}.`);
+    if (homepageSecondaryActiveLabels !== 2 || homepagePastLabels !== 0) throw new Error("Evenimentele secundare de pe homepage nu sunt marcate corect ca active.");
+    if (!homepageSecondaryTitles.every((title) => activeTitles.includes(title))) throw new Error("Homepage afișează un eveniment secundar care nu este activ.");
     if (activeCards > 0 && homepageActiveLabels !== 1) throw new Error("Homepage nu marchează evenimentul principal ca Activ.");
     if (activeCards > 0 && !activeTitles.includes(homepageEventTitle)) throw new Error(`Homepage afișează un eveniment care nu este activ: ${homepageEventTitle}.`);
 
@@ -163,7 +174,7 @@ if (mode === "audit") {
 
     if (criticalConsole.length) throw new Error(`Erori critice în consolă: ${criticalConsole.join("; ")}`);
     if (failedRequests.length) throw new Error(`Cereri eșuate în audit: ${failedRequests.join("; ")}`);
-    results.push({ audit: { activeCards, activeLabels, pastLabels, filters, searchboxes, featuredTitle, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageArchiveCards, homepageActiveLabels, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
+    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, filters, searchboxes, featuredTitle, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageSecondaryCards, homepageSecondaryActiveLabels, homepageSecondaryTitles, homepagePastLabels, homepageActiveLabels, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
   } finally {
     await context.close();
   }

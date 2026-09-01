@@ -32,7 +32,7 @@ const VENDOR = {
   scrollTrigger: "/imersiv/vendor/ScrollTrigger.min.js",
 };
 
-const ENGINE_VERSION = "20260827-section-navigation-v12";
+const ENGINE_VERSION = "20260901-active-events-v13";
 
 function loadScript(src: string, type?: string) {
   return new Promise<void>((resolve, reject) => {

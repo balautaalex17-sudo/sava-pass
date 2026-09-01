@@ -200,7 +200,7 @@ if(window.gsap && !reduce){
     });
     /* ambient parallax — depth on the Higgsfield loops */
     if(!__touch){gsap.to('.hero-video',{yPercent:16*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});
-    gsap.to('.foot-video',{yPercent:14*__vamp,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});}
+    var footVideo=document.querySelector('.foot-video');if(footVideo)gsap.to(footVideo,{yPercent:14*__vamp,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});}
     /* event poster: slow scrub zoom as it passes through */
     if(!__touch) gsap.fromTo('.ev-poster img',{scale:1.12},{scale:1,ease:'none',scrollTrigger:{trigger:'.ev-feat',start:'top bottom',end:'bottom top',scrub:true}});
     /* footer headline rises into place */

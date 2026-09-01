@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { getActiveEvent } from "@/lib/events";
+import { getActiveEvents } from "@/lib/events";
 import { getPublicRecruitmentState } from "@/lib/recruitment-public";
 import { IMMERSIVE_CSS, IMMERSIVE_MARKUP } from "./_immersive/content";
 import { ImmersiveRuntime } from "./_immersive/ImmersiveRuntime";
-import { renderImmersiveMarkup, type LandingEvent } from "./_immersive/upgrade";
+import { renderImmersiveMarkup, type LandingArchivedEvent, type LandingEvent } from "./_immersive/upgrade";
 import { HomeNav } from "./HomeNav";
 
 // Homepage = the v3 immersive port, served responsively at ALL widths. The phone
@@ -114,33 +114,52 @@ const LANDING_CRITICAL_CSS = `${IMMERSIVE_CSS.slice(0, introCssEnd)}
   }
 }`;
 
-async function getHomepageEvent(): Promise<LandingEvent | null> {
+function toLandingEvent(event: Awaited<ReturnType<typeof getActiveEvents>>[number]): LandingEvent {
+  return {
+    title: event.title,
+    subtitle: event.subtitle,
+    about: event.about,
+    dateLabel: event.date_label,
+    doors: event.doors,
+    venue: event.venue,
+    venueLine: event.venue_line,
+    capacity: event.capacity,
+    sold: null,
+    priceBani: event.price_bani,
+    photoUrl: event.photo_url,
+    href: `/${event.slug}`,
+    checkoutHref: `/${event.slug}/checkout`,
+    hasProgram: Array.isArray(event.program) && event.program.length > 0,
+  };
+}
+
+function toLandingSecondaryEvent(event: Awaited<ReturnType<typeof getActiveEvents>>[number]): LandingArchivedEvent {
+  return {
+    title: event.title,
+    subtitle: event.subtitle,
+    about: event.about,
+    dateLabel: event.date_label,
+    venue: event.venue,
+    priceBani: event.price_bani,
+    photoUrl: event.photo_url,
+    href: `/${event.slug}`,
+    status: "active",
+  };
+}
+
+async function getHomepageEvents(): Promise<{ event: LandingEvent | null; secondaryEvents: LandingArchivedEvent[] }> {
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   try {
-    const event = await Promise.race([
-      getActiveEvent().catch(() => null),
-      new Promise<null>((resolve) => {
-        timer = setTimeout(() => resolve(null), 2000);
+    const events = await Promise.race([
+      getActiveEvents().catch(() => []),
+      new Promise<Awaited<ReturnType<typeof getActiveEvents>>>((resolve) => {
+        timer = setTimeout(() => resolve([]), 2000);
       }),
     ]);
-    if (!event) return null;
-
     return {
-      title: event.title,
-      subtitle: event.subtitle,
-      about: event.about,
-      dateLabel: event.date_label,
-      doors: event.doors,
-      venue: event.venue,
-      venueLine: event.venue_line,
-      capacity: event.capacity,
-      sold: null,
-      priceBani: event.price_bani,
-      photoUrl: event.photo_url,
-      href: `/${event.slug}`,
-      checkoutHref: `/${event.slug}/checkout`,
-      hasProgram: Array.isArray(event.program) && event.program.length > 0,
+      event: events[0] ? toLandingEvent(events[0]) : null,
+      secondaryEvents: events.slice(1, 3).map(toLandingSecondaryEvent),
     };
   } finally {
     clearTimeout(timer);
@@ -148,16 +167,16 @@ async function getHomepageEvent(): Promise<LandingEvent | null> {
 }
 
 export default async function Home() {
-  const [event, recruitment] = await Promise.all([
-    getHomepageEvent(),
+  const [homepageEvents, recruitment] = await Promise.all([
+    getHomepageEvents(),
     getPublicRecruitmentState(),
   ]);
-  return <LandingBody event={event} recruitment={recruitment} />;
+  return <LandingBody event={homepageEvents.event} secondaryEvents={homepageEvents.secondaryEvents} recruitment={recruitment} />;
 }
 
-function LandingBody({ event, recruitment }: { event: LandingEvent | null; recruitment: Awaited<ReturnType<typeof getPublicRecruitmentState>> }) {
+function LandingBody({ event, secondaryEvents, recruitment }: { event: LandingEvent | null; secondaryEvents: LandingArchivedEvent[]; recruitment: Awaited<ReturnType<typeof getPublicRecruitmentState>> }) {
   const ctaHref = event?.checkoutHref ?? "/evenimente";
-  const markup = renderImmersiveMarkup(IMMERSIVE_MARKUP, event, recruitment).split("__CTA_HREF__").join(ctaHref);
+  const markup = renderImmersiveMarkup(IMMERSIVE_MARKUP, event, recruitment, secondaryEvents).split("__CTA_HREF__").join(ctaHref);
 
   return (
     <>
