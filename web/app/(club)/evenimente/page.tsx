@@ -71,6 +71,8 @@ export default async function EventsPage() {
   ].sort((a, b) => (b.startDate || "").localeCompare(a.startDate || ""));
   const events = [...activeEvents, ...inactiveEvents];
   const featured = activeEvents[0] || events[0] || null;
+  const featuredCanReserve = Boolean(featured?.registrationUrl)
+    && (featured?.eventStatus === "upcoming" || featured?.eventStatus === "ongoing");
   const charitableCount = historicalEvents.filter((event) => event.charitableCause).length;
   const causeOrganizations = CAUSE_ORGANIZATIONS.map((cause) => ({
     ...cause,
@@ -116,7 +118,7 @@ export default async function EventsPage() {
                 {featured.venueName && <span><MapPin size={14} aria-hidden="true" />{featured.venueName}</span>}
               </div>
               <p>{featured.shortDescription}</p>
-              <span className={styles.featuredLink}>Detalii și galerie <ArrowUpRight size={16} aria-hidden="true" /></span>
+              <span className={styles.featuredLink}>{featuredCanReserve ? "Rezervă bilet" : "Detalii și galerie"} <ArrowUpRight size={16} aria-hidden="true" /></span>
             </div>
           </Link>
         )}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarPlus, Eye, Pencil } from "lucide-react";
+import { Archive, CalendarPlus, Eye, Pencil } from "lucide-react";
 import { StatusControl } from "@/app/(staff)/admin/events/StatusControl";
 import { requirePagePermission } from "@/lib/dashboard/auth";
 import { formatDateTime } from "@/lib/dashboard/format";
@@ -38,7 +38,10 @@ export default async function BoardEventsPage() {
           <h1>Evenimente</h1>
           <p>Publici maximum 3 evenimente active. Toate apar în pagina Evenimente, iar cel mai apropiat apare și pe homepage.</p>
         </div>
-        <Link href="/board/evenimente/new" className="dash-button"><CalendarPlus size={17} /> Eveniment nou</Link>
+        <div className="board-event-head-actions">
+          <Link href="/board/evenimente/arhiva" className="dash-button dash-button--secondary"><Archive size={17} /> Evenimente vechi</Link>
+          <Link href="/board/evenimente/new" className="dash-button"><CalendarPlus size={17} /> Eveniment nou</Link>
+        </div>
       </header>
 
       <section className="board-event-publishing-guide" aria-label="Reguli de publicare">

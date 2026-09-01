@@ -32,7 +32,7 @@ export default async function ArchiveEventEditorPage({ params }: { params: Promi
       <header className="dash-page-head">
         <div>
           <div className="dash-editor-context">
-            <Link href="/board/evenimente" className="dash-back-link"><ChevronLeft size={16} /> Evenimente</Link>
+            <Link href="/board/evenimente/arhiva" className="dash-back-link"><ChevronLeft size={16} /> Evenimente vechi</Link>
             <span className="dash-eyebrow">Eveniment importat</span>
           </div>
           <h1>{event.title}</h1>

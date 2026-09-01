@@ -331,7 +331,7 @@ function renderArchivedEvents(events: LandingArchivedEvent[]) {
     const description = event.about ?? event.subtitle ?? "Detaliile acestei ediții sunt disponibile în arhiva evenimentelor.";
     const price = event.priceBani > 0 ? `${Math.round(event.priceBani / 100)} RON` : "Acces gratuit";
     const isActive = event.status === "active";
-    const statusLabel = isActive ? `Activ · ${price}` : `Ediție încheiată · ${price}`;
+    const statusLabel = isActive ? `Rezervă bilet · ${price}` : `Ediție încheiată · ${price}`;
 
     return `<a href="${escapeHtml(event.href)}" class="ev-past ev-past--managed${isActive ? " ev-past--active" : ""}">
         <div class="ev-past-poster"><img src="${safePhotoUrl(event.photoUrl)}" loading="lazy" decoding="async" alt="Afișul evenimentului ${escapeHtml(event.title)}" /></div>
@@ -569,7 +569,7 @@ export function renderImmersiveMarkup(
 ) {
   const hasActiveSecondaryEvents = archivedEvents.some((item) => item.status === "active");
   const heroHref = escapeHtml(event?.href ?? "/evenimente");
-  const heroAction = event ? "Vezi detaliile" : "Vezi evenimentele";
+  const heroAction = event ? "Rezervă bilet" : "Vezi evenimentele";
   const heroSecondaryHref = event ? "/evenimente#toate-evenimentele" : "/echipa";
   const heroSecondaryAction = event ? "Toate evenimentele" : "Cunoaște echipa";
   const upgraded = applyArchiveContent(applyEventContent(replaceLegacyStatsSection(markup), event), archivedEvents)

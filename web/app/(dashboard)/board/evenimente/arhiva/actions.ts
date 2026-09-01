@@ -74,6 +74,7 @@ function revalidateArchiveEvent(slug: string) {
   revalidatePath("/evenimente");
   revalidatePath(`/evenimente/${slug}`);
   revalidatePath("/board/evenimente");
+  revalidatePath("/board/evenimente/arhiva");
   revalidatePath(`/board/evenimente/arhiva/${slug}`);
 }
 
@@ -171,5 +172,5 @@ export async function archiveImportedEvent(
   });
 
   revalidateArchiveEvent(parsed.data.slug);
-  redirect("/board/evenimente");
+  redirect("/board/evenimente/arhiva");
 }

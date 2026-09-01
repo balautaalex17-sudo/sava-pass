@@ -9,6 +9,8 @@ export function CompactEventCard({ event }: { event: EventRecord }) {
   const academicYear = academicYearForDate(event.startDate);
   const href = event.internalTicketingUrl || `/evenimente/${event.slug}`;
   const isActive = event.eventStatus === "upcoming" || event.eventStatus === "ongoing";
+  const canReserve = isActive && Boolean(event.registrationUrl);
+  const actionLabel = canReserve ? "Rezervă bilet" : "Vezi detalii";
 
   return (
     <article
@@ -33,8 +35,12 @@ export function CompactEventCard({ event }: { event: EventRecord }) {
         <h3>{event.title}</h3>
         <p className={styles.cardDescription}>{event.shortDescription}</p>
         {event.venueName && <p className={styles.cardVenue}><MapPin size={14} aria-hidden="true" />{event.venueName}</p>}
-        <Link className={styles.cardLink} href={href} aria-label={`Vezi detaliile evenimentului ${event.title}`}>
-          Vezi detalii <ArrowUpRight size={15} aria-hidden="true" />
+        <Link
+          className={styles.cardLink}
+          href={href}
+          aria-label={canReserve ? `Rezervă bilet pentru ${event.title}` : `Vezi detaliile evenimentului ${event.title}`}
+        >
+          {actionLabel} <ArrowUpRight size={15} aria-hidden="true" />
         </Link>
       </div>
     </article>

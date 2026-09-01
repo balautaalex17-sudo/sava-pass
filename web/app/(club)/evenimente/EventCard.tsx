@@ -12,6 +12,10 @@ export function EventCard({
   event: EventRecord;
   prominent?: boolean;
 }) {
+  const href = event.internalTicketingUrl || `/evenimente/${event.slug}`;
+  const isActive = event.eventStatus === "upcoming" || event.eventStatus === "ongoing";
+  const canReserve = isActive && Boolean(event.registrationUrl);
+
   return (
     <article className={`${styles.eventCard} ${prominent ? styles.eventCardProminent : ""}`} data-category={event.category} data-event-card data-cover-src={event.coverImage.src || "typographic-fallback"}>
       <EventVisual event={event} />
@@ -23,14 +27,18 @@ export function EventCard({
           </span>
         </div>
         <p className={styles.cardDate}>{formatEventDate(event, true)}</p>
-        <h3><Link href={`/evenimente/${event.slug}`}>{event.title}</Link></h3>
+        <h3><Link href={href}>{event.title}</Link></h3>
         <p className={styles.cardDescription}>{event.shortDescription}</p>
         <div className={styles.cardFacts}>
           {event.venueName && <span><b>Loc</b>{event.venueName}</span>}
           {event.charitableCause && <span><b>Cauză</b>{event.charitableCause}</span>}
         </div>
-        <Link className={styles.detailLink} href={`/evenimente/${event.slug}`} aria-label={`Vezi detaliile evenimentului ${event.title}`}>
-          Vezi detaliile <ArrowUpRight size={17} aria-hidden="true" />
+        <Link
+          className={styles.detailLink}
+          href={href}
+          aria-label={canReserve ? `Rezervă bilet pentru ${event.title}` : `Vezi detaliile evenimentului ${event.title}`}
+        >
+          {canReserve ? "Rezervă bilet" : "Vezi detaliile"} <ArrowUpRight size={17} aria-hidden="true" />
         </Link>
       </div>
     </article>

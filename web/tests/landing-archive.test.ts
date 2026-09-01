@@ -89,7 +89,7 @@ test("homepage labels secondary active events as active", () => {
   const html = renderImmersiveMarkup(IMMERSIVE_MARKUP, null, null, secondaryEvents);
 
   assert.match(html, /Alte evenimente active/);
-  assert.match(html, /Activ · 25 RON/);
+  assert.match(html, /Rezervă bilet · 25 RON/);
   assert.match(html, /href="\/easter-egg-hunt"/);
   assert.match(html, /Toate evenimentele/);
   assert.doesNotMatch(html, /Ediție încheiată · 25 RON/);
@@ -105,6 +105,8 @@ test("homepage hides the archive when only one active event should be promoted",
 
 test("board and public surfaces use the intended event sources", () => {
   const boardPage = readFileSync(new URL("../app/(dashboard)/board/evenimente/page.tsx", import.meta.url), "utf8");
+  const archiveBoardPage = readFileSync(new URL("../app/(dashboard)/board/evenimente/arhiva/page.tsx", import.meta.url), "utf8");
+  const compactEventCard = readFileSync(new URL("../app/(club)/evenimente/CompactEventCard.tsx", import.meta.url), "utf8");
   const publicPage = readFileSync(new URL("../app/(club)/evenimente/page.tsx", import.meta.url), "utf8");
   const homepage = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
   const eventsSource = readFileSync(new URL("../lib/events.ts", import.meta.url), "utf8");
@@ -114,7 +116,15 @@ test("board and public surfaces use the intended event sources", () => {
   assert.match(boardPage, /getActiveEvent/);
   assert.match(boardPage, /activeCount >= 3/);
   assert.match(boardPage, /label="Încheie"/);
+  assert.match(boardPage, /href="\/board\/evenimente\/arhiva"/);
   assert.doesNotMatch(boardPage, /getManagedArchiveEvents|Arhivă importată|view=homepage|view=events/);
+
+  assert.match(archiveBoardPage, /getManagedArchiveEvents/);
+  assert.match(archiveBoardPage, /getAllEventsForAdmin/);
+  assert.match(archiveBoardPage, /\/board\/evenimente\/arhiva\/\$\{event\.slug\}/);
+
+  assert.match(compactEventCard, /event\.internalTicketingUrl \|\| `\/evenimente\/\$\{event\.slug\}`/);
+  assert.match(compactEventCard, /Rezervă bilet/);
 
   assert.match(publicPage, /getPublicEvents/);
   assert.match(publicPage, /getManagedPublishedEvents/);

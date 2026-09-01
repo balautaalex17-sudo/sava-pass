@@ -132,6 +132,12 @@ if (mode === "audit") {
     if (pastLabels < 1) throw new Error("Evenimentele inactive nu apar în pagina Evenimente.");
     if (visibleEventCards <= activeCards) throw new Error("Pagina afișează doar evenimentele active.");
 
+    const reserveLinks = eventsSection.getByRole("link", { name: /Rezervă bilet pentru/ });
+    const reserveLinkCount = await reserveLinks.count();
+    const reserveHrefs = await reserveLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href") || ""));
+    if (reserveLinkCount !== activeCards) throw new Error(`Lipsesc acțiuni „Rezervă bilet”: ${reserveLinkCount} pentru ${activeCards} evenimente active.`);
+    if (reserveHrefs.some((href) => href.startsWith("/evenimente/"))) throw new Error("Un eveniment activ deschide încă fluxul nou în locul celui vechi.");
+
     const filters = await page.locator("#event-filter-controls select").count();
     const searchboxes = await page.getByRole("searchbox").count();
     if (filters !== 2 || searchboxes !== 1) throw new Error(`Layoutul vechi de filtre lipsește: ${filters} selectoare și ${searchboxes} căutări.`);
@@ -145,7 +151,7 @@ if (mode === "audit") {
     if (eventNavAboutHref !== "/") throw new Error(`Legătura Despre duce la ${eventNavAboutHref || "nicăieri"}.`);
 
     let focusVisible = true;
-    const firstDetailLink = page.getByRole("link", { name: /Vezi detaliile evenimentului/ }).first();
+    const firstDetailLink = page.getByRole("link", { name: /Rezervă bilet pentru|Vezi detaliile evenimentului/ }).first();
     if (await firstDetailLink.count()) {
       await firstDetailLink.focus();
       focusVisible = await firstDetailLink.evaluate((element) => element === document.activeElement);
@@ -158,6 +164,7 @@ if (mode === "audit") {
     const homepageFeaturedEvents = await page.locator("#event .ev-feat").count();
     const homepageSecondaryCards = await page.locator("#event .ev-arch .ev-past").count();
     const homepageSecondaryActiveLabels = await page.locator("#event .ev-arch .ev-sold--active").count();
+    const homepageSecondaryReserveLabels = await page.locator("#event .ev-arch .ev-sold--active").filter({ hasText: /Rezervă bilet/ }).count();
     const homepageSecondaryTitles = (await page.locator("#event .ev-arch .ev-past-title").allTextContents()).map((title) => title.trim());
     const homepagePastLabels = await page.locator("#event .ev-arch .ev-sold").filter({ hasText: /Ediție încheiată/ }).count();
     const homepageActiveLabels = await page.locator("#event .pbadge").getByText("Activ", { exact: true }).count();
@@ -165,6 +172,7 @@ if (mode === "audit") {
     if (homepageFeaturedEvents !== 1) throw new Error(`Homepage trebuie să aibă exact un eveniment principal, nu ${homepageFeaturedEvents}.`);
     if (homepageSecondaryCards !== 2) throw new Error(`Homepage trebuie să aibă celelalte 2 evenimente active, nu ${homepageSecondaryCards}.`);
     if (homepageSecondaryActiveLabels !== 2 || homepagePastLabels !== 0) throw new Error("Evenimentele secundare de pe homepage nu sunt marcate corect ca active.");
+    if (homepageSecondaryReserveLabels !== 2) throw new Error("Evenimentele secundare active nu afișează „Rezervă bilet”.");
     if (!homepageSecondaryTitles.every((title) => activeTitles.includes(title))) throw new Error("Homepage afișează un eveniment secundar care nu este activ.");
     if (activeCards > 0 && homepageActiveLabels !== 1) throw new Error("Homepage nu marchează evenimentul principal ca Activ.");
     if (activeCards > 0 && !activeTitles.includes(homepageEventTitle)) throw new Error(`Homepage afișează un eveniment care nu este activ: ${homepageEventTitle}.`);
@@ -174,7 +182,7 @@ if (mode === "audit") {
 
     if (criticalConsole.length) throw new Error(`Erori critice în consolă: ${criticalConsole.join("; ")}`);
     if (failedRequests.length) throw new Error(`Cereri eșuate în audit: ${failedRequests.join("; ")}`);
-    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, filters, searchboxes, featuredTitle, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageSecondaryCards, homepageSecondaryActiveLabels, homepageSecondaryTitles, homepagePastLabels, homepageActiveLabels, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
+    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, reserveLinkCount, reserveHrefs, filters, searchboxes, featuredTitle, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageSecondaryCards, homepageSecondaryActiveLabels, homepageSecondaryReserveLabels, homepageSecondaryTitles, homepagePastLabels, homepageActiveLabels, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
   } finally {
     await context.close();
   }
