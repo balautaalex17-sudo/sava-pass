@@ -73,13 +73,36 @@ test("homepage uses the saved image for the active event and archived cards", ()
   assert.match(html, /https:\/\/example\.com\/archived-poster\.webp/);
 });
 
-test("board event tabs use the same homepage and public-page limits", () => {
-  const boardPage = readFileSync(new URL("../app/(dashboard)/board/evenimente/page.tsx", import.meta.url), "utf8");
+test("homepage hides the archive when only one active event should be promoted", () => {
+  const html = renderImmersiveMarkup(IMMERSIVE_MARKUP, null, null);
 
-  assert.match(boardPage, /const HOMEPAGE_ARCHIVE_LIMIT = 2/);
-  assert.match(boardPage, /homepageArchivedEvents = homepagePastEvents\.slice\(0, HOMEPAGE_ARCHIVE_LIMIT\)/);
-  assert.match(boardPage, /publicTicketingEvents = events\.filter\(\(event\) => event\.status !== "draft"\)/);
-  assert.match(boardPage, /publicEventsPageCount = publicTicketingEvents\.length \+ publicImportedCount/);
-  assert.match(boardPage, /view=homepage/);
-  assert.match(boardPage, /view=events/);
+  assert.doesNotMatch(html, /ev-arch-head/);
+  assert.doesNotMatch(html, /class="ev-arch"/);
+  assert.doesNotMatch(html, /Arhiva va apărea aici/);
+});
+
+test("board and public page use only the SavaPass event source", () => {
+  const boardPage = readFileSync(new URL("../app/(dashboard)/board/evenimente/page.tsx", import.meta.url), "utf8");
+  const publicPage = readFileSync(new URL("../app/(club)/evenimente/page.tsx", import.meta.url), "utf8");
+  const homepage = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const eventsSource = readFileSync(new URL("../lib/events.ts", import.meta.url), "utf8");
+  const archiveAdapter = readFileSync(new URL("../lib/event-archive.ts", import.meta.url), "utf8");
+
+  assert.match(boardPage, /getAllEventsForAdmin/);
+  assert.match(boardPage, /getActiveEvent/);
+  assert.match(boardPage, /activeCount >= 3/);
+  assert.match(boardPage, /label="Încheie"/);
+  assert.doesNotMatch(boardPage, /getManagedArchiveEvents|Arhivă importată|view=homepage|view=events/);
+
+  assert.match(publicPage, /getPublicEvents/);
+  assert.match(publicPage, /Active/);
+  assert.match(publicPage, /Încheiate/);
+  assert.doesNotMatch(publicPage, /getManagedPublishedEvents|importedEvents/);
+
+  assert.match(homepage, /getActiveEvent/);
+  assert.doesNotMatch(homepage, /getManagedEventBySlug|GOLDEN_HOUR|getPastEvents/);
+
+  assert.match(eventsSource, /prioritizeActiveEvents/);
+  assert.doesNotMatch(eventsSource, /\.gt\("starts_at"/);
+  assert.doesNotMatch(archiveAdapter, /record\.eventStatus = event\.status === "past" \? "past" : currentStatus\(record\)/);
 });

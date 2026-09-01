@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import type { EventRecord } from "@/lib/event-types";
-import { academicYearForDate, CATEGORY_LABELS, formatEventDate } from "@/lib/event-display";
+import { academicYearForDate, formatEventDate } from "@/lib/event-display";
 import { EventVisual } from "./EventVisual";
 import styles from "./events-index.module.css";
 
 export function CompactEventCard({ event }: { event: EventRecord }) {
   const academicYear = academicYearForDate(event.startDate);
   const href = event.internalTicketingUrl || `/evenimente/${event.slug}`;
+  const isActive = event.eventStatus === "upcoming" || event.eventStatus === "ongoing";
 
   return (
     <article
@@ -23,7 +24,9 @@ export function CompactEventCard({ event }: { event: EventRecord }) {
       />
       <div className={styles.cardBody}>
         <div className={styles.cardTopline}>
-          <span>{CATEGORY_LABELS[event.category]}</span>
+          <span className={`${styles.cardStatus} ${isActive ? styles.cardStatusActive : styles.cardStatusPast}`}>
+            <i aria-hidden="true" />{isActive ? "Activ" : "Încheiat"}
+          </span>
           {academicYear && <span>Anul {academicYear.slice(0, 4)}–{academicYear.slice(-2)}</span>}
         </div>
         <p className={styles.cardDate}><CalendarDays size={14} aria-hidden="true" />{formatEventDate(event)}</p>

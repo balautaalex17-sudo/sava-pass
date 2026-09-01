@@ -23,7 +23,7 @@ const SITE_LINKS = [
 ];
 
 const LANDING_LINKS = [
-  { label: "Despre", href: "/", key: "despre" },
+  { label: "Despre", href: "/despre", key: "despre" },
   { label: "Evenimente", href: "/evenimente", key: "evenimente" },
   { label: "Devino membru", href: "/devino-membru", key: "membru" },
   { label: "Biletele mele", href: "/conta", key: "bilete" },
@@ -37,7 +37,7 @@ export function HomeNav({
   active,
   immersive = false,
   dark = false,
-  purchaseHref = "/despre",
+  purchaseHref = "/evenimente",
 }: HomeNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);

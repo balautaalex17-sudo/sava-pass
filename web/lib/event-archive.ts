@@ -108,7 +108,6 @@ export function ticketingEventToArchiveEvent(event: Event): EventRecord {
     missingFields: [],
     lastSyncedAt: event.created_at,
   };
-  record.eventStatus = event.status === "past" ? "past" : currentStatus(record);
   return record;
 }
 

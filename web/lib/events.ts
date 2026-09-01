@@ -13,16 +13,28 @@ import type { Event, EventStats, EventTicketType } from "@/lib/supabase/types";
 export const EVENTS_TAG = "events";
 const CACHE = { tags: [EVENTS_TAG], revalidate: 300 };
 
+function prioritizeActiveEvents(events: Event[]) {
+  const now = Date.now();
+  return [...events].sort((first, second) => {
+    const firstStart = new Date(first.starts_at).getTime();
+    const secondStart = new Date(second.starts_at).getTime();
+    const firstIsUpcoming = firstStart > now;
+    const secondIsUpcoming = secondStart > now;
+
+    if (firstIsUpcoming !== secondIsUpcoming) return firstIsUpcoming ? -1 : 1;
+    return firstIsUpcoming ? firstStart - secondStart : secondStart - firstStart;
+  });
+}
+
 const cachedActiveEvents = unstable_cache(
   async (): Promise<Event[]> => {
     const { data } = await supabaseAdmin
       .from("events")
       .select("*")
       .eq("status", "active")
-      .gt("starts_at", new Date().toISOString())
       .order("starts_at")
       .limit(3);
-    return data ?? [];
+    return prioritizeActiveEvents(data ?? []);
   },
   ["active-events"],
   CACHE,

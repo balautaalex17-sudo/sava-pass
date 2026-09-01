@@ -35,6 +35,10 @@ const auditViewports = [
 ];
 const viewports = mode === "audit" ? auditViewports : captureViewports;
 
+function isCancelledNextPrefetch(request) {
+  return request.failure()?.errorText?.includes("ERR_ABORTED") && request.url().includes("_rsc=");
+}
+
 await fs.mkdir(screenshotRoot, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: chromePath });
 const results = [];
@@ -62,7 +66,11 @@ for (const viewport of viewports) {
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
-  page.on("requestfailed", (request) => failedRequests.push(`${request.method()} ${request.url()} · ${request.failure()?.errorText || "failed"}`));
+  page.on("requestfailed", (request) => {
+    if (!isCancelledNextPrefetch(request)) {
+      failedRequests.push(`${request.method()} ${request.url()} · ${request.failure()?.errorText || "failed"}`);
+    }
+  });
   page.on("response", (response) => {
     if (response.request().resourceType() === "image" && response.status() >= 400) brokenImages.push(`${response.status()} ${response.url()}`);
   });
@@ -89,15 +97,7 @@ for (const viewport of viewports) {
     const screenshot = path.join(screenshotRoot, `${label}-${viewport.name}.png`);
     await page.screenshot({ path: foldScreenshot });
     await page.screenshot({ path: screenshot, fullPage: true });
-    let filterScreenshot;
-    if (mode === "capture" && viewport.name === "mobile" && await page.getByRole("button", { name: /Filtrează evenimentele/ }).count()) {
-      const filterToggle = page.getByRole("button", { name: /Filtrează evenimentele/ });
-      await filterToggle.scrollIntoViewIfNeeded();
-      await filterToggle.click();
-      filterScreenshot = path.join(screenshotRoot, `${label}-${viewport.name}-filters.png`);
-      await page.screenshot({ path: filterScreenshot });
-    }
-    results.push({ viewport, foldScreenshot, filterScreenshot, screenshot, layout, consoleErrors, failedRequests, brokenImages });
+    results.push({ viewport, foldScreenshot, screenshot, layout, consoleErrors, failedRequests, brokenImages });
   } finally {
     await context.close();
   }
@@ -109,45 +109,59 @@ if (mode === "audit") {
   const criticalConsole = [];
   const failedRequests = [];
   page.on("console", (message) => { if (message.type() === "error") criticalConsole.push(message.text()); });
-  page.on("requestfailed", (request) => failedRequests.push(request.url()));
+  page.on("requestfailed", (request) => {
+    if (!isCancelledNextPrefetch(request)) failedRequests.push(request.url());
+  });
   try {
     await waitForPage(page);
-    await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
-    let reachedFilterToggle = false;
-    for (let step = 0; step < 30; step += 1) {
-      await page.keyboard.press("Tab");
-      reachedFilterToggle = await page.evaluate(() => document.activeElement?.textContent?.includes("Filtrează evenimentele") || false);
-      if (reachedFilterToggle) break;
+    await page.getByRole("heading", { level: 1, name: "Evenimente", exact: true }).waitFor({ state: "visible" });
+    const activeSection = page.locator("#evenimente-active");
+    const pastSection = page.locator("#evenimente-incheiate");
+    await activeSection.getByRole("heading", { level: 2, name: "Active", exact: true }).waitFor({ state: "visible" });
+    await pastSection.getByRole("heading", { level: 2, name: "Încheiate", exact: true }).waitFor({ state: "visible" });
+
+    const activeCards = await activeSection.locator("[data-event-card]").count();
+    const pastCards = await pastSection.locator("[data-event-card]").count();
+    const activeTitles = (await activeSection.locator("[data-event-card] h3").allTextContents()).map((title) => title.trim());
+    const activeLabels = await activeSection.getByText("Activ", { exact: true }).count();
+    const pastLabels = await pastSection.getByText("Încheiat", { exact: true }).count();
+    if (activeCards > 3) throw new Error(`Sunt publicate ${activeCards} evenimente active, peste limita de 3.`);
+    if (activeLabels !== activeCards) throw new Error(`Eticheta Activ lipsește: ${activeLabels} etichete pentru ${activeCards} carduri.`);
+    if (pastLabels !== pastCards) throw new Error(`Eticheta Încheiat lipsește: ${pastLabels} etichete pentru ${pastCards} carduri.`);
+
+    const filters = await page.getByRole("button", { name: /Filtrează evenimentele/ }).count();
+    const searchboxes = await page.getByRole("searchbox").count();
+    if (filters || searchboxes) throw new Error("Interfața veche de filtre este încă prezentă.");
+
+    let focusVisible = true;
+    const firstDetailLink = page.getByRole("link", { name: /Vezi detaliile evenimentului/ }).first();
+    if (await firstDetailLink.count()) {
+      await firstDetailLink.focus();
+      focusVisible = await firstDetailLink.evaluate((element) => element === document.activeElement);
+      if (!focusVisible) throw new Error("Legătura de detaliu nu poate primi focus prin tastatură.");
     }
-    if (!reachedFilterToggle) throw new Error("Butonul filtrelor nu poate fi atins prin navigare cu Tab.");
-    await page.keyboard.press("Enter");
-    await page.getByRole("combobox", { name: "Perioadă", exact: true }).selectOption("year:2025-2026");
-    await page.waitForURL(/period=year%3A2025-2026/);
-    await page.getByRole("combobox", { name: "Categorie", exact: true }).selectOption("club");
-    await page.waitForURL(/category=club/);
-    const search = page.getByRole("searchbox", { name: "Caută în evenimente" });
-    await search.fill("Cupid");
-    await page.waitForURL(/q=Cupid/);
-    const countText = await page.locator("[aria-live='polite']").filter({ hasText: "eveniment" }).innerText();
-    await page.reload({ waitUntil: "networkidle" });
-    if (!page.url().includes("period=year%3A2025-2026") || !page.url().includes("category=club") || !page.url().includes("q=Cupid")) throw new Error("Parametrii filtrelor nu au persistat după reload.");
-    const detailLink = page.getByRole("link", { name: "Vezi detaliile evenimentului Cupid's Hex" });
-    await detailLink.focus();
-    const focusVisible = await detailLink.evaluate((element) => element === document.activeElement);
-    if (!focusVisible) throw new Error("Legătura de detaliu nu poate primi focus prin tastatură.");
-    await detailLink.click();
-    await page.waitForURL(/\/evenimente\/cupids-hex-2026$/);
-    await page.getByRole("heading", { level: 1, name: "Cupid's Hex" }).waitFor({ state: "visible" });
-    const sourceLinks = await page.getByRole("link", { name: /Postarea/ }).count();
-    if (sourceLinks < 1) throw new Error("Pagina de detaliu nu afișează sursele Instagram.");
-    const primaryEventImages = await page.locator("main header img").count();
-    const relatedCards = await page.locator("main [data-event-card]").count();
-    const relatedImages = await page.locator("main [data-event-card] img").count();
-    if (primaryEventImages !== 1) throw new Error(`Evenimentul principal trebuie să afișeze exact o imagine, nu ${primaryEventImages}.`);
-    if (relatedImages !== relatedCards) throw new Error(`Fiecare eveniment recomandat trebuie să aibă exact o imagine: ${relatedImages} imagini pentru ${relatedCards} carduri.`);
+
+    const homepageUrl = new URL("/", targetUrl).toString();
+    await page.goto(homepageUrl, { waitUntil: "networkidle", timeout: 45_000 });
+    await page.locator("#event").waitFor({ state: "visible" });
+    const homepageFeaturedEvents = await page.locator("#event .ev-feat").count();
+    const homepageArchiveCards = await page.locator("#event .ev-arch [data-event-card], #event .ev-past").count();
+    const homepageActiveLabels = await page.locator("#event .pbadge").getByText("Activ", { exact: true }).count();
+    const homepageEventTitle = (await page.locator("#event .ev-title").innerText()).trim();
+    if (homepageFeaturedEvents !== 1) throw new Error(`Homepage trebuie să aibă exact un eveniment principal, nu ${homepageFeaturedEvents}.`);
+    if (homepageArchiveCards !== 0) throw new Error("Homepage încă afișează carduri din arhiva veche.");
+    if (activeCards > 0 && homepageActiveLabels !== 1) throw new Error("Homepage nu marchează evenimentul principal ca Activ.");
+    if (activeCards > 0 && !activeTitles.includes(homepageEventTitle)) throw new Error(`Homepage afișează un eveniment care nu este activ: ${homepageEventTitle}.`);
+
+    const aboutUrl = new URL("/despre", targetUrl).toString();
+    await page.goto(aboutUrl, { waitUntil: "networkidle", timeout: 45_000 });
+    await page.getByRole("heading", { level: 2, name: "Cine suntem", exact: true }).waitFor({ state: "visible" });
+    const aboutNavHref = await page.getByRole("link", { name: "Despre", exact: true }).first().getAttribute("href");
+    if (aboutNavHref !== "/despre") throw new Error(`Legătura Despre duce la ${aboutNavHref || "nicăieri"}.`);
+
     if (criticalConsole.length) throw new Error(`Erori critice în consolă: ${criticalConsole.join("; ")}`);
     if (failedRequests.length) throw new Error(`Cereri eșuate în audit: ${failedRequests.join("; ")}`);
-    results.push({ audit: { countText, keyboardReachedFilters: reachedFilterToggle, focusVisible, detailUrl: page.url(), sourceLinks, primaryEventImages, relatedCards, relatedImages, criticalConsole, failedRequests } });
+    results.push({ audit: { activeCards, pastCards, activeLabels, pastLabels, filters, searchboxes, focusVisible, homepageFeaturedEvents, homepageArchiveCards, homepageActiveLabels, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
   } finally {
     await context.close();
   }

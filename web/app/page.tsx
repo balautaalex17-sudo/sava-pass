@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { getManagedEventBySlug } from "@/lib/event-archive";
-import { getActiveEvent, getPastEvents } from "@/lib/events";
-import { GOLDEN_HOUR } from "@/lib/golden-hour";
+import { getActiveEvent } from "@/lib/events";
 import { getPublicRecruitmentState } from "@/lib/recruitment-public";
 import { IMMERSIVE_CSS, IMMERSIVE_MARKUP } from "./_immersive/content";
 import { ImmersiveRuntime } from "./_immersive/ImmersiveRuntime";
-import { renderImmersiveMarkup, type LandingArchivedEvent, type LandingEvent } from "./_immersive/upgrade";
+import { renderImmersiveMarkup, type LandingEvent } from "./_immersive/upgrade";
 import { HomeNav } from "./HomeNav";
 
 // Homepage = the v3 immersive port, served responsively at ALL widths. The phone
@@ -116,55 +114,17 @@ const LANDING_CRITICAL_CSS = `${IMMERSIVE_CSS.slice(0, introCssEnd)}
   }
 }`;
 
-function homepageDateLabel(startDate?: string, startTime?: string) {
-  if (!startDate) return "Dată neconfirmată";
-  const date = new Date(`${startDate}T12:00:00Z`);
-  const weekday = new Intl.DateTimeFormat("ro-RO", { weekday: "short", timeZone: "Europe/Bucharest" })
-    .format(date).replace(".", "");
-  const calendarDate = new Intl.DateTimeFormat("ro-RO", { day: "numeric", month: "short", timeZone: "Europe/Bucharest" })
-    .format(date).replace(".", "");
-  const dayLabel = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-  return `${dayLabel} · ${calendarDate}${startTime ? ` · ${startTime}` : ""}`;
-}
-
-function priceLabelToBani(value?: string) {
-  const amount = Number(String(value ?? "").replace(",", ".").match(/\d+(?:\.\d+)?/)?.[0]);
-  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
-}
-
 async function getHomepageEvent(): Promise<LandingEvent | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   try {
-    const [event, importedFallback] = await Promise.all([
-      Promise.race([
-        getActiveEvent().catch(() => null),
-        new Promise<null>((resolve) => {
-          timer = setTimeout(() => resolve(null), 2000);
-        }),
-      ]),
-      getManagedEventBySlug(GOLDEN_HOUR.slug).catch(() => null),
+    const event = await Promise.race([
+      getActiveEvent().catch(() => null),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), 2000);
+      }),
     ]);
-
-    if (!event) {
-      if (!importedFallback) return null;
-      return {
-        title: importedFallback.title,
-        subtitle: importedFallback.subtitle ?? null,
-        about: importedFallback.shortDescription || importedFallback.fullDescription || null,
-        dateLabel: homepageDateLabel(importedFallback.startDate, importedFallback.startTime),
-        doors: importedFallback.startTime ?? "",
-        venue: importedFallback.venueName ?? "Locație în curs de confirmare",
-        venueLine: importedFallback.address ?? null,
-        capacity: null,
-        sold: null,
-        priceBani: priceLabelToBani(importedFallback.ticketPrice),
-        photoUrl: importedFallback.coverImage.src || null,
-        href: `/evenimente/${importedFallback.slug}`,
-        checkoutHref: importedFallback.internalTicketingUrl || importedFallback.registrationUrl || `/evenimente/${importedFallback.slug}`,
-        hasProgram: false,
-      };
-    }
+    if (!event) return null;
 
     return {
       title: event.title,
@@ -187,44 +147,17 @@ async function getHomepageEvent(): Promise<LandingEvent | null> {
   }
 }
 
-async function getHomepageArchivedEvents(): Promise<LandingArchivedEvent[]> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    const events = await Promise.race([
-      getPastEvents().catch(() => []),
-      new Promise<Awaited<ReturnType<typeof getPastEvents>>>((resolve) => {
-        timer = setTimeout(() => resolve([]), 2000);
-      }),
-    ]);
-
-    return events.slice(0, 2).map((event) => ({
-      title: event.title,
-      subtitle: event.subtitle,
-      about: event.about,
-      dateLabel: event.date_label,
-      venue: event.venue,
-      priceBani: event.price_bani,
-      photoUrl: event.photo_url,
-      href: `/${event.slug}`,
-    }));
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 export default async function Home() {
-  const [event, archivedEvents, recruitment] = await Promise.all([
+  const [event, recruitment] = await Promise.all([
     getHomepageEvent(),
-    getHomepageArchivedEvents(),
     getPublicRecruitmentState(),
   ]);
-  return <LandingBody event={event} archivedEvents={archivedEvents} recruitment={recruitment} />;
+  return <LandingBody event={event} recruitment={recruitment} />;
 }
 
-function LandingBody({ event, archivedEvents, recruitment }: { event: LandingEvent | null; archivedEvents: LandingArchivedEvent[]; recruitment: Awaited<ReturnType<typeof getPublicRecruitmentState>> }) {
+function LandingBody({ event, recruitment }: { event: LandingEvent | null; recruitment: Awaited<ReturnType<typeof getPublicRecruitmentState>> }) {
   const ctaHref = event?.checkoutHref ?? "/evenimente";
-  const markup = renderImmersiveMarkup(IMMERSIVE_MARKUP, event, recruitment, archivedEvents).split("__CTA_HREF__").join(ctaHref);
+  const markup = renderImmersiveMarkup(IMMERSIVE_MARKUP, event, recruitment).split("__CTA_HREF__").join(ctaHref);
 
   return (
     <>
@@ -236,7 +169,7 @@ function LandingBody({ event, archivedEvents, recruitment }: { event: LandingEve
       <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 821px)" />
       <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 821px)" />
       <style dangerouslySetInnerHTML={{ __html: LANDING_CRITICAL_CSS }} />
-      <HomeNav active="despre" immersive purchaseHref={ctaHref} />
+      <HomeNav immersive purchaseHref={ctaHref} />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
       <ImmersiveRuntime />
     </>

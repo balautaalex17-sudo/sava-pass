@@ -1,5 +1,5 @@
 import { HomeNav } from "@/app/HomeNav";
-import { GOLDEN_HOUR } from "@/lib/golden-hour";
+import { getActiveEvent } from "@/lib/events";
 import { SiteFooter } from "./SiteFooter";
 
 /**
@@ -9,7 +9,7 @@ import { SiteFooter } from "./SiteFooter";
  * `.theme-immersive` from <body>). The nav + footer point to the current public
  * event checkout.
  */
-export function ClubPage({
+export async function ClubPage({
   active,
   hero,
   cta,
@@ -24,12 +24,13 @@ export function ClubPage({
   showWatermark?: boolean;
   children: React.ReactNode;
 }) {
-  const eventHref = GOLDEN_HOUR.checkoutHref;
+  const activeEvent = await getActiveEvent().catch(() => null);
+  const eventHref = activeEvent ? `/${activeEvent.slug}/checkout` : "/evenimente";
 
   return (
     <div className="cl-shell">
       {showWatermark ? <GearWatermark /> : null}
-      <HomeNav active={active} immersive dark />
+      <HomeNav active={active} immersive dark purchaseHref={eventHref} />
       {hero}
       <div className="cl-body">{children}</div>
       {cta}

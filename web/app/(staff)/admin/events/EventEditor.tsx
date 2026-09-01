@@ -231,10 +231,10 @@ export function EventEditor({ event, ticketTypes, mediaAssets, hasOrders }: { ev
           <Field label="Status public" required>
             <select name="status" defaultValue={event?.status ?? "draft"} required className="input" style={inputStyle}>
               <option value="draft">Ciornă · ascuns</option>
-              <option value="active">Activ · public</option>
-              <option value="past">Arhivat · public</option>
+              <option value="active">Activ · apare în Evenimente</option>
+              <option value="past">Încheiat · rămâne în Evenimente</option>
             </select>
-            <small style={{ color: "var(--im-fg-3)", fontSize: 10 }}>Pot fi publice simultan maximum 3 evenimente active.</small>
+            <small style={{ color: "var(--im-fg-3)", fontSize: 10 }}>Maximum 3 pot fi active. Cel mai apropiat după dată apare și pe homepage.</small>
           </Field>
           <Field label="Slug">
             <input name="slug" defaultValue={event?.slug ?? ""} disabled={hasOrders} placeholder="generat din titlu" className="input" style={inputStyle} />
@@ -261,7 +261,7 @@ export function EventEditor({ event, ticketTypes, mediaAssets, hasOrders }: { ev
           <Field label="Data scurtă" required><input name="date_label" defaultValue={event?.date_label ?? ""} required className="input" style={inputStyle} /></Field>
           <Field label="Data lungă" required><input name="date_long" defaultValue={event?.date_long ?? ""} required className="input" style={inputStyle} /></Field>
           <Field label="Moment exact" required><input name="starts_at" type="datetime-local" defaultValue={startsAt} required className="input" style={inputStyle} /></Field>
-          <Field label="Porți" required><input name="doors" defaultValue={event?.doors ?? ""} required className="input" style={inputStyle} /></Field>
+          <Field label="Ora" required><input name="doors" defaultValue={event?.doors ?? ""} required className="input" style={inputStyle} /></Field>
           <Field label="Locație" required><input name="venue" defaultValue={event?.venue ?? ""} required className="input" style={inputStyle} /></Field>
           <Field label="Adresă"><input name="venue_line" defaultValue={event?.venue_line ?? ""} className="input" style={inputStyle} /></Field>
         </div>

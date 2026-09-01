@@ -301,7 +301,7 @@ function renderFeaturedEvent(event: LandingEvent | null) {
   const secondaryAction = event.hasProgram ? "Vezi programul" : "Detalii complete";
 
   return `<article class="ev-feat">
-      <div class="ev-poster rv"><img src="${safePhotoUrl(event.photoUrl)}" alt="${escapeHtml(event.title)}" loading="lazy" decoding="async" /><span class="pbadge"><i></i>Următorul eveniment</span></div>
+      <div class="ev-poster rv"><img src="${safePhotoUrl(event.photoUrl)}" alt="${escapeHtml(event.title)}" loading="lazy" decoding="async" /><span class="pbadge"><i></i>Activ</span></div>
       <div class="ev-detail">
         <div class="ev-when rv">${escapeHtml(event.dateLabel)}</div>
         <h3 class="ev-title rv">${escapeHtml(event.title)}</h3>
@@ -342,6 +342,13 @@ function renderArchivedEvents(events: LandingArchivedEvent[]) {
 }
 
 function applyArchiveContent(markup: string, events: LandingArchivedEvent[]) {
+  if (events.length === 0) {
+    return markup.replace(
+      /\n    <div class="ev-arch-head rv">[\s\S]*?    <div class="ev-arch">[\s\S]*?    <\/div>\r?\n  <\/div>\r?\n<\/section>/,
+      "\n  </div>\n</section>",
+    );
+  }
+
   const cards = renderArchivedEvents(events);
   return markup.replace(
     /    <div class="ev-arch">[\s\S]*?    <\/div>\r?\n  <\/div>\r?\n<\/section>/,
@@ -351,7 +358,13 @@ function applyArchiveContent(markup: string, events: LandingArchivedEvent[]) {
 
 function applyEventContent(markup: string, event: LandingEvent | null) {
   const featuredMarkup = renderFeaturedEvent(event);
-  let next = markup.replace(/<article class="ev-feat">[\s\S]*?<\/article>\n\n    <div class="ev-map">/, `${featuredMarkup}\n\n    <div class="ev-map">`);
+  const sectionSummary = event
+    ? "Publicat în SavaPass · disponibil și în pagina Evenimente"
+    : "Calendarul se actualizează când publici un eveniment";
+  let next = markup
+    .replace('Ce urmează <em>și ce a fost.</em>', 'Evenimentul <em>activ.</em>')
+    .replace('3 ediții · 264 bilete · cca 13.500 RON donați', sectionSummary)
+    .replace(/<article class="ev-feat">[\s\S]*?<\/article>\n\n    <div class="ev-map">/, `${featuredMarkup}\n\n    <div class="ev-map">`);
 
   if (event) {
     const address = escapeHtml(event.venueLine ?? event.venue).replace(/\r?\n/g, "<br/>");

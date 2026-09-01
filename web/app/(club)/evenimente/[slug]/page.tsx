@@ -4,9 +4,8 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { HomeNav } from "@/app/HomeNav";
 import { SiteFooter } from "@/components/club/SiteFooter";
-import { getManagedEventBySlug, getManagedPublishedEvents, getManagedRelatedEvents } from "@/lib/event-archive";
+import { getManagedEventBySlug, getManagedRelatedEvents } from "@/lib/event-archive";
 import { CATEGORY_LABELS, STATUS_LABELS, formatEventDate, formatEventTime } from "@/lib/event-display";
-import { GOLDEN_HOUR } from "@/lib/golden-hour";
 import { EventCard } from "../EventCard";
 import { EventVisual } from "../EventVisual";
 import styles from "../evenimente.module.css";
@@ -14,9 +13,7 @@ import detailStyles from "./event-detail.module.css";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateStaticParams() {
-  return (await getManagedPublishedEvents()).map((event) => ({ slug: event.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await getManagedEventBySlug((await params).slug);
@@ -24,6 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${event.title} · Evenimente SavaPass`,
     description: event.shortDescription,
+    robots: { index: false, follow: false },
     openGraph: event.coverImage.src ? { images: [{ url: event.coverImage.src, alt: event.coverImage.alt }] } : undefined,
   };
 }
@@ -90,7 +88,7 @@ export default async function EventDetailPage({ params }: Props) {
           </section>
         )}
       </main>
-      <SiteFooter eventHref={GOLDEN_HOUR.checkoutHref} />
+      <SiteFooter eventHref="/evenimente" />
     </div>
   );
 }
