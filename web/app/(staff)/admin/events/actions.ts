@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/dashboard/auth";
 import { revalidateEvents } from "@/lib/events";
+import { bucharestDateTimeToIso, isEventEnded } from "@/lib/event-lifecycle";
 import { logAudit } from "@/lib/audit";
 import type { Database } from "@/lib/supabase/types";
 
@@ -37,6 +38,7 @@ const eventSchema = z.object({
   date_label: z.string().min(2, "Data scurtă e obligatorie"),
   date_long: z.string().min(2, "Data lungă e obligatorie"),
   starts_at: z.string().min(1, "Alege data exactă"),
+  ends_at: z.string().min(1, "Alege ora de încheiere"),
   doors: z.string().min(1, "Ora porților e obligatorie"),
   venue: z.string().min(2, "Locația e obligatorie"),
   venue_line: z.string().optional(),
@@ -49,11 +51,20 @@ const eventSchema = z.object({
   ticket_types: z.string().default("[]"),
   photo_url: z.string().optional(),
   media_asset_id: z.string().uuid().optional().or(z.literal("")),
+  featured_assignment: z.string().default("none"),
 });
 
-const statusSchema = z.object({
-  id: z.string().uuid(),
-  status: z.enum(["draft", "active", "past"]),
+const eventIdSchema = z.object({ id: z.string().uuid() });
+
+const featuredSlotSchema = z.object({
+  event_id: z.string().uuid(),
+  target_slot: z.coerce.number().int().min(1).max(3),
+  expected_occupant_id: z.string().uuid().optional().or(z.literal("")),
+});
+
+const removeFeaturedSchema = z.object({
+  event_id: z.string().uuid(),
+  expected_slot: z.coerce.number().int().min(1).max(3),
 });
 
 const posterUploadSchema = z.object({
@@ -120,6 +131,45 @@ function previousPosterPath(url: string | null | undefined) {
   } catch {
     return null;
   }
+}
+
+type FeaturedAssignment =
+  | { kind: "none" }
+  | { kind: "slot"; slot: 1 | 2 | 3; expectedOccupantId: string | null };
+
+function parseFeaturedAssignment(value: string): FeaturedAssignment | null {
+  if (value === "none") return { kind: "none" };
+  const match = value.match(/^slot:([123]):(empty|self|[0-9a-f-]{36})$/i);
+  if (!match) return null;
+  return {
+    kind: "slot",
+    slot: Number(match[1]) as 1 | 2 | 3,
+    expectedOccupantId: match[2] === "empty" || match[2] === "self" ? null : match[2],
+  };
+}
+
+function featuredMutationError(message: string) {
+  if (message.includes("featured_slot_changed") || message.includes("duplicate key")) {
+    return "Poziția a fost schimbată între timp de alt administrator. Reîncarcă pagina și încearcă din nou.";
+  }
+  if (message.includes("featured_slot_contains_active_event")) {
+    return "Poziția conține un eveniment activ. Încheie-l sau scoate-l separat înainte de înlocuire.";
+  }
+  if (message.includes("draft_event_cannot_be_featured")) {
+    return "O ciornă nu poate apărea pe Despre. Publică mai întâi evenimentul.";
+  }
+  return "Poziția de pe Despre nu a putut fi actualizată.";
+}
+
+function revalidateEventSurfaces(slug?: string) {
+  revalidateEvents();
+  revalidatePath("/");
+  revalidatePath("/despre");
+  revalidatePath("/evenimente");
+  revalidatePath("/admin/events");
+  revalidatePath("/board/evenimente");
+  revalidatePath("/board/evenimente/arhiva");
+  if (slug) revalidatePath(`/${slug}`);
 }
 
 /** Give one authorized editor a short-lived URL for one validated poster file. */
@@ -191,6 +241,26 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
     return { errors: { general: parsed.error.issues[0]?.message ?? "Date invalide." } };
   }
 
+  let startsAt: string;
+  let endsAt: string;
+  try {
+    startsAt = bucharestDateTimeToIso(parsed.data.starts_at);
+    endsAt = bucharestDateTimeToIso(parsed.data.ends_at);
+  } catch {
+    return { errors: { general: "Data sau ora nu este validă pentru fusul orar Europe/Bucharest." } };
+  }
+  if (new Date(endsAt) <= new Date(startsAt)) {
+    return { errors: { general: "Ora de încheiere trebuie să fie după ora începerii." } };
+  }
+
+  const featuredAssignment = parseFeaturedAssignment(parsed.data.featured_assignment);
+  if (!featuredAssignment) {
+    return { errors: { general: "Poziția aleasă pentru Despre nu este validă." } };
+  }
+  if (parsed.data.status === "draft" && featuredAssignment.kind === "slot") {
+    return { errors: { general: "Publică evenimentul înainte să îl adaugi pe Despre." } };
+  }
+
   const program = parseJsonList(parsed.data.program, programSchema);
   if (!program.success) return { errors: { general: program.error.issues[0]?.message ?? "Program invalid." } };
 
@@ -199,6 +269,15 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
 
   const ticketTypes = parseJsonList(parsed.data.ticket_types, ticketTypeSchema);
   if (!ticketTypes.success) return { errors: { general: ticketTypes.error.issues[0]?.message ?? "Tipuri de bilet invalide." } };
+  let ticketSaleWindows: { start: string | null; end: string | null }[];
+  try {
+    ticketSaleWindows = ticketTypes.data.map((type) => ({
+      start: type.sales_start_at ? bucharestDateTimeToIso(type.sales_start_at) : null,
+      end: type.sales_end_at ? bucharestDateTimeToIso(type.sales_end_at) : null,
+    }));
+  } catch {
+    return { errors: { general: "Perioada de vânzare conține o dată invalidă pentru fusul orar Europe/Bucharest." } };
+  }
   const normalizedTypeSlugs = ticketTypes.data.map((type) => slugify(type.slug || type.name));
   if (normalizedTypeSlugs.some((slug) => !slug) || new Set(normalizedTypeSlugs).size !== normalizedTypeSlugs.length) {
     return { errors: { general: "Tipurile de bilet trebuie să aibă slug-uri diferite." } };
@@ -207,8 +286,9 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
   if (activeTypeCapacity > parsed.data.capacity) {
     return { errors: { general: "Suma capacităților tipurilor de bilet nu poate depăși capacitatea evenimentului." } };
   }
-  for (const type of ticketTypes.data) {
-    if (type.sales_start_at && type.sales_end_at && new Date(type.sales_end_at) <= new Date(type.sales_start_at)) {
+  for (const [index, type] of ticketTypes.data.entries()) {
+    const saleWindow = ticketSaleWindows[index];
+    if (saleWindow.start && saleWindow.end && new Date(saleWindow.end) <= new Date(saleWindow.start)) {
       return { errors: { general: `Perioada de vânzare pentru „${type.name}” este invalidă.` } };
     }
   }
@@ -216,10 +296,30 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
   const id = parsed.data.id || randomUUID();
   const isEdit = !!parsed.data.id;
   const current = isEdit
-    ? await supabaseAdmin.from("events").select("id, slug, photo_url, status").eq("id", id).single()
+    ? await supabaseAdmin
+        .from("events")
+        .select("id, slug, photo_url, status, starts_at, ends_at, manually_ended_at, featured_slot")
+        .eq("id", id)
+        .single()
     : null;
 
   if (isEdit && !current?.data) return { errors: { general: "Evenimentul nu există." } };
+  if (!isEdit && parsed.data.status === "past") {
+    return { errors: { general: "Creează evenimentul ca activ sau ciornă. Încheierea se face separat, cu confirmare." } };
+  }
+  if (current?.data?.status === "past" && parsed.data.status !== "past") {
+    return { errors: { general: "Un eveniment încheiat nu poate fi reactivat." } };
+  }
+  if (current?.data?.status === "active" && parsed.data.status !== "active") {
+    return { errors: { general: "Folosește acțiunea «Încheie evenimentul» pentru o schimbare permanentă de status." } };
+  }
+  if (
+    parsed.data.status === "active"
+    && (!current?.data || current.data.status === "draft")
+    && new Date(endsAt).getTime() <= Date.now()
+  ) {
+    return { errors: { general: "Un eveniment nou sau o ciornă publicată trebuie să aibă ora de încheiere în viitor." } };
+  }
 
   const { data: existingTypes } = isEdit
     ? await supabaseAdmin.from("event_ticket_types").select("id").eq("event_id", id)
@@ -272,7 +372,8 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
     slug: nextSlug,
     date_label: parsed.data.date_label,
     date_long: parsed.data.date_long,
-    starts_at: new Date(parsed.data.starts_at).toISOString(),
+    starts_at: startsAt,
+    ends_at: endsAt,
     doors: parsed.data.doors,
     venue: parsed.data.venue,
     venue_line: parsed.data.venue_line || null,
@@ -283,7 +384,7 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
     program: program.data,
     perks: perks.data,
     photo_url: photoUrl,
-    status: isEdit ? undefined : "draft" as EventStatus,
+    status: parsed.data.status as EventStatus,
   };
 
   const { error } = isEdit
@@ -291,7 +392,54 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
     : await supabaseAdmin.from("events").insert(payload);
 
   if (error?.code === "23505") return { errors: { general: "Există deja un eveniment cu acest slug." } };
+  if (error?.message.includes("event_cannot_be_reactivated") || error?.message.includes("event_manual_end_is_permanent")) {
+    return { errors: { general: "Un eveniment încheiat nu poate fi reactivat." } };
+  }
+  if (error?.message.includes("event_end_must_follow_start")) {
+    return { errors: { general: "Ora de încheiere trebuie să fie după ora începerii." } };
+  }
   if (error) return { errors: { general: "Evenimentul nu a putut fi salvat." } };
+
+  const previousFeaturedSlot = current?.data?.featured_slot ?? null;
+  let featuredError: string | null = null;
+  if (featuredAssignment.kind === "none" && previousFeaturedSlot !== null) {
+    const { error: placementError } = await supabaseAdmin.rpc("admin_remove_featured_slot", {
+      target_id: id,
+      expected_slot: previousFeaturedSlot,
+    });
+    if (placementError) featuredError = featuredMutationError(placementError.message);
+  } else if (
+    featuredAssignment.kind === "slot"
+    && previousFeaturedSlot !== featuredAssignment.slot
+  ) {
+    const placementArgs: {
+      target_id: string;
+      target_slot: number;
+      expected_occupant_id?: string;
+    } = {
+      target_id: id,
+      target_slot: featuredAssignment.slot,
+    };
+    if (featuredAssignment.expectedOccupantId) {
+      placementArgs.expected_occupant_id = featuredAssignment.expectedOccupantId;
+    }
+    const { error: placementError } = await supabaseAdmin.rpc(
+      "admin_assign_featured_slot",
+      placementArgs,
+    );
+    if (placementError) featuredError = featuredMutationError(placementError.message);
+  }
+
+  if (featuredError) {
+    if (!isEdit) {
+      await supabaseAdmin.from("events").delete().eq("id", id);
+      const uploadedPath = previousPosterPath(photoUrl);
+      if (uploadedPath) await supabaseAdmin.storage.from("posters").remove([uploadedPath]);
+      return { errors: { general: `${featuredError} Evenimentul nou nu a fost creat.` } };
+    }
+    revalidateEventSurfaces(nextSlug);
+    return { errors: { general: `Detaliile au fost salvate, dar ${featuredError.toLocaleLowerCase("ro")}` }, eventId: id };
+  }
 
   const typePayload = ticketTypes.data.map((type, index) => ({
     id: type.id || randomUUID(),
@@ -301,8 +449,8 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
     description: type.description?.trim() || null,
     price_bani: type.price_ron * 100,
     capacity: type.capacity,
-    sales_start_at: type.sales_start_at ? new Date(type.sales_start_at).toISOString() : null,
-    sales_end_at: type.sales_end_at ? new Date(type.sales_end_at).toISOString() : null,
+    sales_start_at: ticketSaleWindows[index].start,
+    sales_end_at: ticketSaleWindows[index].end,
     status: type.status,
     sort: index * 10,
   }));
@@ -319,24 +467,6 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
     else await supabaseAdmin.from("media_placements").insert({ page_type: "event", target_id: id, slot: "hero", ...mediaPayload });
   }
 
-  const previousStatus = current?.data?.status ?? "draft";
-  if (parsed.data.status !== previousStatus) {
-    const { error: statusError } = await supabaseAdmin.rpc("admin_set_event_status", {
-      target_id: id,
-      target_status: parsed.data.status,
-    });
-    if (statusError) {
-      const limitReached = statusError.message.includes("active_event_limit_reached");
-      return {
-        errors: {
-          general: limitReached
-            ? "Evenimentul a fost salvat, dar sunt deja 3 evenimente active. Statusul a rămas neschimbat; arhivează unul înainte să-l activezi."
-            : "Evenimentul a fost salvat, dar statusul nu a putut fi schimbat.",
-        },
-      };
-    }
-  }
-
   if (current?.data?.photo_url && current.data.photo_url !== photoUrl) {
     const oldPath = previousPosterPath(current.data.photo_url);
     if (oldPath) await supabaseAdmin.storage.from("posters").remove([oldPath]);
@@ -350,60 +480,128 @@ export async function upsertEvent(_prev: EventActionState, form: FormData): Prom
     metadata: { ticket_type_count: typePayload.length, slug: nextSlug, status: parsed.data.status },
   });
 
-  revalidateEvents();
-  revalidatePath("/");
-  revalidatePath(`/${nextSlug}`);
-  revalidatePath("/evenimente");
-  revalidatePath("/despre");
-  revalidatePath("/admin/events");
-  revalidatePath("/board/evenimente");
+  revalidateEventSurfaces(nextSlug);
   return { ok: true, message: "Eveniment salvat.", eventId: id };
 }
 
-export async function setEventStatus(_prev: EventActionState, form: FormData): Promise<EventActionState> {
+export async function endEvent(_prev: EventActionState, form: FormData): Promise<EventActionState> {
   const actor = await requirePermission("manage_public_events").catch(() => null);
   if (!actor) {
     return { errors: { general: "Nu ai acces la această acțiune." } };
   }
 
-  const parsed = statusSchema.safeParse({
-    id: form.get("id"),
-    status: form.get("status"),
-  });
+  const parsed = eventIdSchema.safeParse({ id: form.get("id") });
   if (!parsed.success) return { errors: { general: "Date invalide." } };
 
-  if (parsed.data.status === "active") {
-    const { count: activeCount } = await supabaseAdmin
-      .from("events")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "active")
-      .neq("id", parsed.data.id);
+  const { data: event } = await supabaseAdmin
+    .from("events")
+    .select("id, slug, title, status, ends_at, manually_ended_at")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+  if (!event) return { errors: { general: "Evenimentul nu mai există." } };
 
-    if ((activeCount ?? 0) >= 3) {
-      return { errors: { general: "Sunt deja 3 evenimente active. Arhivează unul înainte să activezi altul." } };
-    }
-  }
-
-  const { error } = await supabaseAdmin.rpc("admin_set_event_status", {
+  const { data: endedNow, error } = await supabaseAdmin.rpc("admin_end_event", {
     target_id: parsed.data.id,
-    target_status: parsed.data.status,
   });
 
   if (error) {
-    const limitReached = error.message.includes("active_event_limit_reached");
-    return { errors: { general: limitReached ? "Sunt deja 3 evenimente active. Arhivează unul înainte să activezi altul." : "Statusul nu a putut fi schimbat." } };
+    return { errors: { general: "Evenimentul nu a putut fi încheiat. Reîncarcă pagina și încearcă din nou." } };
   }
-  await logAudit({ actorId: actor.user.id, action: "event.status_changed", entityType: "event", entityId: parsed.data.id, metadata: { status: parsed.data.status } });
-  revalidateEvents();
-  revalidatePath("/");
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  revalidatePath("/board/evenimente");
-  revalidatePath("/evenimente");
-  revalidatePath("/despre");
-  return { ok: true, message: "Status actualizat." };
+
+  await logAudit({
+    actorId: actor.user.id,
+    action: "event.ended",
+    entityType: "event",
+    entityId: parsed.data.id,
+    metadata: { source: endedNow ? "manual" : "already_ended", featured_slot_retained: true },
+  });
+  revalidateEventSurfaces(event.slug);
+  return {
+    ok: true,
+    message: endedNow
+      ? "Eveniment încheiat. Poziția de pe Despre a fost păstrată."
+      : "Evenimentul era deja încheiat. Pagina a fost actualizată.",
+  };
 }
 
-export async function setEventStatusForm(form: FormData) {
-  await setEventStatus({}, form);
+export async function assignFeaturedSlot(
+  _prev: EventActionState,
+  form: FormData,
+): Promise<EventActionState> {
+  const actor = await requirePermission("manage_public_events").catch(() => null);
+  if (!actor) return { errors: { general: "Nu ai acces la această acțiune." } };
+
+  const parsed = featuredSlotSchema.safeParse({
+    event_id: form.get("event_id"),
+    target_slot: form.get("target_slot"),
+    expected_occupant_id: form.get("expected_occupant_id") ?? "",
+  });
+  if (!parsed.success) return { errors: { general: "Alege un eveniment și o poziție validă." } };
+
+  const args: {
+    target_id: string;
+    target_slot: number;
+    expected_occupant_id?: string;
+  } = {
+    target_id: parsed.data.event_id,
+    target_slot: parsed.data.target_slot,
+  };
+  if (parsed.data.expected_occupant_id) {
+    args.expected_occupant_id = parsed.data.expected_occupant_id;
+  }
+  const { error } = await supabaseAdmin.rpc("admin_assign_featured_slot", args);
+  if (error) return { errors: { general: featuredMutationError(error.message) } };
+
+  const { data: event } = await supabaseAdmin
+    .from("events")
+    .select("slug, status, ends_at, manually_ended_at")
+    .eq("id", parsed.data.event_id)
+    .maybeSingle();
+  await logAudit({
+    actorId: actor.user.id,
+    action: "event.featured_slot_assigned",
+    entityType: "event",
+    entityId: parsed.data.event_id,
+    metadata: {
+      featured_slot: parsed.data.target_slot,
+      lifecycle_status: event && isEventEnded(event) ? "ended" : "active",
+    },
+  });
+  revalidateEventSurfaces(event?.slug);
+  return { ok: true, message: `Evenimentul apare acum în Slotul ${parsed.data.target_slot}.` };
+}
+
+export async function removeFeaturedSlot(
+  _prev: EventActionState,
+  form: FormData,
+): Promise<EventActionState> {
+  const actor = await requirePermission("manage_public_events").catch(() => null);
+  if (!actor) return { errors: { general: "Nu ai acces la această acțiune." } };
+
+  const parsed = removeFeaturedSchema.safeParse({
+    event_id: form.get("event_id"),
+    expected_slot: form.get("expected_slot"),
+  });
+  if (!parsed.success) return { errors: { general: "Poziția aleasă nu este validă." } };
+
+  const { error } = await supabaseAdmin.rpc("admin_remove_featured_slot", {
+    target_id: parsed.data.event_id,
+    expected_slot: parsed.data.expected_slot,
+  });
+  if (error) return { errors: { general: featuredMutationError(error.message) } };
+
+  const { data: event } = await supabaseAdmin
+    .from("events")
+    .select("slug")
+    .eq("id", parsed.data.event_id)
+    .maybeSingle();
+  await logAudit({
+    actorId: actor.user.id,
+    action: "event.featured_slot_removed",
+    entityType: "event",
+    entityId: parsed.data.event_id,
+    metadata: { previous_featured_slot: parsed.data.expected_slot },
+  });
+  revalidateEventSurfaces(event?.slug);
+  return { ok: true, message: "Evenimentul a fost scos de pe Despre. Statusul lui nu s-a schimbat." };
 }

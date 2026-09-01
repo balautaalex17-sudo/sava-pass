@@ -62,6 +62,7 @@ export type EventRecord = {
   publishedAt?: string;
 
   eventStatus: EventStatus;
+  lifecycleEndedAt?: string;
   publishingStatus: "draft" | "published";
 
   extractionConfidence: "high" | "medium" | "low";
@@ -71,7 +72,6 @@ export type EventRecord = {
 
 export type EventOverride = Partial<Omit<EventRecord, "id" | "instagramPostUrls" | "instagramPostIds" | "lastSyncedAt">> & {
   hidden?: boolean;
-  featured?: boolean;
   publish?: boolean;
   mergeInto?: string;
   splitSourceIds?: string[];

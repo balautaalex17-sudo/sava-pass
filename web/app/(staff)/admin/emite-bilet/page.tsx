@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { StaffHeader } from "@/components/staff/StaffHeader";
+import { isEventEnded } from "@/lib/event-lifecycle";
 import { requireStaffRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { IssueTicketForm } from "./IssueTicketForm";
@@ -15,14 +16,16 @@ export default async function IssueTicketPage() {
   if (!current) redirect("/conta");
 
   const [{ data: events }, { data: rawTicketTypes }] = await Promise.all([
-    supabaseAdmin.from("events").select("id, title, status").order("status", { ascending: true }).order("created_at", { ascending: false }),
+    supabaseAdmin.from("events").select("id, title, status, ends_at, manually_ended_at").order("starts_at", { ascending: true }),
     supabaseAdmin.from("event_ticket_types").select("id, event_id, name, events(title)").neq("status", "hidden").order("sort"),
   ]);
 
-  const list = (events ?? []).map((e) => ({ id: e.id, title: e.title, status: e.status as string }));
-  const defaultEventId = list.find((e) => e.status === "active")?.id ?? list[0]?.id ?? "";
+  const activeEvents = (events ?? []).filter((event) => event.status === "active" && !isEventEnded(event));
+  const activeEventIds = new Set(activeEvents.map((event) => event.id));
+  const list = activeEvents.map((event) => ({ id: event.id, title: event.title, status: "active" }));
+  const defaultEventId = list[0]?.id ?? "";
   const defaultEmail = current.user.email ?? "";
-  const ticketTypes = (rawTicketTypes ?? []).map((type) => ({ id: type.id, eventId: type.event_id, label: `${type.events?.title ?? "Eveniment"} · ${type.name}` }));
+  const ticketTypes = (rawTicketTypes ?? []).filter((type) => activeEventIds.has(type.event_id)).map((type) => ({ id: type.id, eventId: type.event_id, label: `${type.events?.title ?? "Eveniment"} · ${type.name}` }));
 
   return (
     <>

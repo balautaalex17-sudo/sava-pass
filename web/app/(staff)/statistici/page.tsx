@@ -4,6 +4,7 @@ import { RefreshCcw } from "lucide-react";
 import { Chip } from "@/components/ui/Chip";
 import { GearWatermark } from "@/components/ui/GearWatermark";
 import { StaffHeader } from "@/components/staff/StaffHeader";
+import { getEventStatus, isEventEnded } from "@/lib/event-lifecycle";
 import { getAllEventsForAdmin, priceRon } from "@/lib/events";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireStaffRole } from "@/lib/roles";
@@ -22,7 +23,7 @@ export default async function StatsPage() {
     supabaseAdmin.from("orders").select("event_id, amount_bani").eq("status", "paid"),
   ]);
 
-  const active = events.find((event) => event.status === "active") ?? null;
+  const active = events.find((event) => event.status === "active" && !isEventEnded(event)) ?? null;
   const statsByEvent = new Map((statsResult.data ?? []).map((row) => [row.event_id, row]));
   const revenueByEvent = new Map<string, number>();
   for (const order of ordersResult.data ?? []) {
@@ -96,7 +97,7 @@ export default async function StatsPage() {
                       <div style={{ color: "var(--im-fg)", fontSize: 14, fontWeight: 800 }}>{event.title}</div>
                       <div style={{ color: "var(--im-fg-2)", fontSize: 12, marginTop: 2 }}>{event.date_label}</div>
                     </td>
-                    <td style={{ padding: 14 }}><Chip size="sm" tone={event.status === "active" ? "success" : event.status === "draft" ? "warning" : "used"} dot>{event.status}</Chip></td>
+                    <td style={{ padding: 14 }}><Chip size="sm" tone={event.status === "draft" ? "warning" : isEventEnded(event) ? "used" : "success"} dot>{event.status === "draft" ? "Ciornă" : getEventStatus(event) === "ended" ? "Eveniment încheiat" : "Activ"}</Chip></td>
                     <td style={{ padding: 14 }}>
                       <div style={{ color: "var(--im-fg)", fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: 13 }}>{eventSold} / {event.capacity}</div>
                       <ProgressBar value={eventPct} color="var(--brand-cyan)" small />

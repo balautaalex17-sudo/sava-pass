@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { priceRon } from "@/lib/events";
+import { getActiveEvent, priceRon } from "@/lib/events";
 import { AdminClient } from "./AdminClient";
 import { Chip } from "@/components/ui/Chip";
 import { GearWatermark } from "@/components/ui/GearWatermark";
@@ -18,13 +18,9 @@ export default async function AdminPage() {
   const current = await requireStaffRole(["admin"]);
   if (!current) redirect("/conta");
 
-  // Get active event
-  const { data: event } = await supabaseAdmin
-    .from("events")
-    .select("id, title, capacity, price_bani, status, date_label, venue")
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle();
+  // Use the shared lifecycle rule so manually or automatically ended events
+  // never appear as the live event in this legacy overview.
+  const event = await getActiveEvent();
 
   if (!event) {
     return (

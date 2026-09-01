@@ -2,6 +2,7 @@ import { z } from "zod";
 import { dashboardAccessResponse, privateJson } from "@/lib/dashboard/api";
 import { requirePermission } from "@/lib/dashboard/auth";
 import { consumeDashboardRateLimit } from "@/lib/dashboard/rate-limit";
+import { isEventEnded } from "@/lib/event-lifecycle";
 import { resultObject, TICKET_MESSAGES } from "@/lib/dashboard/scan-results";
 import {
   resolveTicketInput,
@@ -49,6 +50,9 @@ export async function POST(request: Request) {
         result: resolved.code,
         message: TICKET_MESSAGES[resolved.code],
       });
+    }
+    if (!resolved.ticket.events || resolved.ticket.events.status !== "active" || isEventEnded(resolved.ticket.events)) {
+      return privateJson({ result: "inactive_event", message: TICKET_MESSAGES.inactive_event, ticket: ticketDto(resolved.ticket) });
     }
 
     const { data, error } = await supabaseAdmin.rpc("confirm_cash_payment", {

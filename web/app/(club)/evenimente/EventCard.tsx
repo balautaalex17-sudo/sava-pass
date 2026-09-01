@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { EventRecord } from "@/lib/event-types";
-import { CATEGORY_LABELS, STATUS_LABELS, formatEventDate } from "@/lib/event-display";
+import { CATEGORY_LABELS, formatEventDate } from "@/lib/event-display";
 import { EventVisual } from "./EventVisual";
 import styles from "./evenimente.module.css";
 
@@ -23,7 +23,7 @@ export function EventCard({
         <div className={styles.cardTopline}>
           <span>{CATEGORY_LABELS[event.category]}</span>
           <span className={`${styles.status} ${styles[`status_${event.eventStatus.replace("-", "_")}`]}`}>
-            {STATUS_LABELS[event.eventStatus]}
+            {isActive ? "Activ" : "Eveniment încheiat"}
           </span>
         </div>
         <p className={styles.cardDate}>{formatEventDate(event, true)}</p>
@@ -36,9 +36,9 @@ export function EventCard({
         <Link
           className={styles.detailLink}
           href={href}
-          aria-label={canReserve ? `Rezervă bilet pentru ${event.title}` : `Vezi detaliile evenimentului ${event.title}`}
+          aria-label={canReserve ? `Rezervă bilet pentru ${event.title}` : `Eveniment încheiat: ${event.title}`}
         >
-          {canReserve ? "Rezervă bilet" : "Vezi detaliile"} <ArrowUpRight size={17} aria-hidden="true" />
+          {canReserve ? "Rezervă bilet" : "Eveniment încheiat"} <ArrowUpRight size={17} aria-hidden="true" />
         </Link>
       </div>
     </article>

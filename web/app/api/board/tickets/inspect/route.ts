@@ -1,6 +1,7 @@
 import { dashboardAccessResponse, privateJson } from "@/lib/dashboard/api";
 import { requirePermission } from "@/lib/dashboard/auth";
 import { consumeDashboardRateLimit } from "@/lib/dashboard/rate-limit";
+import { isEventEnded } from "@/lib/event-lifecycle";
 import { TICKET_MESSAGES } from "@/lib/dashboard/scan-results";
 import {
   logTicketInspection,
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
 
     const { ticket, fingerprint } = resolved;
     let result = "error";
-    if (ticket.events?.status !== "active") result = "inactive_event";
+    if (!ticket.events || ticket.events.status !== "active" || isEventEnded(ticket.events)) result = "inactive_event";
     else if (ticket.status === "reserved") result = "reservation_found";
     else if (ticket.status === "paid") result = "valid_ticket";
     else if (ticket.status === "checked_in") result = "already_checked_in";

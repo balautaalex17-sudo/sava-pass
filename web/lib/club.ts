@@ -92,7 +92,15 @@ export async function getSiteContent(): Promise<Record<string, Json>> {
 export async function getContent<T = string>(key: string, fallback: T): Promise<T> {
   const all = await getSiteContentMap();
   const v = all[key];
-  return v === undefined || v === null ? fallback : (v as unknown as T);
+  if (v === undefined || v === null) return fallback;
+
+  // Older seed data wrapped editable prose as { value: "..." }. Keep raw
+  // site-content reads untouched, but normalize that legacy shape here so
+  // public pages always receive the scalar value they requested.
+  if (typeof v === "object" && !Array.isArray(v) && "value" in v) {
+    return v.value as unknown as T;
+  }
+  return v as unknown as T;
 }
 
 // ── Admin reads: all rows incl. inactive/unpublished. Uncached. Staff-gated. ──

@@ -218,7 +218,16 @@ try {
   console.log(`Stress run ${runShort}: preflight on staging ${actualProjectRef}`);
   const now = new Date().toISOString();
   const [{ data: event, error: eventError }, { data: scanner, error: scannerError }, { data: campaign, error: campaignError }] = await Promise.all([
-    supabase.from("events").select("id, title, capacity").eq("status", "active").gt("starts_at", now).order("starts_at").limit(1).maybeSingle(),
+    supabase
+      .from("events")
+      .select("id, title, capacity")
+      .eq("status", "active")
+      .is("manually_ended_at", null)
+      .gt("ends_at", now)
+      .gt("starts_at", now)
+      .order("starts_at")
+      .limit(1)
+      .maybeSingle(),
     supabase.from("profiles").select("id, full_name").eq("membership_status", "active").in("role", ["scanner", "board", "admin"]).order("created_at").limit(1).maybeSingle(),
     supabase.from("recruitment_campaigns").select("id").eq("status", "open").lte("opens_at", now).gte("closes_at", now).order("opens_at", { ascending: false }).limit(1).maybeSingle(),
   ]);

@@ -4,6 +4,7 @@ import generatedEvents from "@/data/instagram-events.generated.json";
 import eventOverrides from "@/data/event-overrides.json";
 import { getSiteContent } from "@/lib/club";
 import { GOLDEN_HOUR_EVENT } from "@/lib/golden-hour";
+import { isEventEnded } from "@/lib/event-lifecycle";
 import type { EventOverride, EventRecord } from "@/lib/event-types";
 import type { Event } from "@/lib/supabase/types";
 
@@ -36,26 +37,6 @@ export async function getBoardEventOverrides(): Promise<EventOverrideMap> {
   return overrides;
 }
 
-function bucharestToday() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Bucharest",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
-function currentStatus(event: EventRecord): EventRecord["eventStatus"] {
-  if (!event.startDate) return "date-unknown";
-  const today = bucharestToday();
-  const endDate = event.endDate || event.startDate;
-  if (today < event.startDate) return "upcoming";
-  if (today > endDate) return "past";
-  return "ongoing";
-}
-
 function bucharestDateTime(value: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Bucharest",
@@ -73,39 +54,51 @@ function bucharestDateTime(value: string) {
   };
 }
 
-export function ticketingEventToArchiveEvent(event: Event): EventRecord {
+export function ticketingEventToArchiveEvent(event: Event, legacy?: EventRecord): EventRecord {
   const starts = bucharestDateTime(event.starts_at);
+  const ends = bucharestDateTime(event.ends_at);
+  const ended = isEventEnded(event);
+  const eventStatus: EventRecord["eventStatus"] = ended
+    ? "past"
+    : new Date(event.starts_at).getTime() <= Date.now()
+      ? "ongoing"
+      : "upcoming";
   const record: EventRecord = {
+    ...legacy,
     id: `ticketing-${event.id}`,
     slug: event.slug,
     title: event.title,
     subtitle: event.subtitle ?? undefined,
-    shortDescription: event.subtitle || event.about || `${event.date_label} · ${event.venue}`,
-    fullDescription: event.about ?? undefined,
+    shortDescription: event.subtitle || event.about || legacy?.shortDescription || `${event.date_label} · ${event.venue}`,
+    fullDescription: event.about ?? legacy?.fullDescription,
     startDate: starts.date,
     startTime: starts.time,
+    endDate: ends.date,
+    endTime: ends.time,
     timezone: "Europe/Bucharest",
     venueName: event.venue,
     address: event.venue_line ?? undefined,
-    category: "other",
+    category: legacy?.category ?? "other",
     ticketPrice: `${Math.round(event.price_bani / 100)} RON`,
-    registrationUrl: event.status === "active" ? `/${event.slug}/checkout` : undefined,
-    internalTicketingUrl: `/${event.slug}`,
-    collaborators: [],
-    sponsors: [],
+    registrationUrl: !ended && event.status === "active" ? `/${event.slug}/checkout` : undefined,
+    internalTicketingUrl: legacy ? `/evenimente/${event.slug}` : `/${event.slug}`,
+    collaborators: legacy?.collaborators ?? [],
+    sponsors: legacy?.sponsors ?? [],
     coverImage: {
-      src: event.photo_url ?? "",
+      src: event.photo_url ?? legacy?.coverImage.src ?? "",
       alt: `Afișul evenimentului ${event.title}`,
-      type: "poster",
+      type: legacy?.coverImage.type ?? "poster",
+      position: legacy?.coverImage.position,
     },
-    gallery: [],
-    instagramPostUrls: [],
-    instagramPostIds: [],
+    gallery: legacy?.gallery ?? [],
+    instagramPostUrls: legacy?.instagramPostUrls ?? [],
+    instagramPostIds: legacy?.instagramPostIds ?? [],
     publishedAt: event.created_at,
-    eventStatus: event.status === "past" ? "past" : "upcoming",
+    eventStatus,
+    lifecycleEndedAt: event.manually_ended_at ?? event.ends_at,
     publishingStatus: "published",
     extractionConfidence: "high",
-    missingFields: [],
+    missingFields: legacy?.missingFields ?? [],
     lastSyncedAt: event.created_at,
   };
   return record;
@@ -114,7 +107,7 @@ export function ticketingEventToArchiveEvent(event: Event): EventRecord {
 function applyRuntimeOverride(event: EventRecord, overrides: EventOverrideMap) {
   const override = overrides[event.slug] || {};
   const fields = Object.fromEntries(
-    Object.entries(override).filter(([key]) => !["hidden", "featured", "publish", "mergeInto", "splitSourceIds", "imagePosition"].includes(key)),
+    Object.entries(override).filter(([key]) => !["hidden", "publish", "mergeInto", "splitSourceIds", "imagePosition"].includes(key)),
   ) as Partial<EventRecord>;
   const next = { ...event, ...fields } as EventRecord;
   if (override.imagePosition) {
@@ -122,7 +115,10 @@ function applyRuntimeOverride(event: EventRecord, overrides: EventOverrideMap) {
   }
   if (override.publish === true) next.publishingStatus = "published";
   if (override.publish === false || override.hidden) next.publishingStatus = "draft";
-  next.eventStatus = currentStatus(next);
+  // Imported Instagram records are presentation/history only. Database events
+  // are the sole source for active/ended lifecycle and ticket availability.
+  next.eventStatus = "past";
+  next.registrationUrl = undefined;
   return next;
 }
 
@@ -240,17 +236,6 @@ export function getEventBySlug(slug: string) {
   return getPublishedEvents().find((event) => event.slug === slug) || null;
 }
 
-export function getFeaturedEvent() {
-  const overrides = eventOverrides.events as Record<string, EventOverride>;
-  return getPublishedEvents().find((event) => overrides[event.slug]?.featured) || null;
-}
-
-export function getClosestUpcomingEvent() {
-  return getPublishedEvents()
-    .filter((event) => event.eventStatus === "upcoming" || event.eventStatus === "ongoing")
-    .sort((a, b) => (a.startDate || "9999-12-31").localeCompare(b.startDate || "9999-12-31"))[0] || null;
-}
-
 export function getRelatedEvents(event: EventRecord, limit = 3) {
   return getPublishedEvents()
     .filter((candidate) => candidate.id !== event.id)
@@ -260,11 +245,6 @@ export function getRelatedEvents(event: EventRecord, limit = 3) {
       return bScore - aScore || (b.startDate || "").localeCompare(a.startDate || "");
     })
     .slice(0, limit);
-}
-
-export function getFeaturedSlug() {
-  const overrides = eventOverrides.events as Record<string, EventOverride>;
-  return Object.entries(overrides).find(([, override]) => override.featured)?.[0] || null;
 }
 
 export function getImagePosition(slug: string) {

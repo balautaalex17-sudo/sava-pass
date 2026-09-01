@@ -31,6 +31,8 @@ interface TicketRecord {
     title: string;
     status: Database["public"]["Enums"]["event_status"];
     starts_at: string;
+    ends_at: string;
+    manually_ended_at: string | null;
   } | null;
   event_ticket_types: { name: string; price_bani: number } | null;
   orders: {
@@ -69,7 +71,7 @@ export async function resolveTicketInput(
   let query = supabaseAdmin
     .from("tickets")
     .select(
-      "id, status, holder_name, holder_email, code, event_id, ticket_type_id, issued_at, expires_at, checked_in_at, payment_confirmed_at, events(id, title, status, starts_at), event_ticket_types(name, price_bani), orders(status, amount_bani, created_at)",
+      "id, status, holder_name, holder_email, code, event_id, ticket_type_id, issued_at, expires_at, checked_in_at, payment_confirmed_at, events(id, title, status, starts_at, ends_at, manually_ended_at), event_ticket_types(name, price_bani), orders(status, amount_bani, created_at)",
     );
   query = ticketId ? query.eq("id", ticketId) : query.eq("code", code!);
   const { data, error } = await query.maybeSingle();

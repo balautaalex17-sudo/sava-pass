@@ -2,54 +2,41 @@ import { unstable_cache, updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireStaffRole } from "@/lib/roles";
+import { isEventEnded, sortPublicEvents } from "@/lib/event-lifecycle";
 import type { Event, EventStats, EventTicketType } from "@/lib/supabase/types";
 
 // Perf (U5): public event reads are cached in the Next data cache so the homepage
 // and buyer pages don't hit Supabase on every request (also reduces how often a
 // cold DB has to wake). Cached reads use the ADMIN client because unstable_cache
 // cannot wrap the cookie-based client (it reads cookies). Mutations call
-// revalidateTag(EVENTS_TAG) to refresh immediately. Stats stay UNCACHED (live
+// updateTag(EVENTS_TAG) to refresh immediately. Stats stay UNCACHED (live
 // sold counts). Events are public data, so admin-client reads are equivalent.
 export const EVENTS_TAG = "events";
 const CACHE = { tags: [EVENTS_TAG], revalidate: 300 };
-
-function prioritizeActiveEvents(events: Event[]) {
-  const now = Date.now();
-  return [...events].sort((first, second) => {
-    const firstStart = new Date(first.starts_at).getTime();
-    const secondStart = new Date(second.starts_at).getTime();
-    const firstIsUpcoming = firstStart > now;
-    const secondIsUpcoming = secondStart > now;
-
-    if (firstIsUpcoming !== secondIsUpcoming) return firstIsUpcoming ? -1 : 1;
-    return firstIsUpcoming ? firstStart - secondStart : secondStart - firstStart;
-  });
-}
-
-const cachedActiveEvents = unstable_cache(
-  async (): Promise<Event[]> => {
-    const { data } = await supabaseAdmin
-      .from("events")
-      .select("*")
-      .eq("status", "active")
-      .order("starts_at")
-      .limit(3);
-    return prioritizeActiveEvents(data ?? []);
-  },
-  ["active-events"],
-  CACHE,
-);
 
 const cachedPublicEvents = unstable_cache(
   async (): Promise<Event[]> => {
     const { data } = await supabaseAdmin
       .from("events")
       .select("*")
-      .in("status", ["active", "past"])
-      .order("starts_at", { ascending: false });
+      .in("status", ["active", "past"]);
     return data ?? [];
   },
-  ["public-events"],
+  ["public-events-lifecycle-v1"],
+  CACHE,
+);
+
+const cachedFeaturedEvents = unstable_cache(
+  async (): Promise<Event[]> => {
+    const { data } = await supabaseAdmin
+      .from("events")
+      .select("*")
+      .in("status", ["active", "past"])
+      .not("featured_slot", "is", null)
+      .order("featured_slot", { ascending: true });
+    return data ?? [];
+  },
+  ["featured-events-v1"],
   CACHE,
 );
 
@@ -63,37 +50,38 @@ const cachedEventBySlugPublic = unstable_cache(
       .single();
     return data ?? null;
   },
-  ["event-by-slug-public"],
-  CACHE,
-);
-
-const cachedPastEvents = unstable_cache(
-  async (): Promise<Event[]> => {
-    const { data } = await supabaseAdmin
-      .from("events")
-      .select("*")
-      .eq("status", "past")
-      .order("starts_at", { ascending: false });
-    return data ?? [];
-  },
-  ["past-events"],
+  ["event-by-slug-public-lifecycle-v1"],
   CACHE,
 );
 
 export async function getActiveEvent(): Promise<Event | null> {
-  return (await cachedActiveEvents())[0] ?? null;
+  return (await getActiveEvents())[0] ?? null;
 }
 
 export async function getActiveEvents(): Promise<Event[]> {
-  return cachedActiveEvents();
+  const now = Date.now();
+  return (await cachedPublicEvents())
+    .filter((event) => event.status === "active" && !isEventEnded(event, now))
+    .sort((first, second) => new Date(first.starts_at).getTime() - new Date(second.starts_at).getTime());
 }
 
 export async function getPublicEvents(): Promise<Event[]> {
-  return cachedPublicEvents();
+  return sortPublicEvents(await cachedPublicEvents());
 }
 
+export async function getFeaturedEvents(): Promise<Event[]> {
+  return cachedFeaturedEvents();
+}
+
+export async function getEndedEvents(): Promise<Event[]> {
+  const now = Date.now();
+  return sortPublicEvents(await cachedPublicEvents(), now)
+    .filter((event) => isEventEnded(event, now));
+}
+
+/** Compatibility alias for code that has not yet adopted the domain term. */
 export async function getPastEvents(): Promise<Event[]> {
-  return cachedPastEvents();
+  return getEndedEvents();
 }
 
 export async function getEventBySlug(slug: string, options?: { includeDraftForAdmin?: boolean }): Promise<Event | null> {
@@ -183,6 +171,8 @@ export function priceRon(priceBani: number): number {
 }
 
 /** One shared lifecycle rule prevents stale "active" records from accepting sales. */
-export function eventIsBookable(event: Pick<Event, "status" | "starts_at">): boolean {
-  return event.status === "active" && new Date(event.starts_at).getTime() > Date.now();
+export function eventIsBookable(
+  event: Pick<Event, "status" | "ends_at" | "manually_ended_at">,
+): boolean {
+  return event.status === "active" && !isEventEnded(event);
 }

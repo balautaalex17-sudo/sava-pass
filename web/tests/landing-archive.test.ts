@@ -113,18 +113,20 @@ test("board and public surfaces use the intended event sources", () => {
   const archiveAdapter = readFileSync(new URL("../lib/event-archive.ts", import.meta.url), "utf8");
 
   assert.match(boardPage, /getAllEventsForAdmin/);
-  assert.match(boardPage, /getActiveEvent/);
-  assert.match(boardPage, /activeCount >= 3/);
-  assert.match(boardPage, /label="Încheie"/);
-  assert.match(boardPage, /href="\/board\/evenimente\/arhiva"/);
-  assert.doesNotMatch(boardPage, /getManagedArchiveEvents|Arhivă importată|view=homepage|view=events/);
+  assert.match(boardPage, /featured_slot/);
+  assert.match(boardPage, /isEventEnded/);
+  assert.match(boardPage, /SlotAssignmentForm/);
+  assert.match(boardPage, /EndEventDialog/);
+  assert.doesNotMatch(boardPage, /activeCount >= 3|StatusControl|getActiveEvent/);
 
-  assert.match(archiveBoardPage, /getManagedArchiveEvents/);
   assert.match(archiveBoardPage, /getAllEventsForAdmin/);
-  assert.match(archiveBoardPage, /\/board\/evenimente\/arhiva\/\$\{event\.slug\}/);
+  assert.match(archiveBoardPage, /filter\(\(event\) => isEventEnded\(event\)\)/);
+  assert.match(archiveBoardPage, /ArchivePlacementControl/);
+  assert.doesNotMatch(archiveBoardPage, /getManagedArchiveEvents|ArchiveEventEditor/);
 
   assert.match(compactEventCard, /event\.internalTicketingUrl \|\| `\/evenimente\/\$\{event\.slug\}`/);
   assert.match(compactEventCard, /Rezervă bilet/);
+  assert.match(compactEventCard, /Eveniment încheiat/);
 
   assert.match(publicPage, /getPublicEvents/);
   assert.match(publicPage, /getManagedPublishedEvents/);
@@ -138,7 +140,10 @@ test("board and public surfaces use the intended event sources", () => {
   assert.match(homepage, /secondaryEvents: events\.slice\(1, 3\)/);
   assert.doesNotMatch(homepage, /getManagedEventBySlug|GOLDEN_HOUR|getPastEvents/);
 
-  assert.match(eventsSource, /prioritizeActiveEvents/);
-  assert.doesNotMatch(eventsSource, /\.gt\("starts_at"/);
-  assert.doesNotMatch(archiveAdapter, /record\.eventStatus = event\.status === "past" \? "past" : currentStatus\(record\)/);
+  assert.match(eventsSource, /sortPublicEvents/);
+  assert.match(eventsSource, /getFeaturedEvents/);
+  assert.match(eventsSource, /!isEventEnded\(event/);
+  assert.doesNotMatch(eventsSource, /limit\(3\)|prioritizeActiveEvents/);
+  assert.match(archiveAdapter, /isEventEnded\(event\)/);
+  assert.doesNotMatch(archiveAdapter, /getFeaturedEvent|getFeaturedSlug|currentStatus/);
 });

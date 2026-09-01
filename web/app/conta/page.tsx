@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 
 import { Chip } from "@/components/ui/Chip";
 import { GearWatermark } from "@/components/ui/GearWatermark";
+import { isEventEnded } from "@/lib/event-lifecycle";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./SignOutButton";
 import { TicketAccessForm } from "./TicketAccessForm";
@@ -34,7 +35,9 @@ type TicketRow = {
     title: string;
     date_label: string;
     venue: string;
-    status: string;
+    status: "draft" | "active" | "past";
+    ends_at: string;
+    manually_ended_at: string | null;
   } | null;
 };
 
@@ -56,12 +59,12 @@ export default async function ContaPage({
 
   const { data } = await supabase
     .from("tickets")
-    .select("id, code, qr_token, status, issued_at, events(title, date_label, venue, status)")
+    .select("id, code, qr_token, status, issued_at, events(title, date_label, venue, status, ends_at, manually_ended_at)")
     .order("issued_at", { ascending: false });
 
   const tickets = (data ?? []) as unknown as TicketRow[];
-  const activeTickets = tickets.filter((ticket) => ticket.events?.status === "active");
-  const pastTickets = tickets.filter((ticket) => ticket.events?.status !== "active");
+  const activeTickets = tickets.filter((ticket) => ticket.events?.status === "active" && !isEventEnded(ticket.events));
+  const pastTickets = tickets.filter((ticket) => !ticket.events || ticket.events.status !== "active" || isEventEnded(ticket.events));
 
   return (
     <main className={styles.page}>

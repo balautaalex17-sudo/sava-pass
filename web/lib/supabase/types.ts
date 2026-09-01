@@ -464,7 +464,10 @@ export type Database = {
           date_label: string
           date_long: string
           doors: string
+          ends_at: string
+          featured_slot: number | null
           id: string
+          manually_ended_at: string | null
           perks: Json
           photo_url: string | null
           price_bani: number
@@ -485,7 +488,10 @@ export type Database = {
           date_label: string
           date_long: string
           doors?: string
+          ends_at: string
+          featured_slot?: number | null
           id?: string
+          manually_ended_at?: string | null
           perks?: Json
           photo_url?: string | null
           price_bani: number
@@ -506,7 +512,10 @@ export type Database = {
           date_label?: string
           date_long?: string
           doors?: string
+          ends_at?: string
+          featured_slot?: number | null
           id?: string
+          manually_ended_at?: string | null
           perks?: Json
           photo_url?: string | null
           price_bani?: number
@@ -2333,6 +2342,19 @@ export type Database = {
       }
     }
     Functions: {
+      admin_assign_featured_slot: {
+        Args: {
+          expected_occupant_id?: string
+          target_id: string
+          target_slot: number
+        }
+        Returns: undefined
+      }
+      admin_end_event: { Args: { target_id: string }; Returns: boolean }
+      admin_remove_featured_slot: {
+        Args: { expected_slot: number; target_id: string }
+        Returns: boolean
+      }
       admin_set_event_status: {
         Args: {
           target_id: string

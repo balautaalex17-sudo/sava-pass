@@ -3,9 +3,13 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ClubHero } from "@/components/club/ClubHero";
 import { ClubPage } from "@/components/club/ClubPage";
+import { CompactEventCard } from "@/app/(club)/evenimente/CompactEventCard";
 import { getContent } from "@/lib/club";
+import { getManagedPublishedEvents, ticketingEventToArchiveEvent } from "@/lib/event-archive";
+import { getFeaturedEvents } from "@/lib/events";
+import styles from "./despre-events.module.css";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Despre · Interact Sf. Sava",
@@ -33,7 +37,7 @@ const IMPACT_KEYS = [
 ] as const;
 
 export default async function DesprePage() {
-  const [lead, who1, who2, ...impactValues] = await Promise.all([
+  const [lead, who1, who2, impactValues, featuredRows, historicalEvents] = await Promise.all([
     getContent(
       "despre_lead",
       "Interact Sf. Sava este clubul de voluntariat al elevilor, un loc unde tinerii pornesc proiecte reale și cresc împreună.",
@@ -46,9 +50,13 @@ export default async function DesprePage() {
       "despre_who_2",
       "Dincolo de fapte bune, clubul este un loc de creștere: descoperi ce te pasionează, înveți să lucrezi în echipă și devii un lider responsabil al generației tale.",
     ),
-    ...IMPACT_KEYS.map((item) => getContent(item.key, "—")),
+    Promise.all(IMPACT_KEYS.map((item) => getContent(item.key, "—"))),
+    getFeaturedEvents(),
+    getManagedPublishedEvents(),
   ]);
   const impact = IMPACT_KEYS.map((item, index) => ({ number: impactValues[index], label: item.label }));
+  const historicalBySlug = new Map(historicalEvents.map((event) => [event.slug, event]));
+  const featuredEvents = featuredRows.map((event) => ticketingEventToArchiveEvent(event, historicalBySlug.get(event.slug)));
 
   const hero = (
     <ClubHero
@@ -84,6 +92,21 @@ export default async function DesprePage() {
           </div>
         </div>
       </section>
+
+      {featuredEvents.length > 0 && (
+        <section className="cl-section" aria-labelledby="despre-events-title">
+          <div className={styles.heading}>
+            <div>
+              <span className="cl-label">Alese de echipă</span>
+              <h2 className="cl-h2" id="despre-events-title">Evenimente pe care le păstrăm aproape</h2>
+            </div>
+            <p>Pozițiile sunt alese manual. Un eveniment încheiat poate rămâne aici ca parte din povestea clubului.</p>
+          </div>
+          <div className={styles.grid}>
+            {featuredEvents.map((event) => <CompactEventCard event={event} key={event.id} />)}
+          </div>
+        </section>
+      )}
 
       <section className="cl-section">
         <h2 className="cl-h2 anim-rise">Ce ne definește</h2>

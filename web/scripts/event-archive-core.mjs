@@ -280,7 +280,7 @@ export function applyOverrides(events, overrideDocument = {}) {
   return applyStructuralOverrides(events, overrideDocument).map((event) => {
     const override = entries[event.slug] || {};
     const fields = Object.fromEntries(
-      Object.entries(override).filter(([key]) => !["hidden", "featured", "publish", "imagePosition", "mergeInto", "splitSourceIds"].includes(key)),
+      Object.entries(override).filter(([key]) => !["hidden", "publish", "imagePosition", "mergeInto", "splitSourceIds"].includes(key)),
     );
     const next = { ...event, ...fields };
     if (override.imagePosition) next.coverImage = { ...next.coverImage, position: override.imagePosition };

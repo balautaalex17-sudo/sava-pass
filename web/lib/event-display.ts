@@ -18,7 +18,7 @@ export const CATEGORY_LABELS: Record<EventCategory, string> = {
 export const STATUS_LABELS: Record<EventStatus, string> = {
   upcoming: "Urmează",
   ongoing: "În desfășurare",
-  past: "Încheiat",
+  past: "Eveniment încheiat",
   "date-unknown": "Dată neconfirmată",
 };
 

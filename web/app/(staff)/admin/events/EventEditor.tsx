@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ImagePlus, Plus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getEventStatus, toBucharestDateTimeInput } from "@/lib/event-lifecycle";
 import { preparePosterUpload, upsertEvent, type EventActionState } from "./actions";
 import type { Event, EventTicketType } from "@/lib/supabase/types";
 
@@ -26,9 +27,12 @@ function jsonArray<T>(value: unknown, fallback: T[]): T[] {
   return Array.isArray(value) ? value as T[] : fallback;
 }
 
-function localDate(value: string | null) {
-  return value ? new Date(value).toISOString().slice(0, 16) : "";
-}
+export type FeaturedSlotEditorOption = {
+  slot: 1 | 2 | 3;
+  eventId: string | null;
+  eventTitle: string | null;
+  ended: boolean;
+};
 
 function ticketRows(ticketTypes: EventTicketType[], event: Event | null): TicketTypeRow[] {
   if (ticketTypes.length) return ticketTypes.map((type) => ({
@@ -39,14 +43,26 @@ function ticketRows(ticketTypes: EventTicketType[], event: Event | null): Ticket
     description: type.description ?? "",
     price_ron: Math.round(type.price_bani / 100),
     capacity: type.capacity,
-    sales_start_at: localDate(type.sales_start_at),
-    sales_end_at: localDate(type.sales_end_at),
+    sales_start_at: toBucharestDateTimeInput(type.sales_start_at),
+    sales_end_at: toBucharestDateTimeInput(type.sales_end_at),
     status: type.status as TicketTypeRow["status"],
   }));
   return [{ key: "initial", id: "", slug: "acces-general", name: "Acces general", description: "Bilet individual pentru acces la eveniment.", price_ron: event ? Math.round(event.price_bani / 100) : 45, capacity: event?.capacity ?? 120, sales_start_at: "", sales_end_at: "", status: "active" }];
 }
 
-export function EventEditor({ event, ticketTypes, mediaAssets, hasOrders }: { event: Event | null; ticketTypes: EventTicketType[]; mediaAssets: { id: string; file_name: string; public_url: string; source_kind: string }[]; hasOrders: boolean }) {
+export function EventEditor({
+  event,
+  ticketTypes,
+  mediaAssets,
+  hasOrders,
+  featuredSlots,
+}: {
+  event: Event | null;
+  ticketTypes: EventTicketType[];
+  mediaAssets: { id: string; file_name: string; public_url: string; source_kind: string }[];
+  hasOrders: boolean;
+  featuredSlots: FeaturedSlotEditorOption[];
+}) {
   const [state, action, pending] = useActionState(upsertEvent, {} as EventActionState);
   const pathname = usePathname();
   const router = useRouter();
@@ -64,7 +80,12 @@ export function EventEditor({ event, ticketTypes, mediaAssets, hasOrders }: { ev
   const previewObjectUrlRef = useRef<string | null>(null);
   const [newProgramKeys, setNewProgramKeys] = useState<Set<number>>(new Set());
   const [newPerkKeys, setNewPerkKeys] = useState<Set<number>>(new Set());
-  const startsAt = useMemo(() => event ? new Date(event.starts_at).toISOString().slice(0, 16) : "", [event]);
+  const startsAt = toBucharestDateTimeInput(event?.starts_at);
+  const endsAt = toBucharestDateTimeInput(event?.ends_at);
+  const lifecycleStatus = event ? getEventStatus(event) : "active";
+  const initialFeaturedAssignment = event?.featured_slot
+    ? `slot:${event.featured_slot}:self`
+    : "none";
 
   useEffect(() => {
     if (event || !state.ok || !state.eventId) return;
@@ -229,12 +250,50 @@ export function EventEditor({ event, ticketTypes, mediaAssets, hasOrders }: { ev
           <Field label="Titlu" required><input name="title" defaultValue={event?.title ?? ""} required className="input" style={inputStyle} /></Field>
           <Field label="Subtitlu"><input name="subtitle" defaultValue={event?.subtitle ?? ""} className="input" style={inputStyle} /></Field>
           <Field label="Status public" required>
-            <select name="status" defaultValue={event?.status ?? "draft"} required className="input" style={inputStyle}>
-              <option value="draft">Ciornă · ascuns</option>
-              <option value="active">Activ · apare în Evenimente</option>
-              <option value="past">Încheiat · rămâne în Evenimente</option>
+            {event?.status === "draft" ? (
+              <select name="status" defaultValue="draft" required className="input" style={inputStyle}>
+                <option value="draft">Ciornă · ascuns</option>
+                <option value="active">Publică · activ până la ora încheierii</option>
+              </select>
+            ) : (
+              <>
+                <input type="hidden" name="status" value={event?.status ?? "active"} />
+                <div className="input" style={{ ...inputStyle, display: "flex", alignItems: "center" }}>
+                  {lifecycleStatus === "ended" ? "Eveniment încheiat · permanent" : "Activ · apare în Evenimente"}
+                </div>
+              </>
+            )}
+            <small style={{ color: "var(--im-fg-3)", fontSize: 10 }}>
+              Statusul se încheie automat la ora configurată. Încheierea manuală se confirmă separat și nu poate fi anulată.
+            </small>
+          </Field>
+          <Field label="Poziție pe Despre">
+            <select
+              name="featured_assignment"
+              defaultValue={initialFeaturedAssignment}
+              className="input"
+              style={inputStyle}
+            >
+              <option value="none">Fără poziție pe Despre</option>
+              {featuredSlots.map((slot) => {
+                const isCurrent = slot.eventId === event?.id;
+                const value = isCurrent
+                  ? `slot:${slot.slot}:self`
+                  : `slot:${slot.slot}:${slot.eventId ?? "empty"}`;
+                const disabled = Boolean(slot.eventId) && !slot.ended && !isCurrent;
+                const label = isCurrent
+                  ? `Slot ${slot.slot} · poziția actuală`
+                  : !slot.eventId
+                    ? `Slot ${slot.slot} · liber`
+                    : slot.ended
+                      ? `Slot ${slot.slot} · înlocuiește „${slot.eventTitle}” (încheiat)`
+                      : `Slot ${slot.slot} · ocupat de „${slot.eventTitle}” (activ)`;
+                return <option key={slot.slot} value={value} disabled={disabled}>{label}</option>;
+              })}
             </select>
-            <small style={{ color: "var(--im-fg-3)", fontSize: 10 }}>Maximum 3 pot fi active. Cel mai apropiat după dată apare și pe homepage.</small>
+            <small style={{ color: "var(--im-fg-3)", fontSize: 10 }}>
+              Poziția schimbă doar unde apare evenimentul. Nu îi schimbă statusul și nu reactivează evenimente încheiate.
+            </small>
           </Field>
           <Field label="Slug">
             <input name="slug" defaultValue={event?.slug ?? ""} disabled={hasOrders} placeholder="generat din titlu" className="input" style={inputStyle} />
@@ -260,7 +319,8 @@ export function EventEditor({ event, ticketTypes, mediaAssets, hasOrders }: { ev
         <div style={gridStyle}>
           <Field label="Data scurtă" required><input name="date_label" defaultValue={event?.date_label ?? ""} required className="input" style={inputStyle} /></Field>
           <Field label="Data lungă" required><input name="date_long" defaultValue={event?.date_long ?? ""} required className="input" style={inputStyle} /></Field>
-          <Field label="Moment exact" required><input name="starts_at" type="datetime-local" defaultValue={startsAt} required className="input" style={inputStyle} /></Field>
+          <Field label="Începe la" required><input name="starts_at" type="datetime-local" defaultValue={startsAt} required className="input" style={inputStyle} /></Field>
+          <Field label="Se încheie la" required><input name="ends_at" type="datetime-local" defaultValue={endsAt} required className="input" style={inputStyle} /></Field>
           <Field label="Ora" required><input name="doors" defaultValue={event?.doors ?? ""} required className="input" style={inputStyle} /></Field>
           <Field label="Locație" required><input name="venue" defaultValue={event?.venue ?? ""} required className="input" style={inputStyle} /></Field>
           <Field label="Adresă"><input name="venue_line" defaultValue={event?.venue_line ?? ""} className="input" style={inputStyle} /></Field>

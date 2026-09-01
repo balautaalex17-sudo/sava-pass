@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "Descoperă evenimentele culturale și caritabile organizate de Interact Sf. Sava – Curtea Veche.",
 };
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 const CAUSE_ORGANIZATIONS = [
   { name: "Touched Romania", match: "Touched Romania", logo: "/causes/touched-romania.jpg", website: "https://touchedromania.org/", tone: "light" },
@@ -30,6 +30,7 @@ const CAUSE_ORGANIZATIONS = [
 ] as const;
 
 function featuredLabel(event: EventRecord) {
+  if (event.eventStatus === "past") return "Eveniment încheiat";
   if (event.eventStatus === "ongoing") return "În desfășurare";
   return "Activ";
 }
@@ -43,32 +44,30 @@ function ExplorerFallback() {
   );
 }
 
-async function ticketingEventsWithTimeout() {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      getPublicEvents().catch(() => []),
-      new Promise<Awaited<ReturnType<typeof getPublicEvents>>>((resolve) => {
-        timer = setTimeout(() => resolve([]), 2000);
-      }),
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
+function eventStartTime(event: EventRecord) {
+  return new Date(`${event.startDate ?? "9999-12-31"}T${event.startTime ?? "00:00"}:00Z`).getTime();
+}
+
+function eventEndTime(event: EventRecord) {
+  if (event.lifecycleEndedAt) return new Date(event.lifecycleEndedAt).getTime();
+  return new Date(`${event.endDate ?? event.startDate ?? "0000-01-01"}T${event.endTime ?? event.startTime ?? "23:59"}:00Z`).getTime();
 }
 
 export default async function EventsPage() {
   const [ticketingRows, historicalEvents] = await Promise.all([
-    ticketingEventsWithTimeout(),
+    getPublicEvents(),
     getManagedPublishedEvents(),
   ]);
-  const ticketingEvents = ticketingRows.map(ticketingEventToArchiveEvent);
+  const historicalBySlug = new Map(historicalEvents.map((event) => [event.slug, event]));
+  const ticketingEvents = ticketingRows.map((event) => ticketingEventToArchiveEvent(event, historicalBySlug.get(event.slug)));
   const ticketingSlugs = new Set(ticketingEvents.map((event) => event.slug));
-  const activeEvents = ticketingEvents.filter((event) => event.eventStatus === "upcoming" || event.eventStatus === "ongoing");
+  const activeEvents = ticketingEvents
+    .filter((event) => event.eventStatus === "upcoming" || event.eventStatus === "ongoing")
+    .sort((first, second) => eventStartTime(first) - eventStartTime(second));
   const inactiveEvents = [
     ...ticketingEvents.filter((event) => event.eventStatus === "past"),
     ...historicalEvents.filter((event) => !ticketingSlugs.has(event.slug)),
-  ].sort((a, b) => (b.startDate || "").localeCompare(a.startDate || ""));
+  ].sort((first, second) => eventEndTime(second) - eventEndTime(first));
   const events = [...activeEvents, ...inactiveEvents];
   const featured = activeEvents[0] || events[0] || null;
   const featuredCanReserve = Boolean(featured?.registrationUrl)
@@ -118,7 +117,7 @@ export default async function EventsPage() {
                 {featured.venueName && <span><MapPin size={14} aria-hidden="true" />{featured.venueName}</span>}
               </div>
               <p>{featured.shortDescription}</p>
-              <span className={styles.featuredLink}>{featuredCanReserve ? "Rezervă bilet" : "Detalii și galerie"} <ArrowUpRight size={16} aria-hidden="true" /></span>
+              <span className={styles.featuredLink}>{featuredCanReserve ? "Rezervă bilet" : "Eveniment încheiat"} <ArrowUpRight size={16} aria-hidden="true" /></span>
             </div>
           </Link>
         )}

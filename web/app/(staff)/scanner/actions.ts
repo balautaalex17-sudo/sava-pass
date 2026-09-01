@@ -1,6 +1,7 @@
 "use server";
 
 import { requirePermission } from "@/lib/dashboard/auth";
+import { isEventEnded } from "@/lib/event-lifecycle";
 import { qrTokenFingerprint, verifyTicket } from "@/lib/qr-token";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
@@ -31,6 +32,8 @@ type TicketWithEvent = Database["public"]["Tables"]["tickets"]["Row"] & {
   events?: {
     title: string | null;
     status: Database["public"]["Enums"]["event_status"] | null;
+    ends_at: string | null;
+    manually_ended_at: string | null;
   } | null;
   orders?: {
     status: Database["public"]["Enums"]["order_status"];
@@ -39,7 +42,7 @@ type TicketWithEvent = Database["public"]["Tables"]["tickets"]["Row"] & {
 };
 
 const ticketSelect =
-  "id, status, holder_name, holder_email, code, event_id, events(title, status), orders(status, amount_bani)";
+  "id, status, holder_name, holder_email, code, event_id, events(title, status, ends_at, manually_ended_at), orders(status, amount_bani)";
 
 function normalizeTicketCode(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -105,7 +108,16 @@ async function checkInTicket(
     event_title: ticket.events?.title ?? "Eveniment",
   };
 
-  if (ticket.events?.status !== "active") {
+  if (
+    !ticket.events
+    || ticket.events.status !== "active"
+    || !ticket.events.ends_at
+    || isEventEnded({
+      status: ticket.events.status,
+      ends_at: ticket.events.ends_at,
+      manually_ended_at: ticket.events.manually_ended_at,
+    })
+  ) {
     return { result: "inactive_event", ticket: info };
   }
 

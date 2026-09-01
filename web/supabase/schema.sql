@@ -60,6 +60,9 @@ create table public.events (
   title      text not null,
   subtitle   text,
   starts_at  timestamptz not null,
+  ends_at    timestamptz not null,
+  manually_ended_at timestamptz,
+  featured_slot smallint check (featured_slot is null or featured_slot between 1 and 3),
   doors      text not null default '19:00',
   date_label text not null,
   date_long  text not null,
@@ -73,10 +76,11 @@ create table public.events (
   about      text,
   program    jsonb not null default '[]'::jsonb,
   perks      jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint events_end_after_start check (ends_at > starts_at),
+  constraint events_featured_must_be_public check (featured_slot is null or status <> 'draft'::public.event_status)
 );
--- At most one active event at a time.
-create unique index one_active_event on public.events (status) where (status = 'active'::public.event_status);
+create unique index events_featured_slot_unique on public.events(featured_slot) where featured_slot is not null;
 
 -- ── orders ───────────────────────────────────────────────────────────────────
 create table public.orders (
@@ -165,16 +169,25 @@ create or replace function public.is_admin()
 as $$ select exists (select 1 from profiles where id = auth.uid() and role = 'admin'); $$;
 
 create or replace function public.admin_set_event_status(target_id uuid, target_status public.event_status)
-  returns void language plpgsql security definer set search_path to 'public'
+  returns void language plpgsql security definer set search_path = ''
 as $$
+declare
+  v_event public.events%rowtype;
 begin
-  if target_status = 'active' then
-    update public.events set status = 'past' where status = 'active' and id <> target_id;
+  select e.* into v_event from public.events e where e.id = target_id for update;
+  if not found then raise exception 'event_not_found'; end if;
+
+  if target_status = 'past'::public.event_status and v_event.status = 'active'::public.event_status then
+    update public.events set status = 'past', manually_ended_at = now() where id = target_id;
+    return;
   end if;
-  update public.events set status = target_status where id = target_id;
-  if not found then
-    raise exception 'event_not_found';
+  if target_status = 'active'::public.event_status
+     and v_event.status = 'draft'::public.event_status
+     and v_event.ends_at > now() then
+    update public.events set status = 'active' where id = target_id;
+    return;
   end if;
+  raise exception 'event_cannot_be_reactivated';
 end;
 $$;
 

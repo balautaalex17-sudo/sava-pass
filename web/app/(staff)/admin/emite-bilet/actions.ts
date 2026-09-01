@@ -7,6 +7,7 @@ import { resolveSiteUrl } from "@/lib/site-url";
 import { notifyTicketIssued } from "@/lib/ticket-notifications";
 import { logAudit } from "@/lib/audit";
 import { logServerError } from "@/lib/server-log";
+import { isEventEnded } from "@/lib/event-lifecycle";
 
 const schema = z.object({
   event_id: z.string().uuid("Alege un eveniment"),
@@ -45,10 +46,11 @@ export async function issueCompTicket(_prev: IssueState, form: FormData): Promis
   const { event_id, ticket_type_id, holder_name, holder_email } = parsed.data;
 
   const [{ data: event }, { data: ticketType }] = await Promise.all([
-    supabaseAdmin.from("events").select("id, title, starts_at, capacity").eq("id", event_id).maybeSingle(),
+    supabaseAdmin.from("events").select("id, title, starts_at, ends_at, manually_ended_at, status, capacity").eq("id", event_id).maybeSingle(),
     supabaseAdmin.from("event_ticket_types").select("id, event_id, capacity").eq("id", ticket_type_id).maybeSingle(),
   ]);
   if (!event || !ticketType || ticketType.event_id !== event.id) return { errors: { ticket_type_id: "Tipul de bilet nu aparține evenimentului." } };
+  if (event.status !== "active" || isEventEnded(event)) return { errors: { event_id: "Evenimentul este încheiat și nu mai poate primi bilete." } };
   const { count } = await supabaseAdmin.from("tickets").select("id", { count: "exact", head: true }).eq("ticket_type_id", ticketType.id).in("status", ["reserved", "paid", "checked_in"]);
   if ((count ?? 0) >= ticketType.capacity) return { errors: { ticket_type_id: "Capacitatea acestui tip de bilet este plină." } };
 

@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${event.title} - SavaPass`,
     description: event.about ?? event.subtitle ?? undefined,
-    robots: { index: event.status === "active" },
+    robots: { index: event.status !== "draft" },
   };
 }
 
@@ -47,7 +47,7 @@ export default async function EventPage({ params }: Props) {
   const price = priceRon(availableTypes.length ? Math.min(...availableTypes.map((type) => type.price_bani)) : event.price_bani);
   const program = Array.isArray(event.program) ? (event.program as ProgramItem[]) : [];
   const perks = Array.isArray(event.perks) ? (event.perks as string[]) : [];
-  const statusLabel = event.status === "draft" ? "Schiță" : isActive ? "În vânzare" : "Încheiat";
+  const statusLabel = event.status === "draft" ? "Schiță" : isActive ? "În vânzare" : "Eveniment încheiat";
 
   return (
     <div className="sp-light event-page">
@@ -145,7 +145,7 @@ export default async function EventPage({ params }: Props) {
               )
             ) : (
               <div className="event-buy__stock event-buy__stock--out">
-                <span className="event-buy__dot" /> Eveniment din arhivă
+                <span className="event-buy__dot" /> Eveniment încheiat
               </div>
             )}
 
@@ -162,7 +162,7 @@ export default async function EventPage({ params }: Props) {
               </Link>
             ) : (
               <div className="event-buy__btn event-buy__btn--disabled">
-                {isActive ? "Sold out" : "Indisponibil"}
+                {isActive ? "Sold out" : "Eveniment încheiat"}
               </div>
             )}
 
