@@ -327,18 +327,21 @@ function renderArchivedEvents(events: LandingArchivedEvent[]) {
     return '<p class="ev-archive-empty">Arhiva va apărea aici când un eveniment este marcat „Arhivat” în admin.</p>';
   }
 
-  return events.slice(0, 2).map((event) => {
+  return events.slice(0, 3).map((event, index) => {
     const description = event.about ?? event.subtitle ?? "Detaliile acestei ediții sunt disponibile în arhiva evenimentelor.";
     const price = event.priceBani > 0 ? `${Math.round(event.priceBani / 100)} RON` : "Acces gratuit";
     const isActive = event.status === "active";
-    const statusLabel = isActive ? `Rezervă bilet · ${price}` : `Ediție încheiată · ${price}`;
+    const statusLabel = isActive ? "Activ" : "Eveniment încheiat";
+    const actionLabel = isActive ? "Rezervă bilet" : "Vezi ediția";
+    const cardRole = index === 0 ? " ev-past--lead" : " ev-past--support";
 
-    return `<a href="${escapeHtml(event.href)}" class="ev-past ev-past--managed${isActive ? " ev-past--active" : ""}">
+    return `<a href="${escapeHtml(event.href)}" class="ev-past ev-past--managed${cardRole}${isActive ? " ev-past--active" : ""}" aria-label="${escapeHtml(`${statusLabel}: ${event.title}`)}">
         <div class="ev-past-poster"><img src="${safePhotoUrl(event.photoUrl)}" loading="lazy" decoding="async" alt="Afișul evenimentului ${escapeHtml(event.title)}" /></div>
         <div class="ev-past-body">
           <div class="ev-past-tags"><span class="ev-cat">${escapeHtml(event.dateLabel)}</span><span class="ev-sold${isActive ? " ev-sold--active" : ""}">${escapeHtml(statusLabel)}</span></div>
           <h4 class="ev-past-title">${escapeHtml(event.title)}</h4>
           <p class="ev-past-desc"><strong>${escapeHtml(event.venue)}</strong> · ${escapeHtml(description)}</p>
+          <div class="ev-past-footer"><span class="ev-past-price">${escapeHtml(price)}</span><span class="ev-past-action">${escapeHtml(actionLabel)} <span class="ar" data-i="arrow" aria-hidden="true"></span></span></div>
         </div>
       </a>`;
   }).join("\n      ");
@@ -353,13 +356,20 @@ function applyArchiveContent(markup: string, events: LandingArchivedEvent[]) {
   }
 
   const cards = renderArchivedEvents(events);
-  const next = markup.replace(
-    /    <div class="ev-arch">[\s\S]*?    <\/div>\r?\n  <\/div>\r?\n<\/section>/,
-    `    <div class="ev-arch">\n      ${cards}\n    </div>\n  </div>\n</section>`,
+  const heading = events.length === 3 ? "Trei ediții în prim-plan." : "Ediții în prim-plan.";
+  return markup.replace(
+    /\n    <div class="ev-arch-head rv">[\s\S]*?    <div class="ev-arch">[\s\S]*?    <\/div>\r?\n  <\/div>\r?\n<\/section>/,
+    `
+    <div class="ev-arch-head ev-showcase-head rv">
+      <div class="ev-showcase-copy"><h3 class="ev-showcase-title">${heading}</h3><p>Trei seri alese de echipă, fiecare cu atmosfera și povestea ei.</p></div>
+      <button class="ev-all rv" style="--d:.12s;">Toate edițiile <span class="ar" data-i="arrow"></span></button>
+    </div>
+    <div class="ev-arch ev-showcase-grid">
+      ${cards}
+    </div>
+  </div>
+</section>`,
   );
-  return events.some((event) => event.status === "active")
-    ? next.replace('<span class="t">Din arhivă</span>', '<span class="t">Alte evenimente active</span>')
-    : next;
 }
 
 function applyEventContent(markup: string, event: LandingEvent | null) {
@@ -1250,6 +1260,183 @@ export const LANDING_REFINEMENT_CSS = `
   .sp-immersive-root .foot .social { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 
+/* The three admin-selected events form one editorial showcase, not a small archive row. */
+.sp-immersive-root .ev-showcase-head {
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: clamp(24px, 5vw, 64px);
+  margin-top: clamp(56px, 7vw, 92px);
+}
+.sp-immersive-root .ev-showcase-copy { max-width: 680px; }
+.sp-immersive-root .ev-showcase-title {
+  color: var(--ink);
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: .98;
+  text-wrap: balance;
+}
+.sp-immersive-root .ev-showcase-copy p {
+  max-width: 52ch;
+  margin-top: 14px;
+  color: var(--mut-l);
+  font-size: clamp(.94rem, 1.2vw, 1.05rem);
+  line-height: 1.65;
+}
+.sp-immersive-root .ev-arch.ev-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(250px, auto));
+  gap: clamp(14px, 1.7vw, 22px);
+  margin-top: 30px;
+}
+.sp-immersive-root .ev-showcase-grid .ev-past--managed {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line-l);
+  border-radius: 18px;
+  transition: transform .28s var(--e), border-color .28s var(--e);
+}
+.sp-immersive-root .ev-showcase-grid .ev-past--lead {
+  grid-column: 1 / span 7;
+  grid-row: 1 / span 2;
+  grid-template-columns: minmax(300px, 1.08fr) minmax(250px, .92fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 562px;
+}
+.sp-immersive-root .ev-showcase-grid .ev-past--support {
+  grid-column: 8 / -1;
+  grid-template-columns: minmax(150px, .72fr) minmax(0, 1.28fr);
+  min-height: 250px;
+}
+.sp-immersive-root .ev-showcase-grid .ev-past--support:nth-child(2) { grid-row: 1; }
+.sp-immersive-root .ev-showcase-grid .ev-past--support:nth-child(3) { grid-row: 2; }
+.sp-immersive-root .ev-showcase-grid .ev-past-poster {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+.sp-immersive-root .ev-showcase-grid .ev-past-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .45s var(--e);
+}
+.sp-immersive-root .ev-showcase-grid .ev-past-body {
+  min-width: 0;
+  padding: clamp(22px, 2.5vw, 34px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.sp-immersive-root .ev-showcase-grid .ev-past--support .ev-past-body { padding: clamp(18px, 2vw, 26px); }
+.sp-immersive-root .ev-showcase-grid .ev-past-tags {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sp-immersive-root .ev-showcase-grid .ev-cat,
+.sp-immersive-root .ev-showcase-grid .ev-sold {
+  font-size: 10px;
+  line-height: 1.35;
+}
+.sp-immersive-root .ev-showcase-grid .ev-sold { color: var(--used); }
+.sp-immersive-root .ev-showcase-grid .ev-past-title {
+  margin-top: clamp(16px, 2vw, 24px);
+  font-size: clamp(1.55rem, 2.8vw, 2.7rem);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+.sp-immersive-root .ev-showcase-grid .ev-past--support .ev-past-title {
+  margin-top: 16px;
+  font-size: clamp(1.25rem, 1.7vw, 1.65rem);
+}
+.sp-immersive-root .ev-showcase-grid .ev-past-desc {
+  display: -webkit-box;
+  margin: 14px 0 0;
+  overflow: hidden;
+  color: var(--mut-l);
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.sp-immersive-root .ev-showcase-grid .ev-past--support .ev-past-desc {
+  font-size: 12.5px;
+  -webkit-line-clamp: 4;
+}
+.sp-immersive-root .ev-past-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: auto;
+  padding-top: 22px;
+}
+.sp-immersive-root .ev-past-price { color: var(--ink); font-size: 13px; font-weight: 800; }
+.sp-immersive-root .ev-past-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 800;
+}
+.sp-immersive-root .ev-past-action .ar { display: inline-grid; transition: transform .28s var(--e); }
+.sp-immersive-root .ev-past-action svg { width: 15px; height: 15px; }
+.sp-immersive-root .ev-showcase-grid .ev-past--managed:focus-visible {
+  outline: 3px solid var(--cyan);
+  outline-offset: 4px;
+}
+@media (hover: hover) {
+  .sp-immersive-root .ev-showcase-grid .ev-past--managed:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0, 167, 232, .42);
+    box-shadow: none;
+  }
+  .sp-immersive-root .ev-showcase-grid .ev-past--managed:hover .ev-past-poster img { transform: scale(1.025); }
+  .sp-immersive-root .ev-showcase-grid .ev-past--managed:hover .ev-past-action .ar { transform: translateX(4px); }
+}
+@media (max-width: 980px) {
+  .sp-immersive-root .ev-arch.ev-showcase-grid { grid-template-rows: none; }
+  .sp-immersive-root .ev-showcase-grid .ev-past--lead {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    grid-template-columns: minmax(280px, .9fr) minmax(0, 1.1fr);
+    grid-template-rows: minmax(330px, auto);
+    min-height: 430px;
+  }
+  .sp-immersive-root .ev-showcase-grid .ev-past--support {
+    grid-column: span 6;
+    grid-row: auto !important;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .sp-immersive-root .ev-showcase-grid .ev-past--support .ev-past-poster { aspect-ratio: 16 / 10; }
+}
+@media (max-width: 720px) {
+  .sp-immersive-root .ev-showcase-head { align-items: flex-start; flex-direction: column; margin-top: 58px; }
+  .sp-immersive-root .ev-showcase-head .ev-all { width: 100%; min-height: 48px; justify-content: space-between; }
+  .sp-immersive-root .ev-arch.ev-showcase-grid { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
+  .sp-immersive-root .ev-showcase-grid .ev-past--lead,
+  .sp-immersive-root .ev-showcase-grid .ev-past--support {
+    grid-column: 1;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    min-height: 0;
+  }
+  .sp-immersive-root .ev-showcase-grid .ev-past-poster { min-height: 0; aspect-ratio: 16 / 10; }
+  .sp-immersive-root .ev-showcase-grid .ev-past-body,
+  .sp-immersive-root .ev-showcase-grid .ev-past--support .ev-past-body { padding: 22px; }
+  .sp-immersive-root .ev-showcase-grid .ev-past--support .ev-past-title { font-size: 1.5rem; }
+  .sp-immersive-root .ev-showcase-grid .ev-past--support .ev-past-desc { font-size: 13px; -webkit-line-clamp: 3; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sp-immersive-root .rv,
   .sp-immersive-root .hline > span,
@@ -1261,6 +1448,9 @@ export const LANDING_REFINEMENT_CSS = `
     transition: none !important;
     animation: none !important;
   }
+  .sp-immersive-root .ev-showcase-grid .ev-past--managed,
+  .sp-immersive-root .ev-showcase-grid .ev-past-poster img,
+  .sp-immersive-root .ev-past-action .ar { transition: none !important; }
 }
 `;
 

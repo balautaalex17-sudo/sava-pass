@@ -24,7 +24,9 @@ test("Despre archive cards use admin-managed event values", () => {
   assert.match(html, /Descriere actualizată din admin\./);
   assert.match(html, /27 august 2026/);
   assert.match(html, /Sala Test/);
-  assert.match(html, /Ediție încheiată · 55 RON/);
+  assert.match(html, /Eveniment încheiat/);
+  assert.match(html, /55 RON/);
+  assert.match(html, /Vezi ediția/);
   assert.match(html, /https:\/\/example\.com\/poster\.webp/);
   assert.doesNotMatch(html, /Easter Egg Hunt/);
   assert.doesNotMatch(html, /Cupid&#39;s Hex|Cupid's Hex/);
@@ -73,7 +75,7 @@ test("homepage uses the saved image for the active event and archived cards", ()
   assert.match(html, /https:\/\/example\.com\/archived-poster\.webp/);
 });
 
-test("homepage labels secondary active events as active", () => {
+test("homepage labels promoted active events as active", () => {
   const secondaryEvents: LandingArchivedEvent[] = [{
     title: "Easter Egg Hunt",
     subtitle: "Vânătoare de ouă",
@@ -88,11 +90,35 @@ test("homepage labels secondary active events as active", () => {
 
   const html = renderImmersiveMarkup(IMMERSIVE_MARKUP, null, null, secondaryEvents);
 
-  assert.match(html, /Alte evenimente active/);
-  assert.match(html, /Rezervă bilet · 25 RON/);
+  assert.match(html, /Ediții în prim-plan/);
+  assert.match(html, />Activ</);
+  assert.match(html, /25 RON/);
+  assert.match(html, /Rezervă bilet/);
   assert.match(html, /href="\/easter-egg-hunt"/);
   assert.match(html, /Toate evenimentele/);
-  assert.doesNotMatch(html, /Ediție încheiată · 25 RON/);
+  assert.doesNotMatch(html, /Eveniment încheiat/);
+});
+
+test("homepage gives all three promoted slots a deliberate visual hierarchy", () => {
+  const promotedEvents: LandingArchivedEvent[] = [1, 2, 3].map((slot) => ({
+    title: `Ediția ${slot}`,
+    subtitle: null,
+    about: `Descrierea ediției ${slot}.`,
+    dateLabel: `${slot} septembrie 2026`,
+    venue: `Sala ${slot}`,
+    priceBani: slot * 1000,
+    photoUrl: `https://example.com/slot-${slot}.webp`,
+    href: `/editia-${slot}`,
+    status: "past",
+  }));
+
+  const html = renderImmersiveMarkup(IMMERSIVE_MARKUP, null, null, promotedEvents);
+
+  assert.equal(html.match(/class="ev-past ev-past--managed/g)?.length, 3);
+  assert.equal(html.match(/ev-past--lead/g)?.length, 1);
+  assert.equal(html.match(/ev-past--support/g)?.length, 2);
+  assert.match(html, /Trei ediții în prim-plan/);
+  for (const event of promotedEvents) assert.match(html, new RegExp(event.title));
 });
 
 test("homepage hides the archive when only one active event should be promoted", () => {
@@ -137,10 +163,12 @@ test("board and public surfaces use the intended event sources", () => {
   assert.match(publicPage, /historicalEvents\.filter/);
 
   assert.match(homepage, /getPublicEvents/);
+  assert.match(homepage, /getFeaturedEvents/);
+  assert.match(homepage, /const \[events, featuredEvents\] = await Promise\.all/);
   assert.match(homepage, /activeEvents = events\.filter\(\(event\) => !isEventEnded\(event, now\)\)/);
-  assert.match(homepage, /endedEvents = events\.filter\(\(event\) => isEventEnded\(event, now\)\)/);
-  assert.match(homepage, /toLandingSecondaryEvent\(event, "past"\)/);
-  assert.doesNotMatch(homepage, /getActiveEvents|getFeaturedEvents|getManagedEventBySlug|GOLDEN_HOUR|getPastEvents/);
+  assert.match(homepage, /featuredEvents\.map/);
+  assert.match(homepage, /isEventEnded\(event, now\) \? "past" : "active"/);
+  assert.doesNotMatch(homepage, /getActiveEvents|getManagedEventBySlug|GOLDEN_HOUR|getPastEvents/);
 
   assert.match(eventsSource, /sortPublicEvents/);
   assert.match(eventsSource, /getFeaturedEvents/);

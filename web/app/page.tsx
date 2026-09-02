@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { isEventEnded } from "@/lib/event-lifecycle";
-import { getPublicEvents } from "@/lib/events";
+import { getFeaturedEvents, getPublicEvents } from "@/lib/events";
 import { getPublicRecruitmentState } from "@/lib/recruitment-public";
 import { IMMERSIVE_CSS, IMMERSIVE_MARKUP } from "./_immersive/content";
 import { ImmersiveRuntime } from "./_immersive/ImmersiveRuntime";
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 // ISR — the page has no per-request data, only cached public event/content reads.
 export const revalidate = 300;
 
-const LANDING_STYLESHEET = "/landing.css?v=20260819-mobile-marquee-13";
+const LANDING_STYLESHEET = "/landing.css?v=20260902-featured-events-14";
 const introCssEnd = IMMERSIVE_CSS.indexOf("/* scrolling brand marquee");
 
 if (introCssEnd < 0) {
@@ -154,15 +154,16 @@ function toLandingSecondaryEvent(
 }
 
 async function getHomepageEvents(): Promise<{ event: LandingEvent | null; secondaryEvents: LandingArchivedEvent[] }> {
-  const events = await getPublicEvents();
+  const [events, featuredEvents] = await Promise.all([
+    getPublicEvents(),
+    getFeaturedEvents(),
+  ]);
   const now = Date.now();
   const activeEvents = events.filter((event) => !isEventEnded(event, now));
-  const endedEvents = events.filter((event) => isEventEnded(event, now));
   const featuredEvent = activeEvents[0] ?? null;
-  const secondaryEvents = [
-    ...activeEvents.slice(1).map((event) => toLandingSecondaryEvent(event, "active")),
-    ...endedEvents.map((event) => toLandingSecondaryEvent(event, "past")),
-  ].slice(0, 2);
+  const secondaryEvents = featuredEvents.map((event) =>
+    toLandingSecondaryEvent(event, isEventEnded(event, now) ? "past" : "active"),
+  );
 
   return {
     event: featuredEvent ? toLandingEvent(featuredEvent) : null,

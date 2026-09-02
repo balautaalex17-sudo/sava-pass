@@ -176,16 +176,20 @@ if (mode === "audit") {
     await page.locator("#event").waitFor({ state: "visible" });
     const homepageFeaturedEvents = await page.locator("#event .ev-feat").count();
     const homepageSecondaryCards = await page.locator("#event .ev-arch .ev-past").count();
+    const homepageLeadCards = await page.locator("#event .ev-arch .ev-past--lead").count();
+    const homepageSupportCards = await page.locator("#event .ev-arch .ev-past--support").count();
     const homepageSecondaryActiveLabels = await page.locator("#event .ev-arch .ev-sold--active").count();
-    const homepageSecondaryReserveLabels = await page.locator("#event .ev-arch .ev-sold--active").filter({ hasText: /Rezervă bilet/ }).count();
+    const homepageSecondaryReserveLabels = await page.locator("#event .ev-arch .ev-past-action").filter({ hasText: /Rezervă bilet/ }).count();
     const homepageSecondaryTitles = (await page.locator("#event .ev-arch .ev-past-title").allTextContents()).map((title) => title.trim());
     const homepageSecondaryActiveTitles = (await page.locator("#event .ev-arch .ev-past--active .ev-past-title").allTextContents()).map((title) => title.trim());
-    const homepagePastLabels = await page.locator("#event .ev-arch .ev-sold").filter({ hasText: /Ediție încheiată/ }).count();
+    const homepagePastLabels = await page.locator("#event .ev-arch .ev-sold").filter({ hasText: /Eveniment încheiat/ }).count();
     const homepageActiveLabels = await page.locator("#event .pbadge").getByText("Activ", { exact: true }).count();
     const homepageEmptyHero = await page.locator("#event .ev-feat--empty").count();
     const homepageEventTitle = (await page.locator("#event .ev-title").innerText()).trim();
     if (homepageFeaturedEvents !== 1) throw new Error(`Homepage trebuie să aibă exact un eveniment principal, nu ${homepageFeaturedEvents}.`);
-    if (homepageSecondaryActiveLabels !== Math.min(2, Math.max(0, activeCards - 1))) throw new Error("Homepage nu păstrează ordinea evenimentelor active secundare.");
+    if (homepageSecondaryCards !== 3 || homepageLeadCards !== 1 || homepageSupportCards !== 2) throw new Error("Homepage nu pune toate cele trei sloturi promovate în ierarhia 1 + 2.");
+    const expectedHomepageActiveCards = homepageSecondaryTitles.filter((title) => activeTitles.includes(title)).length;
+    if (homepageSecondaryActiveLabels !== expectedHomepageActiveCards) throw new Error("Homepage calculează greșit statusul unui eveniment promovat.");
     if (homepagePastLabels !== homepageSecondaryCards - homepageSecondaryActiveLabels) throw new Error("Cardurile de arhivă de pe homepage au statusuri greșite.");
     if (homepageSecondaryReserveLabels !== homepageSecondaryActiveLabels) throw new Error("Doar evenimentele active secundare trebuie să afișeze „Rezervă bilet”.");
     if (!homepageSecondaryActiveTitles.every((title) => activeTitles.includes(title))) throw new Error("Homepage afișează ca activ un eveniment încheiat.");
@@ -203,7 +207,7 @@ if (mode === "audit") {
 
     if (criticalConsole.length) throw new Error(`Erori critice în consolă: ${criticalConsole.join("; ")}`);
     if (failedRequests.length) throw new Error(`Cereri eșuate în audit: ${failedRequests.join("; ")}`);
-    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, reserveLinkCount, reserveHrefs, filters, searchboxes, featuredTitle, featuredIsActive, featuredIsEnded, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageSecondaryCards, homepageSecondaryActiveLabels, homepageSecondaryReserveLabels, homepageSecondaryTitles, homepagePastLabels, homepageActiveLabels, homepageEmptyHero, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
+    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, reserveLinkCount, reserveHrefs, filters, searchboxes, featuredTitle, featuredIsActive, featuredIsEnded, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageSecondaryCards, homepageLeadCards, homepageSupportCards, homepageSecondaryActiveLabels, homepageSecondaryReserveLabels, homepageSecondaryTitles, homepagePastLabels, homepageActiveLabels, homepageEmptyHero, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
   } finally {
     await context.close();
   }
