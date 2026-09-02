@@ -44,6 +44,7 @@ export function HomeNav({
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const links = immersive ? LANDING_LINKS : SITE_LINKS;
+  const purchaseIsActive = active === "rezerva";
   const navClassName = ["hnav", immersive && "hnav--immersive", dark && "hnav--dark"]
     .filter(Boolean)
     .join(" ");
@@ -126,7 +127,8 @@ export function HomeNav({
           })}
           <AnimatedNavLink
             href={purchaseHref}
-            className="hnav__mobile-cta"
+            className={purchaseIsActive ? "hnav__mobile-cta hnav__mobile-cta--active" : "hnav__mobile-cta"}
+            aria-current={purchaseIsActive ? "page" : undefined}
             onClick={() => setMenuOpen(false)}
           >
             Rezervă bilet
@@ -134,7 +136,11 @@ export function HomeNav({
           </AnimatedNavLink>
         </div>
 
-        <AnimatedNavLink href={purchaseHref} className="hnav__cta hnav__desktop-cta">
+        <AnimatedNavLink
+          href={purchaseHref}
+          className={purchaseIsActive ? "hnav__cta hnav__desktop-cta hnav__cta--active" : "hnav__cta hnav__desktop-cta"}
+          aria-current={purchaseIsActive ? "page" : undefined}
+        >
           Rezervă bilet
           <ArrowRight size={17} strokeWidth={1.9} aria-hidden="true" />
         </AnimatedNavLink>
@@ -271,6 +277,10 @@ export function HomeNav({
           background: #00a7e8;
           color: #03111a;
           font-weight: 760;
+        }
+        .hnav__cta--active,
+        .hnav__mobile-cta--active {
+          box-shadow: inset 0 -3px 0 rgba(255,255,255,.72);
         }
         .hnav__mobile-cta { display: none; }
         .hnav__cta:hover { background: #28b6eb; }

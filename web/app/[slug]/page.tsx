@@ -13,8 +13,8 @@ import {
   EventPurchaseExperience,
   type PurchaseState,
 } from "@/components/events/EventPurchaseExperience";
+import { HomeNav } from "@/app/HomeNav";
 import { Chip } from "@/components/ui/Chip";
-import { FlowNav } from "@/components/ui/FlowNav";
 import { formatCompactEventDate } from "@/lib/event-display";
 import { isEventEnded } from "@/lib/event-lifecycle";
 import {
@@ -136,7 +136,7 @@ export default async function EventPage({ params, searchParams }: Props) {
 
   return (
     <div className={`sp-light ${styles.page}`}>
-      <FlowNav backHref="/" right={<span className={styles.navBrand}>SavaPass · Interact Sf. Sava</span>} />
+      <HomeNav active="rezerva" immersive purchaseHref={`/${event.slug}#bilete`} />
 
       <main id="continut-principal">
         <header className={styles.hero}>
