@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { getActiveEvents } from "@/lib/events";
+import { isEventEnded } from "@/lib/event-lifecycle";
+import { getPublicEvents } from "@/lib/events";
 import { getPublicRecruitmentState } from "@/lib/recruitment-public";
 import { IMMERSIVE_CSS, IMMERSIVE_MARKUP } from "./_immersive/content";
 import { ImmersiveRuntime } from "./_immersive/ImmersiveRuntime";
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
     "Cumperi online, primești QR-ul pe email și intri la ușă cu o singură scanare. Biletele oficiale Interact Sf. Sava.",
 };
 
-// ISR — the page has no per-request data, only the cached active-event read.
+// ISR — the page has no per-request data, only cached public event/content reads.
 export const revalidate = 300;
 
 const LANDING_STYLESHEET = "/landing.css?v=20260819-mobile-marquee-13";
@@ -114,7 +115,9 @@ const LANDING_CRITICAL_CSS = `${IMMERSIVE_CSS.slice(0, introCssEnd)}
   }
 }`;
 
-function toLandingEvent(event: Awaited<ReturnType<typeof getActiveEvents>>[number]): LandingEvent {
+type PublicEvent = Awaited<ReturnType<typeof getPublicEvents>>[number];
+
+function toLandingEvent(event: PublicEvent): LandingEvent {
   return {
     title: event.title,
     subtitle: event.subtitle,
@@ -133,7 +136,10 @@ function toLandingEvent(event: Awaited<ReturnType<typeof getActiveEvents>>[numbe
   };
 }
 
-function toLandingSecondaryEvent(event: Awaited<ReturnType<typeof getActiveEvents>>[number]): LandingArchivedEvent {
+function toLandingSecondaryEvent(
+  event: PublicEvent,
+  status: NonNullable<LandingArchivedEvent["status"]>,
+): LandingArchivedEvent {
   return {
     title: event.title,
     subtitle: event.subtitle,
@@ -143,27 +149,25 @@ function toLandingSecondaryEvent(event: Awaited<ReturnType<typeof getActiveEvent
     priceBani: event.price_bani,
     photoUrl: event.photo_url,
     href: `/${event.slug}`,
-    status: "active",
+    status,
   };
 }
 
 async function getHomepageEvents(): Promise<{ event: LandingEvent | null; secondaryEvents: LandingArchivedEvent[] }> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  const events = await getPublicEvents();
+  const now = Date.now();
+  const activeEvents = events.filter((event) => !isEventEnded(event, now));
+  const endedEvents = events.filter((event) => isEventEnded(event, now));
+  const featuredEvent = activeEvents[0] ?? null;
+  const secondaryEvents = [
+    ...activeEvents.slice(1).map((event) => toLandingSecondaryEvent(event, "active")),
+    ...endedEvents.map((event) => toLandingSecondaryEvent(event, "past")),
+  ].slice(0, 2);
 
-  try {
-    const events = await Promise.race([
-      getActiveEvents().catch(() => []),
-      new Promise<Awaited<ReturnType<typeof getActiveEvents>>>((resolve) => {
-        timer = setTimeout(() => resolve([]), 2000);
-      }),
-    ]);
-    return {
-      event: events[0] ? toLandingEvent(events[0]) : null,
-      secondaryEvents: events.slice(1, 3).map(toLandingSecondaryEvent),
-    };
-  } finally {
-    clearTimeout(timer);
-  }
+  return {
+    event: featuredEvent ? toLandingEvent(featuredEvent) : null,
+    secondaryEvents,
+  };
 }
 
 export default async function Home() {

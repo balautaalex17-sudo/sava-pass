@@ -1,6 +1,7 @@
 import { unstable_cache, updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { serverEnv } from "@/lib/env";
 import { requireStaffRole } from "@/lib/roles";
 import { isEventEnded, sortPublicEvents } from "@/lib/event-lifecycle";
 import type { Event, EventStats, EventTicketType } from "@/lib/supabase/types";
@@ -11,7 +12,8 @@ import type { Event, EventStats, EventTicketType } from "@/lib/supabase/types";
 // cannot wrap the cookie-based client (it reads cookies). Mutations call
 // updateTag(EVENTS_TAG) to refresh immediately. Stats stay UNCACHED (live
 // sold counts). Events are public data, so admin-client reads are equivalent.
-export const EVENTS_TAG = "events";
+const EVENTS_CACHE_SCOPE = new URL(serverEnv.NEXT_PUBLIC_SUPABASE_URL).hostname;
+export const EVENTS_TAG = `events:${EVENTS_CACHE_SCOPE}`;
 const CACHE = { tags: [EVENTS_TAG], revalidate: 300 };
 
 const cachedPublicEvents = unstable_cache(
@@ -22,7 +24,7 @@ const cachedPublicEvents = unstable_cache(
       .in("status", ["active", "past"]);
     return data ?? [];
   },
-  ["public-events-lifecycle-v1"],
+  ["public-events-lifecycle-v2", EVENTS_CACHE_SCOPE],
   CACHE,
 );
 
@@ -36,7 +38,7 @@ const cachedFeaturedEvents = unstable_cache(
       .order("featured_slot", { ascending: true });
     return data ?? [];
   },
-  ["featured-events-v1"],
+  ["featured-events-v2", EVENTS_CACHE_SCOPE],
   CACHE,
 );
 
@@ -50,7 +52,7 @@ const cachedEventBySlugPublic = unstable_cache(
       .single();
     return data ?? null;
   },
-  ["event-by-slug-public-lifecycle-v1"],
+  ["event-by-slug-public-lifecycle-v2", EVENTS_CACHE_SCOPE],
   CACHE,
 );
 

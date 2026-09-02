@@ -44,9 +44,19 @@ test("manual and stored ended states are permanent lifecycle signals", () => {
 test("featured placement does not affect lifecycle", () => {
   const activeFeatured = { ...event("featured", "2026-09-10T17:00:00Z", "2026-09-10T21:00:00Z"), featured_slot: 1 };
   const activeUnfeatured = { ...activeFeatured, featured_slot: null };
+  const endedFeatured = { ...event("ended-featured", "2026-08-30T17:00:00Z", "2026-08-30T23:00:00Z"), featured_slot: 1 };
   const now = new Date("2026-09-01T10:00:00Z");
   assert.equal(getEventStatus(activeFeatured, now), "active");
   assert.equal(getEventStatus(activeUnfeatured, now), "active");
+  assert.equal(getEventStatus(endedFeatured, now), "ended");
+  assert.equal(endedFeatured.featured_slot, 1);
+});
+
+test("an event ending at 02:00 Bucharest on August 31 is ended by September 2", () => {
+  const row = event("bucharest-overnight", "2026-08-30T17:00:00Z", "2026-08-30T23:00:00Z");
+  assert.equal(toBucharestDateTimeInput(row.ends_at), "2026-08-31T02:00");
+  assert.equal(getEventStatus(row, new Date("2026-08-30T22:59:59Z")), "active");
+  assert.equal(getEventStatus(row, new Date("2026-09-02T00:00:00Z")), "ended");
 });
 
 test("public ordering is active by start, then ended by effective end descending", () => {

@@ -136,13 +136,19 @@ test("board and public surfaces use the intended event sources", () => {
   assert.match(publicPage, /<EventsExplorer events=\{events\}/);
   assert.match(publicPage, /historicalEvents\.filter/);
 
-  assert.match(homepage, /getActiveEvents/);
-  assert.match(homepage, /secondaryEvents: events\.slice\(1, 3\)/);
-  assert.doesNotMatch(homepage, /getManagedEventBySlug|GOLDEN_HOUR|getPastEvents/);
+  assert.match(homepage, /getPublicEvents/);
+  assert.match(homepage, /activeEvents = events\.filter\(\(event\) => !isEventEnded\(event, now\)\)/);
+  assert.match(homepage, /endedEvents = events\.filter\(\(event\) => isEventEnded\(event, now\)\)/);
+  assert.match(homepage, /toLandingSecondaryEvent\(event, "past"\)/);
+  assert.doesNotMatch(homepage, /getActiveEvents|getFeaturedEvents|getManagedEventBySlug|GOLDEN_HOUR|getPastEvents/);
 
   assert.match(eventsSource, /sortPublicEvents/);
   assert.match(eventsSource, /getFeaturedEvents/);
   assert.match(eventsSource, /!isEventEnded\(event/);
+  assert.match(eventsSource, /EVENTS_CACHE_SCOPE = new URL\(serverEnv\.NEXT_PUBLIC_SUPABASE_URL\)\.hostname/);
+  assert.match(eventsSource, /\["public-events-lifecycle-v2", EVENTS_CACHE_SCOPE\]/);
+  assert.match(eventsSource, /\["featured-events-v2", EVENTS_CACHE_SCOPE\]/);
+  assert.match(eventsSource, /\["event-by-slug-public-lifecycle-v2", EVENTS_CACHE_SCOPE\]/);
   assert.doesNotMatch(eventsSource, /limit\(3\)|prioritizeActiveEvents/);
   assert.match(archiveAdapter, /isEventEnded\(event\)/);
   assert.doesNotMatch(archiveAdapter, /getFeaturedEvent|getFeaturedSlug|currentStatus/);

@@ -120,16 +120,23 @@ if (mode === "audit") {
 
     const eventCards = eventsSection.locator("[data-event-card]");
     const visibleEventCards = await eventCards.count();
-    const activeTitles = await eventCards.evaluateAll((cards) => cards
-      .filter((card) => [...card.querySelectorAll("span")].some((span) => span.textContent?.trim() === "Activ"))
-      .map((card) => card.querySelector("h3")?.textContent?.trim() || "")
-      .filter(Boolean));
+    const cardSummaries = await eventCards.evaluateAll((cards) => cards.map((card) => ({
+      title: card.querySelector("h3")?.textContent?.trim() || "",
+      status: [...card.querySelectorAll("span")]
+        .map((span) => span.textContent?.trim())
+        .find((value) => value === "Activ" || value === "Eveniment încheiat") || "",
+    })));
+    const activeTitles = cardSummaries.filter((card) => card.status === "Activ").map((card) => card.title);
+    const endedTitles = cardSummaries.filter((card) => card.status === "Eveniment încheiat").map((card) => card.title);
     const activeCards = activeTitles.length;
-    const activeLabels = await eventsSection.getByText("Activ", { exact: true }).count();
-    const pastLabels = await eventsSection.getByText("Încheiat", { exact: true }).count();
-    if (activeCards !== 3) throw new Error(`Trebuie afișate exact 3 evenimente active, nu ${activeCards}.`);
+    const activeLabels = await eventCards.locator("span").filter({ hasText: /^Activ$/ }).count();
+    const pastLabels = await eventCards.locator("span").filter({ hasText: /^Eveniment încheiat$/ }).count();
+    const firstEndedIndex = cardSummaries.findIndex((card) => card.status === "Eveniment încheiat");
+    if (firstEndedIndex >= 0 && cardSummaries.slice(firstEndedIndex).some((card) => card.status === "Activ")) {
+      throw new Error("Un eveniment activ apare după începutul arhivei.");
+    }
     if (activeLabels !== activeCards) throw new Error(`Eticheta Activ lipsește: ${activeLabels} etichete pentru ${activeCards} carduri.`);
-    if (pastLabels < 1) throw new Error("Evenimentele inactive nu apar în pagina Evenimente.");
+    if (pastLabels !== endedTitles.length || pastLabels < 1) throw new Error("Evenimentele încheiate nu apar corect în pagina Evenimente.");
     if (visibleEventCards <= activeCards) throw new Error("Pagina afișează doar evenimentele active.");
 
     const reserveLinks = eventsSection.getByRole("link", { name: /Rezervă bilet pentru/ });
@@ -145,13 +152,19 @@ if (mode === "audit") {
     const featuredCard = page.locator('header a[aria-label^="Vezi evenimentul "]');
     if (await featuredCard.count() !== 1) throw new Error("Cardul principal din hero lipsește.");
     const featuredTitle = (await featuredCard.getAttribute("aria-label"))?.replace("Vezi evenimentul ", "") || "";
-    if (!activeTitles.includes(featuredTitle)) throw new Error(`Hero-ul afișează un eveniment care nu este activ: ${featuredTitle}.`);
+    const featuredIsActive = await featuredCard.getByText("Activ", { exact: true }).count() === 1;
+    const featuredIsEnded = await featuredCard.getByText("Eveniment încheiat", { exact: true }).count() >= 1;
+    if (featuredTitle !== cardSummaries[0]?.title) throw new Error("Hero-ul nu folosește primul eveniment din ordinea publică.");
+    if (activeCards > 0 && (!featuredIsActive || !activeTitles.includes(featuredTitle))) {
+      throw new Error(`Hero-ul nu prioritizează evenimentul activ: ${featuredTitle}.`);
+    }
+    if (activeCards === 0 && !featuredIsEnded) throw new Error("Hero-ul nu marchează corect ultima ediție ca încheiată.");
 
     const eventNavAboutHref = await page.locator("nav a").filter({ hasText: /^Despre$/ }).first().getAttribute("href");
     if (eventNavAboutHref !== "/") throw new Error(`Legătura Despre duce la ${eventNavAboutHref || "nicăieri"}.`);
 
     let focusVisible = true;
-    const firstDetailLink = page.getByRole("link", { name: /Rezervă bilet pentru|Vezi detaliile evenimentului/ }).first();
+    const firstDetailLink = page.getByRole("link", { name: /Rezervă bilet pentru|Eveniment încheiat:/ }).first();
     if (await firstDetailLink.count()) {
       await firstDetailLink.focus();
       focusVisible = await firstDetailLink.evaluate((element) => element === document.activeElement);
@@ -166,23 +179,31 @@ if (mode === "audit") {
     const homepageSecondaryActiveLabels = await page.locator("#event .ev-arch .ev-sold--active").count();
     const homepageSecondaryReserveLabels = await page.locator("#event .ev-arch .ev-sold--active").filter({ hasText: /Rezervă bilet/ }).count();
     const homepageSecondaryTitles = (await page.locator("#event .ev-arch .ev-past-title").allTextContents()).map((title) => title.trim());
+    const homepageSecondaryActiveTitles = (await page.locator("#event .ev-arch .ev-past--active .ev-past-title").allTextContents()).map((title) => title.trim());
     const homepagePastLabels = await page.locator("#event .ev-arch .ev-sold").filter({ hasText: /Ediție încheiată/ }).count();
     const homepageActiveLabels = await page.locator("#event .pbadge").getByText("Activ", { exact: true }).count();
+    const homepageEmptyHero = await page.locator("#event .ev-feat--empty").count();
     const homepageEventTitle = (await page.locator("#event .ev-title").innerText()).trim();
     if (homepageFeaturedEvents !== 1) throw new Error(`Homepage trebuie să aibă exact un eveniment principal, nu ${homepageFeaturedEvents}.`);
-    if (homepageSecondaryCards !== 2) throw new Error(`Homepage trebuie să aibă celelalte 2 evenimente active, nu ${homepageSecondaryCards}.`);
-    if (homepageSecondaryActiveLabels !== 2 || homepagePastLabels !== 0) throw new Error("Evenimentele secundare de pe homepage nu sunt marcate corect ca active.");
-    if (homepageSecondaryReserveLabels !== 2) throw new Error("Evenimentele secundare active nu afișează „Rezervă bilet”.");
-    if (!homepageSecondaryTitles.every((title) => activeTitles.includes(title))) throw new Error("Homepage afișează un eveniment secundar care nu este activ.");
-    if (activeCards > 0 && homepageActiveLabels !== 1) throw new Error("Homepage nu marchează evenimentul principal ca Activ.");
-    if (activeCards > 0 && !activeTitles.includes(homepageEventTitle)) throw new Error(`Homepage afișează un eveniment care nu este activ: ${homepageEventTitle}.`);
+    if (homepageSecondaryActiveLabels !== Math.min(2, Math.max(0, activeCards - 1))) throw new Error("Homepage nu păstrează ordinea evenimentelor active secundare.");
+    if (homepagePastLabels !== homepageSecondaryCards - homepageSecondaryActiveLabels) throw new Error("Cardurile de arhivă de pe homepage au statusuri greșite.");
+    if (homepageSecondaryReserveLabels !== homepageSecondaryActiveLabels) throw new Error("Doar evenimentele active secundare trebuie să afișeze „Rezervă bilet”.");
+    if (!homepageSecondaryActiveTitles.every((title) => activeTitles.includes(title))) throw new Error("Homepage afișează ca activ un eveniment încheiat.");
+    if (activeCards > 0) {
+      if (homepageEmptyHero !== 0 || homepageActiveLabels !== 1) throw new Error("Homepage nu marchează evenimentul principal ca Activ.");
+      if (!activeTitles.includes(homepageEventTitle)) throw new Error(`Homepage afișează un eveniment principal care nu este activ: ${homepageEventTitle}.`);
+    } else {
+      if (homepageEmptyHero !== 1 || homepageEventTitle !== "Revenim curând cu o ediție nouă.") throw new Error("Homepage nu folosește fallbackul corect când nu există evenimente active.");
+      if (homepageSecondaryCards < 1 || homepagePastLabels !== homepageSecondaryCards) throw new Error("Evenimentele încheiate dispar de sub fallbackul homepage-ului.");
+      if (homepageActiveLabels !== 0 || homepageSecondaryActiveLabels !== 0) throw new Error("Un eveniment încheiat este etichetat ca activ pe homepage.");
+    }
 
     const aboutNavHref = await page.locator("nav a").filter({ hasText: /^Despre$/ }).first().getAttribute("href");
     if (aboutNavHref !== "/") throw new Error(`Legătura Despre de pe homepage duce la ${aboutNavHref || "nicăieri"}.`);
 
     if (criticalConsole.length) throw new Error(`Erori critice în consolă: ${criticalConsole.join("; ")}`);
     if (failedRequests.length) throw new Error(`Cereri eșuate în audit: ${failedRequests.join("; ")}`);
-    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, reserveLinkCount, reserveHrefs, filters, searchboxes, featuredTitle, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageSecondaryCards, homepageSecondaryActiveLabels, homepageSecondaryReserveLabels, homepageSecondaryTitles, homepagePastLabels, homepageActiveLabels, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
+    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, reserveLinkCount, reserveHrefs, filters, searchboxes, featuredTitle, featuredIsActive, featuredIsEnded, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageSecondaryCards, homepageSecondaryActiveLabels, homepageSecondaryReserveLabels, homepageSecondaryTitles, homepagePastLabels, homepageActiveLabels, homepageEmptyHero, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
   } finally {
     await context.close();
   }
