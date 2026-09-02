@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { isEventEnded } from "@/lib/event-lifecycle";
-import { getFeaturedEvents, getPublicEvents } from "@/lib/events";
+import { getFeaturedEvents } from "@/lib/events";
 import { getPublicRecruitmentState } from "@/lib/recruitment-public";
 import { IMMERSIVE_CSS, IMMERSIVE_MARKUP } from "./_immersive/content";
 import { ImmersiveRuntime } from "./_immersive/ImmersiveRuntime";
-import { renderImmersiveMarkup, type LandingArchivedEvent, type LandingEvent } from "./_immersive/upgrade";
+import { renderImmersiveMarkup, type LandingShowcaseEvent } from "./_immersive/upgrade";
 import { HomeNav } from "./HomeNav";
 
 // Homepage = the v3 immersive port, served responsively at ALL widths. The phone
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 // ISR — the page has no per-request data, only cached public event/content reads.
 export const revalidate = 300;
 
-const LANDING_STYLESHEET = "/landing.css?v=20260902-featured-events-14";
+const LANDING_STYLESHEET = "/landing.css?v=20260902-unified-showcase-15";
 const introCssEnd = IMMERSIVE_CSS.indexOf("/* scrolling brand marquee");
 
 if (introCssEnd < 0) {
@@ -115,73 +115,41 @@ const LANDING_CRITICAL_CSS = `${IMMERSIVE_CSS.slice(0, introCssEnd)}
   }
 }`;
 
-type PublicEvent = Awaited<ReturnType<typeof getPublicEvents>>[number];
+type FeaturedEvent = Awaited<ReturnType<typeof getFeaturedEvents>>[number];
 
-function toLandingEvent(event: PublicEvent): LandingEvent {
+function toLandingShowcaseEvent(event: FeaturedEvent, now: number): LandingShowcaseEvent {
+  const status = isEventEnded(event, now) ? "ended" : "active";
   return {
     title: event.title,
     subtitle: event.subtitle,
     about: event.about,
     dateLabel: event.date_label,
-    doors: event.doors,
     venue: event.venue,
-    venueLine: event.venue_line,
-    capacity: event.capacity,
-    sold: null,
     priceBani: event.price_bani,
     photoUrl: event.photo_url,
-    href: `/${event.slug}`,
+    detailsHref: `/${event.slug}`,
     checkoutHref: `/${event.slug}/checkout`,
-    hasProgram: Array.isArray(event.program) && event.program.length > 0,
-  };
-}
-
-function toLandingSecondaryEvent(
-  event: PublicEvent,
-  status: NonNullable<LandingArchivedEvent["status"]>,
-): LandingArchivedEvent {
-  return {
-    title: event.title,
-    subtitle: event.subtitle,
-    about: event.about,
-    dateLabel: event.date_label,
-    venue: event.venue,
-    priceBani: event.price_bani,
-    photoUrl: event.photo_url,
-    href: `/${event.slug}`,
     status,
   };
 }
 
-async function getHomepageEvents(): Promise<{ event: LandingEvent | null; secondaryEvents: LandingArchivedEvent[] }> {
-  const [events, featuredEvents] = await Promise.all([
-    getPublicEvents(),
-    getFeaturedEvents(),
-  ]);
+async function getHomepageEvents(): Promise<LandingShowcaseEvent[]> {
+  const featuredEvents = await getFeaturedEvents();
   const now = Date.now();
-  const activeEvents = events.filter((event) => !isEventEnded(event, now));
-  const featuredEvent = activeEvents[0] ?? null;
-  const secondaryEvents = featuredEvents.map((event) =>
-    toLandingSecondaryEvent(event, isEventEnded(event, now) ? "past" : "active"),
-  );
-
-  return {
-    event: featuredEvent ? toLandingEvent(featuredEvent) : null,
-    secondaryEvents,
-  };
+  return featuredEvents.map((event) => toLandingShowcaseEvent(event, now));
 }
 
 export default async function Home() {
-  const [homepageEvents, recruitment] = await Promise.all([
+  const [showcaseEvents, recruitment] = await Promise.all([
     getHomepageEvents(),
     getPublicRecruitmentState(),
   ]);
-  return <LandingBody event={homepageEvents.event} secondaryEvents={homepageEvents.secondaryEvents} recruitment={recruitment} />;
+  return <LandingBody showcaseEvents={showcaseEvents} recruitment={recruitment} />;
 }
 
-function LandingBody({ event, secondaryEvents, recruitment }: { event: LandingEvent | null; secondaryEvents: LandingArchivedEvent[]; recruitment: Awaited<ReturnType<typeof getPublicRecruitmentState>> }) {
-  const ctaHref = event?.checkoutHref ?? "/evenimente";
-  const markup = renderImmersiveMarkup(IMMERSIVE_MARKUP, event, recruitment, secondaryEvents).split("__CTA_HREF__").join(ctaHref);
+function LandingBody({ showcaseEvents, recruitment }: { showcaseEvents: LandingShowcaseEvent[]; recruitment: Awaited<ReturnType<typeof getPublicRecruitmentState>> }) {
+  const ctaHref = showcaseEvents.find((event) => event.status === "active")?.checkoutHref ?? "/evenimente";
+  const markup = renderImmersiveMarkup(IMMERSIVE_MARKUP, { recruitment, showcaseEvents }).split("__CTA_HREF__").join(ctaHref);
 
   return (
     <>

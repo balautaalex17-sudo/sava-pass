@@ -1,11 +1,6 @@
 const INTRO_VIDEOS = `  <video class="mhi-ambient" autoplay muted loop playsinline preload="metadata" aria-hidden="true" src="/imersiv/intro-ambient.mp4"></video>
   <video class="intro-video" autoplay muted loop playsinline preload="metadata" fetchpriority="low" aria-hidden="true" src="/imersiv/savapass-ticket-engine-loop.mp4"></video>`;
 
-const INTRO_PHOTO = `  <picture class="intro-photo" aria-hidden="true">
-    <source media="(max-width: 760px)" srcset="/media/hero-mobile.webp" />
-    <img src="/media/hero-desktop.webp" width="2200" height="1238" alt="" fetchpriority="high" decoding="async" />
-  </picture>`;
-
 const HERO_VIDEO = `  <video class="hero-video" autoplay muted loop playsinline preload="metadata" fetchpriority="low" aria-hidden="true" src="/imersiv/savapass-hero-loop.mp4"></video>`;
 
 // Mobile uses the CSS ticket-engine artwork, so these decorative videos only
@@ -59,38 +54,17 @@ function buildInteractWheelSvg() {
 
 const INTERACT_WHEEL_SVG = buildInteractWheelSvg();
 
-const HERO_PHOTO = `  <picture class="hero-photo" aria-hidden="true">
-    <source media="(max-width: 760px)" srcset="/media/story-event.webp" />
-    <img src="/media/story-event.webp" width="1400" height="1000" alt="" loading="lazy" decoding="async" />
-  </picture>`;
-
-export type LandingEvent = {
+export type LandingShowcaseEvent = {
   title: string;
   subtitle: string | null;
   about: string | null;
   dateLabel: string;
-  doors: string;
   venue: string;
-  venueLine: string | null;
-  capacity: number | null;
-  sold: number | null;
   priceBani: number;
   photoUrl: string | null;
-  href: string;
+  detailsHref: string;
   checkoutHref: string;
-  hasProgram: boolean;
-};
-
-export type LandingArchivedEvent = {
-  title: string;
-  subtitle: string | null;
-  about: string | null;
-  dateLabel: string;
-  venue: string;
-  priceBani: number;
-  photoUrl: string | null;
-  href: string;
-  status?: "active" | "past";
+  status: "active" | "ended";
 };
 
 export type LandingRecruitment = {
@@ -277,142 +251,83 @@ function safePhotoUrl(value: string | null) {
   return "/media/story-event.webp";
 }
 
-function renderFeaturedEvent(event: LandingEvent | null) {
-  if (!event) {
-    return `<article class="ev-feat ev-feat--empty">
-      <div class="ev-poster rv"><img src="/media/story-event.webp" alt="Membri Interact dansând aproape de scenă la un eveniment" width="1400" height="1000" loading="lazy" decoding="async" /><span class="pbadge"><i></i>Calendar în pregătire</span></div>
-      <div class="ev-detail">
-        <div class="ev-when rv">Următorul eveniment</div>
-        <h3 class="ev-title rv">Revenim curând cu o ediție nouă.</h3>
-        <div class="ev-tag rv">Până atunci, vezi proiectele și momentele comunității.</div>
-        <p class="ev-desc rv">Când echipa publică un eveniment, aici apar automat data, locurile disponibile și tipurile de bilet. Nu afișăm date provizorii.</p>
-        <div class="ev-cta rv"><a href="/proiecte" class="btn btn-p mag">Vezi proiectele <span class="ar" data-i="arrow"></span></a></div>
-      </div>
-    </article>`;
-  }
+const MAX_SHOWCASE_EVENTS = 3;
+const EVENT_SECTION_PATTERN = /<section class="sec" id="event"[\s\S]*?<\/section>/;
 
-  const capacity = Math.max(0, event.capacity ?? 0);
-  const sold = Math.min(capacity, Math.max(0, event.sold ?? 0));
-  const hasAvailability = event.capacity !== null && event.sold !== null && capacity > 0;
-  const left = Math.max(0, capacity - sold);
-  const fill = capacity > 0 ? Math.round((sold / capacity) * 100) : 0;
-  const description = event.about ?? event.subtitle ?? "Detaliile complete sunt disponibile pe pagina evenimentului.";
-  const purchaseHref = escapeHtml(event.checkoutHref);
-  const secondaryHref = escapeHtml(`${event.href}${event.hasProgram ? "#program" : "#detalii"}`);
-  const secondaryAction = event.hasProgram ? "Vezi programul" : "Detalii complete";
-
-  return `<article class="ev-feat">
-      <div class="ev-poster rv"><img src="${safePhotoUrl(event.photoUrl)}" alt="${escapeHtml(event.title)}" loading="lazy" decoding="async" /><span class="pbadge"><i></i>Activ</span></div>
-      <div class="ev-detail">
-        <div class="ev-when rv">${escapeHtml(event.dateLabel)}</div>
-        <h3 class="ev-title rv">${escapeHtml(event.title)}</h3>
-        ${event.subtitle ? `<div class="ev-tag rv">${escapeHtml(event.subtitle)}</div>` : ""}
-        <p class="ev-desc rv">${escapeHtml(description)}</p>
-        <div class="ev-facts rv">
-          <span class="ev-fact"><span class="fi" data-i="pin"></span>${escapeHtml(event.venue)}</span>
-          <span class="ev-fact"><span class="fi" data-i="clock"></span>Acces de la ${escapeHtml(event.doors)}</span>
-          ${hasAvailability ? `<span class="ev-fact"><span class="fi" data-i="ticket"></span>${left} ${left === 1 ? "loc rămas" : "locuri rămase"}</span>` : ""}
-        </div>
-        ${hasAvailability ? `<div class="ev-prog rv"><div class="ev-prog-bar"><i style="width:${fill}%"></i></div><div class="ev-prog-meta"><span class="l">${sold} din ${capacity} bilete</span><span class="r">${fill}% ocupat</span></div></div>` : ""}
-        <div class="ev-cta rv">
-          <a href="${purchaseHref}" class="btn btn-p mag">Rezervă bilet <span class="ar" data-i="arrow"></span></a>
-          <a href="${secondaryHref}" class="ev-ghost">${secondaryAction}</a>
-        </div>
-      </div>
-    </article>`;
+export function prepareShowcaseEvents(events: readonly LandingShowcaseEvent[]) {
+  return events
+    .map((event, index) => ({ event, index }))
+    .sort((first, second) => {
+      const firstIsActive = first.event.status === "active";
+      const secondIsActive = second.event.status === "active";
+      if (firstIsActive !== secondIsActive) return firstIsActive ? -1 : 1;
+      return first.index - second.index;
+    })
+    .slice(0, MAX_SHOWCASE_EVENTS)
+    .map(({ event }) => event);
 }
 
-function renderArchivedEvents(events: LandingArchivedEvent[]) {
-  if (events.length === 0) {
-    return '<p class="ev-archive-empty">Arhiva va apărea aici când un eveniment este marcat „Arhivat” în admin.</p>';
-  }
-
-  return events.slice(0, 3).map((event, index) => {
-    const description = event.about ?? event.subtitle ?? "Detaliile acestei ediții sunt disponibile în arhiva evenimentelor.";
-    const price = event.priceBani > 0 ? `${Math.round(event.priceBani / 100)} RON` : "Acces gratuit";
+function renderShowcaseCards(events: readonly LandingShowcaseEvent[]) {
+  return events.map((event, index) => {
+    const description = event.about ?? event.subtitle ?? "Detaliile acestei ediții sunt disponibile pe pagina evenimentului.";
     const isActive = event.status === "active";
     const statusLabel = isActive ? "Activ" : "Eveniment încheiat";
     const actionLabel = isActive ? "Rezervă bilet" : "Vezi ediția";
+    const href = isActive ? event.checkoutHref : event.detailsHref;
+    const price = event.priceBani > 0 ? `${Math.round(event.priceBani / 100)} RON` : "Acces gratuit";
     const cardRole = index === 0 ? " ev-past--lead" : " ev-past--support";
+    const priceMarkup = isActive ? `<span class="ev-past-price">${escapeHtml(price)}</span>` : "";
+    const locationMarkup = isActive
+      ? `<div class="ev-active-location" aria-label="Locație: ${escapeHtml(event.venue)}"><span>Locație</span><strong>${escapeHtml(event.venue)}</strong></div>`
+      : "";
+    const descriptionMarkup = isActive
+      ? escapeHtml(description)
+      : `<strong>${escapeHtml(event.venue)}</strong> · ${escapeHtml(description)}`;
 
-    return `<a href="${escapeHtml(event.href)}" class="ev-past ev-past--managed${cardRole}${isActive ? " ev-past--active" : ""}" aria-label="${escapeHtml(`${statusLabel}: ${event.title}`)}">
+    return `<a href="${escapeHtml(href)}" class="ev-past ev-past--managed${cardRole}${isActive ? " ev-past--active" : ""}" aria-label="${escapeHtml(`${actionLabel}: ${event.title}`)}">
         <div class="ev-past-poster"><img src="${safePhotoUrl(event.photoUrl)}" loading="lazy" decoding="async" alt="Afișul evenimentului ${escapeHtml(event.title)}" /></div>
         <div class="ev-past-body">
           <div class="ev-past-tags"><span class="ev-cat">${escapeHtml(event.dateLabel)}</span><span class="ev-sold${isActive ? " ev-sold--active" : ""}">${escapeHtml(statusLabel)}</span></div>
+          ${locationMarkup}
           <h4 class="ev-past-title">${escapeHtml(event.title)}</h4>
-          <p class="ev-past-desc"><strong>${escapeHtml(event.venue)}</strong> · ${escapeHtml(description)}</p>
-          <div class="ev-past-footer"><span class="ev-past-price">${escapeHtml(price)}</span><span class="ev-past-action">${escapeHtml(actionLabel)} <span class="ar" data-i="arrow" aria-hidden="true"></span></span></div>
+          <p class="ev-past-desc">${descriptionMarkup}</p>
+          <div class="ev-past-footer">${priceMarkup}<span class="ev-past-action">${escapeHtml(actionLabel)} <span class="ar" data-i="arrow" aria-hidden="true"></span></span></div>
         </div>
       </a>`;
   }).join("\n      ");
 }
 
-function applyArchiveContent(markup: string, events: LandingArchivedEvent[]) {
-  if (events.length === 0) {
-    return markup.replace(
-      /\n    <div class="ev-arch-head rv">[\s\S]*?    <div class="ev-arch">[\s\S]*?    <\/div>\r?\n  <\/div>\r?\n<\/section>/,
-      "\n  </div>\n</section>",
-    );
-  }
+function applyShowcaseContent(markup: string, events: readonly LandingShowcaseEvent[]) {
+  if (events.length === 0) return markup.replace(EVENT_SECTION_PATTERN, "");
 
-  const cards = renderArchivedEvents(events);
-  const heading = events.length === 3 ? "Trei ediții în prim-plan." : "Ediții în prim-plan.";
-  return markup.replace(
-    /\n    <div class="ev-arch-head rv">[\s\S]*?    <div class="ev-arch">[\s\S]*?    <\/div>\r?\n  <\/div>\r?\n<\/section>/,
-    `
-    <div class="ev-arch-head ev-showcase-head rv">
-      <div class="ev-showcase-copy"><h3 class="ev-showcase-title">${heading}</h3><p>Trei seri alese de echipă, fiecare cu atmosfera și povestea ei.</p></div>
-      <button class="ev-all rv" style="--d:.12s;">Toate edițiile <span class="ar" data-i="arrow"></span></button>
+  return markup.replace(EVENT_SECTION_PATTERN, `<section class="sec" id="event" data-screen-label="Evenimente" aria-labelledby="showcase-title">
+  <div class="seam" aria-hidden="true"><i></i><b></b></div>
+  <div class="wrap">
+    <div class="ev-showcase-head rv">
+      <div class="ev-showcase-copy"><h2 class="ev-showcase-title" id="showcase-title">Seri care ne aduc împreună</h2><p>O selecție de evenimente SavaPass, fiecare cu atmosfera, energia și povestea ei.</p></div>
+      <a href="/evenimente#toate-evenimentele" class="ev-all rv" style="--d:.12s;">Toate edițiile <span class="ar" data-i="arrow"></span></a>
     </div>
     <div class="ev-arch ev-showcase-grid">
-      ${cards}
+      ${renderShowcaseCards(events)}
     </div>
   </div>
-</section>`,
-  );
+</section>`);
 }
 
-function applyEventContent(markup: string, event: LandingEvent | null) {
-  const featuredMarkup = renderFeaturedEvent(event);
-  const sectionSummary = event
-    ? "Publicat în SavaPass · disponibil și în pagina Evenimente"
-    : "Calendarul se actualizează când publici un eveniment";
-  let next = markup
-    .replace('Ce urmează <em>și ce a fost.</em>', 'Evenimentul <em>activ.</em>')
-    .replace('3 ediții · 264 bilete · cca 13.500 RON donați', sectionSummary)
-    .replace(/<article class="ev-feat">[\s\S]*?<\/article>\n\n    <div class="ev-map">/, `${featuredMarkup}\n\n    <div class="ev-map">`);
+function applyGenericTicketDemo(markup: string) {
+  return markup
+    .replace(
+      '<div><div class="e">Bilet activ</div><h3>Echoes<br/>Unplugged</h3></div>',
+      '<div><div class="e">Model SavaPass</div><h3>Bilet<br/>digital</h3></div>',
+    )
+    .replace('<span class="tk-stat"><span class="tk-live"></span>Valid</span>', '<span class="tk-stat"><span class="tk-live"></span>Demo</span>')
+    .replace('<div>Locul<b>Curtea Veche</b></div>', '<div>Locul<b>De anunțat</b></div>')
+    .replace('<div style="text-align:right;">Data<b>Vin · 14 Nov</b></div>', '<div style="text-align:right;">Data<b>În curând</b></div>');
+}
 
-  if (event) {
-    const address = escapeHtml(event.venueLine ?? event.venue).replace(/\r?\n/g, "<br/>");
-    const mapsHref = `https://maps.google.com/?q=${encodeURIComponent(`${event.venue} ${event.venueLine ?? ""}`.trim())}`;
-    next = next
-      .replace('<div><div class="e">Bilet activ</div><h3>Echoes<br/>Unplugged</h3></div>', `<div><div class="e">Bilet activ</div><h3>${escapeHtml(event.title)}</h3></div>`)
-      .replace('<div>Locul<b>Curtea Veche</b></div>', `<div>Locul<b>${escapeHtml(event.venue)}</b></div>`)
-      .replace('<div style="text-align:right;">Data<b>Vin · 14 Nov</b></div>', `<div style="text-align:right;">Data<b>${escapeHtml(event.dateLabel)}</b></div>`)
-      .replace('<div class="place rv" style="--d:.08s">Curtea Veche</div>', `<div class="place rv" style="--d:.08s">${escapeHtml(event.venue)}</div>`)
-      .replace('<div class="addr rv" style="--d:.12s">Strada Franceză 25<br/>București</div>', `<div class="addr rv" style="--d:.12s">${address}</div>`)
-      .replace(
-        '<button class="ev-ghost maps rv" style="--d:.24s">Deschide în Maps <span class="ar" data-i="arrow"></span></button>',
-        `<a class="ev-ghost maps rv" style="--d:.24s" href="${escapeHtml(mapsHref)}" target="_blank" rel="noopener noreferrer">Deschide în Maps <span class="ar" data-i="arrow"></span></a>`,
-      )
-      .replace('href="https://maps.google.com/?q=Curtea+Veche+Bucuresti"', `href="${mapsHref}"`);
-  } else {
-    next = next
-      .replace(
-        '<div><div class="e">Bilet activ</div><h3>Echoes<br/>Unplugged</h3></div>',
-        '<div><div class="e">Model SavaPass</div><h3>Bilet<br/>digital</h3></div>',
-      )
-      .replace('<span class="tk-stat"><span class="tk-live"></span>Valid</span>', '<span class="tk-stat"><span class="tk-live"></span>Demo</span>')
-      .replace('<div>Locul<b>Curtea Veche</b></div>', '<div>Locul<b>De anunțat</b></div>')
-      .replace('<div style="text-align:right;">Data<b>Vin · 14 Nov</b></div>', '<div style="text-align:right;">Data<b>În curând</b></div>')
-      .replace('<div class="ev-map">', '<div class="ev-map" hidden>');
-  }
-
-  const footerCopy = event
-    ? `<p class="nx rv" style="--d:.08s">Următorul eveniment: <b>${escapeHtml(event.title)}</b> · ${escapeHtml(event.dateLabel)}.<br/>Ai deja bilet? Îl găsești oricând în contul tău.</p><a href="/conta" class="btn btn-p mag rv" style="--d:.14s">Biletele mele <span class="ar" data-i="arrow"></span></a>`
-    : '<p class="nx rv" style="--d:.08s">Următorul eveniment este în pregătire.<br/>Ai o întrebare sau o idee? Scrie echipei Interact Sf. Sava.</p><a href="/contact" class="btn btn-p mag rv" style="--d:.14s">Scrie-ne <span class="ar" data-i="arrow"></span></a>';
-
-  return next.replace(/<p class="nx rv" style="--d:\.08s">[\s\S]*?<\/p>\n      <a href="__CTA_HREF__" class="btn btn-p mag rv" style="--d:\.14s">[\s\S]*?<\/a>/, footerCopy);
+function applyEventsFooter(markup: string) {
+  const footerCopy = '<p class="nx rv" style="--d:.08s">O selecție din serile SavaPass, într-un singur loc.<br/>Descoperă evenimentele active și poveștile edițiilor încheiate.</p><a href="/evenimente#toate-evenimentele" class="btn btn-p mag rv" style="--d:.14s">Toate edițiile <span class="ar" data-i="arrow"></span></a>';
+  return markup.replace(/<p class="nx rv" style="--d:\.08s">[\s\S]*?<\/p>\n      <a href="__CTA_HREF__" class="btn btn-p mag rv" style="--d:\.14s">[\s\S]*?<\/a>/, footerCopy);
 }
 
 function applyRecruitmentContent(markup: string, recruitment: LandingRecruitment | null) {
@@ -489,100 +404,23 @@ function applyInstagramFeed(markup: string) {
   );
 }
 
-const PHOTO_STORY = `
-<!-- Curated editorial grid, adapted to SavaPass from the layout-grid interaction pattern -->
-<section class="photo-story" id="community" data-screen-label="Comunitate">
-  <div class="wrap">
-    <header class="photo-story__head">
-      <div>
-        <div class="eyebrow rv">Din culise</div>
-        <h2 class="h2 rv" style="--d:.06s;">O platformă construită pentru <em>oameni reali.</em></h2>
-      </div>
-      <p class="rv" style="--d:.12s;">De la energia unui eveniment la discuția calmă de la interviu, fiecare modul pornește din felul în care lucrează echipa Interact Sf. Sava.</p>
-    </header>
-    <div class="photo-grid">
-      <a class="photo-card photo-card--event rv" href="#event" style="--d:.04s;">
-        <img src="/media/story-event.webp" width="1400" height="1000" loading="lazy" decoding="async" alt="Membri Interact dansând la un eveniment cu lumini de scenă" />
-        <span class="photo-card__shade"></span><span class="photo-card__copy"><small>Evenimente</small><b>Energia din sală, accesul fără haos.</b><em>Descoperă biletele și check-in-ul.</em></span>
-      </a>
-      <a class="photo-card photo-card--community rv" href="/proiecte" style="--d:.09s;">
-        <img src="/media/story-community.webp" width="1400" height="900" loading="lazy" decoding="async" alt="Grup mare de voluntari Interact ținând certificate în aer liber" />
-        <span class="photo-card__shade"></span><span class="photo-card__copy"><small>Comunitate</small><b>Proiecte care se văd în afara ecranului.</b><em>Vezi inițiativele echipei.</em></span>
-      </a>
-      <a class="photo-card photo-card--recruitment rv" href="/devino-membru" style="--d:.14s;">
-        <img src="/media/story-recruitment.webp" width="1000" height="1300" loading="lazy" decoding="async" alt="Elevi colaborând în jurul unor materiale tipărite" />
-        <span class="photo-card__shade"></span><span class="photo-card__copy"><small>Recrutare</small><b>Idei puse împreună.</b><em>Aplică pentru generația nouă.</em></span>
-      </a>
-      <a class="photo-card photo-card--interview rv" href="/devino-membru#aplica" style="--d:.18s;">
-        <img src="/media/story-interview.webp" width="1200" height="900" loading="lazy" decoding="async" alt="Trei elevi discutând relaxat la o masă în timpul unui interviu" />
-        <span class="photo-card__shade"></span><span class="photo-card__copy"><small>Interviuri</small><b>O conversație, nu un examen.</b><em>Află cum decurge selecția.</em></span>
-      </a>
-    </div>
-  </div>
-</section>
-
-`;
-
-export function enhanceLandingMarkup(markup: string, event: LandingEvent | null = null) {
-  const upgraded = markup
-    .replace(INTRO_VIDEOS, INTRO_PHOTO)
-    .replace(HERO_VIDEO, HERO_PHOTO)
-    .replace('<div class="mhi-church"><img src="/imersiv/church.webp" alt="" fetchpriority="high" decoding="async"/></div>', "")
-    .replace('<!-- ═══ STATS ═══ -->', `${PHOTO_STORY}<!-- ═══ STATS ═══ -->`)
-    .replace('<button class="btn btn-g mag">Vezi arhiva</button>', '<a href="/evenimente#toate-evenimentele" class="btn btn-g mag">Toate evenimentele</a>')
-    .replace('<button class="ev-all rv" style="--d:.12s;">Toate edițiile <span class="ar" data-i="arrow"></span></button>', '<a href="/evenimente?period=past#toate-evenimentele" class="ev-all rv" style="--d:.12s;">Ediții încheiate <span class="ar" data-i="arrow"></span></a>')
-    .replace('<button class="ev-ghost">Programul serii</button>', '<a href="__CTA_HREF__#program" class="ev-ghost">Vezi programul</a>')
-    .replace('<button class="ev-ghost maps rv" style="--d:.24s">Deschide în Maps <span class="ar" data-i="arrow"></span></button>', '<a class="ev-ghost maps rv" style="--d:.24s" href="https://maps.google.com/?q=Curtea+Veche+Bucuresti" target="_blank" rel="noopener">Deschide în Maps <span class="ar" data-i="arrow"></span></a>')
-    .replace('<button class="btn btn-g mag">Cum decurge</button>', '<a href="/devino-membru#process-title" class="btn btn-g mag">Vezi pașii</a>')
-    .replace("Devino membru · Toamna 2025", "Devino membru · Generația 2026–2027")
-    .replace("3 ediții · 264 bilete · cca 13.500 RON donați", "Fotografii reale · proiecte și evenimente Interact")
-    .replace("Easter Egg Hunt", "Momente de la evenimente")
-    .replace('<h4 class="ev-past-title">Easter Egg Hunt</h4>', '<h4 class="ev-past-title">Momente de la evenimente</h4>')
-    .replace("Eveniment de primăvară", "Din comunitate")
-    .replace("O dimineață de primăvară în curtea liceului — ouă ascunse, premii dulci și cea mai veselă vânătoare a anului. Fondurile au susținut bursele Sava.", "Cadre autentice din serile în care participanții, voluntarii și organizatorii se întâlnesc în același loc.")
-    .replace("Cupid's Hex", "Echipa în acțiune")
-    .replace('<h4 class="ev-past-title">Cupid\'s Hex</h4>', '<h4 class="ev-past-title">Echipa în acțiune</h4>')
-    .replace("Bal · Arhivă", "Din culise")
-    .replace("O seară roșu-burgund, măști de carton și scrisori de dragoste anonime. Cel mai bine costumat a câștigat un weekend la Brașov.", "Pregătirea, coordonarea și energia din spatele unui proiect Interact, surprinse fără decor de reclamă.")
-    .replaceAll("Sold out", "Fotografie reală")
-    .replace("Trei generații <em>de board.</em>", "Din sală până <em>în echipă.</em>")
-    .replace("De la primul concert din curtea liceului la o sală plină — trei ani, trei echipe, aceeași seară caldă.", "Evenimente, drumuri și întâlniri de echipă. Câteva cadre reale din felul în care se construiește comunitatea Interact Sf. Sava.")
-    .replace("Prima generație · 2024", "În sală · Evenimente")
-    .replace("A doua generație · 2025", "Pe drum · Comunitate")
-    .replace("A treia generație · 2026", "În echipă · Board")
-    .replace("Unde a început", "Energia din sală")
-    .replace("Cum a crescut", "Timpul împreună")
-    .replace("Generația de azi", "O echipă care organizează")
-    .replace("Un singur concert, în curtea liceului. O chitară, lumânări și un public cât o clasă — și ideea că merită repetată.", "Oameni aproape de scenă, lumină joasă și energia care transformă un eveniment într-o amintire comună.")
-    .replace("Două ediții, o curte plină și o echipă mai mare. Mai mulți oameni, aceeași seară caldă — doar că de două ori.", "Comunitatea se construiește și între proiecte: pe drum, în conversații și în momentele care nu ajung într-un raport.")
-    .replace("O sală plină și un board care duce mai departe aceeași seară. Iar SavaPass e felul în care o ținem să crească.", "Board-ul coordonează oamenii, proiectele și deciziile din spatele fiecărei ediții. SavaPass îi oferă un singur loc în care să le gestioneze.")
-    .replace("Alegi singur slotul, online sau în liceu", "Primești ora și locul confirmate")
-    .replace("© 2025 SavaPass", "© 2026 SavaPass")
-    .replace('alt="Echoes Unplugged — concert acustic Interact Sf. Sava"', 'alt="Membri Interact dansând aproape de scenă la un eveniment"')
-    .replace('alt="Easter Egg Hunt — eveniment de primăvară Interact Sf. Sava"', 'alt="Masă aglomerată și participanți la un eveniment Interact"')
-    .replace('alt="Cupid\'s Hex — bal mascat Interact Sf. Sava"', 'alt="Grup Interact într-un coridor din culisele unui eveniment"')
-    .replace('alt="Prima generație a board-ului Interact Sf. Sava, un concert acustic intim în Curtea Veche, 2024"', 'alt="Membri Interact dansând la un eveniment cu lumini de scenă"')
-    .replace('alt="A doua generație a board-ului Interact Sf. Sava, o seară mai aglomerată cu lumini de sărbătoare, 2025"', 'alt="Membri Interact călătorind împreună spre o activitate"')
-    .replace('alt="Generația de azi a board-ului Interact Sf. Sava, o echipă tânără la un eveniment plin, 2026"', 'alt="Board-ul Interact Sf. Sava reunit pe o scară de marmură"')
-    .replace('alt="Echipa de voluntari Interact Sf. Sava împreună seara după un eveniment"', 'alt="Board-ul Interact Sf. Sava reunit pe o scară de marmură"');
-
-  return applyInstagramFeed(applyEventContent(upgraded, event));
-}
-
-// The original immersive homepage keeps the animated engine intro and only
-// applies live event data to the content below it.
+// The original immersive homepage keeps its animated intro. The event section
+// is replaced wholesale with the single dashboard-managed showcase below it.
 export function renderImmersiveMarkup(
   markup: string,
-  event: LandingEvent | null = null,
-  recruitment: LandingRecruitment | null = null,
-  archivedEvents: LandingArchivedEvent[] = [],
+  options: {
+    recruitment?: LandingRecruitment | null;
+    showcaseEvents?: LandingShowcaseEvent[];
+  } = {},
 ) {
-  const hasActiveSecondaryEvents = archivedEvents.some((item) => item.status === "active");
-  const heroHref = escapeHtml(event?.href ?? "/evenimente");
-  const heroAction = event ? "Rezervă bilet" : "Vezi evenimentele";
-  const heroSecondaryHref = event ? "/evenimente#toate-evenimentele" : "/echipa";
-  const heroSecondaryAction = event ? "Toate evenimentele" : "Cunoaște echipa";
-  const upgraded = applyArchiveContent(applyEventContent(replaceLegacyStatsSection(markup), event), archivedEvents)
+  const recruitment = options.recruitment ?? null;
+  const showcaseEvents = prepareShowcaseEvents(options.showcaseEvents ?? []);
+  const reservableEvent = showcaseEvents.find((event) => event.status === "active") ?? null;
+  const heroHref = escapeHtml(reservableEvent?.checkoutHref ?? "/evenimente");
+  const heroAction = reservableEvent ? "Rezervă bilet" : "Vezi evenimentele";
+  const heroSecondaryHref = reservableEvent ? "/evenimente#toate-evenimentele" : "/echipa";
+  const heroSecondaryAction = reservableEvent ? "Toate evenimentele" : "Cunoaște echipa";
+  const upgraded = applyEventsFooter(applyGenericTicketDemo(applyShowcaseContent(replaceLegacyStatsSection(markup), showcaseEvents)))
     .replace(SECTION_DOTS, SECTION_NAVIGATION)
     .replace(INTRO_VIDEOS, DESKTOP_INTRO_VIDEOS)
     .replace(HERO_VIDEO, DESKTOP_HERO_VIDEO)
@@ -594,16 +432,6 @@ export function renderImmersiveMarkup(
     .replace(
       '<button class="btn btn-g mag">Vezi arhiva</button>',
       `<a href="${heroSecondaryHref}" class="btn btn-g mag">${heroSecondaryAction}</a>`,
-    )
-    .replace(
-      '<button class="ev-all rv" style="--d:.12s;">Toate edițiile <span class="ar" data-i="arrow"></span></button>',
-      hasActiveSecondaryEvents
-        ? '<a href="/evenimente#toate-evenimentele" class="ev-all rv" style="--d:.12s;">Toate evenimentele <span class="ar" data-i="arrow"></span></a>'
-        : '<a href="/evenimente?period=past#toate-evenimentele" class="ev-all rv" style="--d:.12s;">Ediții încheiate <span class="ar" data-i="arrow"></span></a>',
-    )
-    .replace(
-      '<button class="ev-ghost maps rv" style="--d:.24s">Deschide în Maps <span class="ar" data-i="arrow"></span></button>',
-      '<a class="ev-ghost maps rv" style="--d:.24s" href="https://maps.google.com/?q=Curtea+Veche+Bucuresti" target="_blank" rel="noopener noreferrer">Deschide în Maps <span class="ar" data-i="arrow"></span></a>',
     )
     .replace('<div class="mhi-church"><img src="/imersiv/church.webp" alt="" fetchpriority="high" decoding="async"/></div>', "")
     .replace('<div class="tele tl">SavaPass<br/><b>Bilete digitale</b></div>', "")
@@ -639,7 +467,6 @@ export const LANDING_REFINEMENT_CSS = `
 .sp-immersive-root .ev-past--managed:hover{transform:none;border-color:var(--line-l);box-shadow:none}
 .sp-immersive-root .ev-past--managed:hover .ev-past-poster img{transform:none}
 .sp-immersive-root .ev-past--active .ev-sold--active{color:var(--cyan)}
-.sp-immersive-root .ev-archive-empty{grid-column:1/-1;color:var(--mut-d);font-size:14px;line-height:1.6;margin:0}
 .sp-immersive-root .h2 em,
 .sp-immersive-root .feat-media .ov .ti em,
 .sp-immersive-root .jt-line em,
@@ -1265,14 +1092,14 @@ export const LANDING_REFINEMENT_CSS = `
   align-items: flex-end;
   justify-content: space-between;
   gap: clamp(24px, 5vw, 64px);
-  margin-top: clamp(56px, 7vw, 92px);
+  margin-top: 0;
 }
 .sp-immersive-root .ev-showcase-copy { max-width: 680px; }
 .sp-immersive-root .ev-showcase-title {
   color: var(--ink);
   font-size: clamp(2rem, 4vw, 3.35rem);
   font-weight: 800;
-  letter-spacing: -.045em;
+  letter-spacing: -.04em;
   line-height: .98;
   text-wrap: balance;
 }
@@ -1309,7 +1136,7 @@ export const LANDING_REFINEMENT_CSS = `
 }
 .sp-immersive-root .ev-showcase-grid .ev-past--support {
   grid-column: 8 / -1;
-  grid-template-columns: minmax(150px, .72fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(150px, .82fr) minmax(0, 1.18fr);
   min-height: 250px;
 }
 .sp-immersive-root .ev-showcase-grid .ev-past--support:nth-child(2) { grid-row: 1; }
@@ -1347,6 +1174,22 @@ export const LANDING_REFINEMENT_CSS = `
   line-height: 1.35;
 }
 .sp-immersive-root .ev-showcase-grid .ev-sold { color: var(--used); }
+.sp-immersive-root .ev-active-location {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 12px;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.sp-immersive-root .ev-active-location span {
+  color: var(--cyan);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.sp-immersive-root .ev-active-location strong { color: var(--ink); font-weight: 700; }
 .sp-immersive-root .ev-showcase-grid .ev-past-title {
   margin-top: clamp(16px, 2vw, 24px);
   font-size: clamp(1.55rem, 2.8vw, 2.7rem);
@@ -1383,6 +1226,7 @@ export const LANDING_REFINEMENT_CSS = `
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
   color: var(--cyan);
   font-size: 12px;
   font-weight: 800;
@@ -1420,7 +1264,7 @@ export const LANDING_REFINEMENT_CSS = `
   .sp-immersive-root .ev-showcase-grid .ev-past--support .ev-past-poster { aspect-ratio: 16 / 10; }
 }
 @media (max-width: 720px) {
-  .sp-immersive-root .ev-showcase-head { align-items: flex-start; flex-direction: column; margin-top: 58px; }
+  .sp-immersive-root .ev-showcase-head { align-items: flex-start; flex-direction: column; margin-top: 0; }
   .sp-immersive-root .ev-showcase-head .ev-all { width: 100%; min-height: 48px; justify-content: space-between; }
   .sp-immersive-root .ev-arch.ev-showcase-grid { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
   .sp-immersive-root .ev-showcase-grid .ev-past--lead,
@@ -1452,43 +1296,6 @@ export const LANDING_REFINEMENT_CSS = `
   .sp-immersive-root .ev-showcase-grid .ev-past-poster img,
   .sp-immersive-root .ev-past-action .ar { transition: none !important; }
 }
-`;
-
-export const LANDING_UPGRADE_CSS = `
-/* Photography-led art direction layered over the preserved immersive structure. */
-.sp-immersive-root .intro-photo,.sp-immersive-root .hero-photo{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-.sp-immersive-root .intro-photo img,.sp-immersive-root .hero-photo img{width:100%;height:100%;max-width:none;object-fit:cover}
-.sp-immersive-root .intro-photo img{object-position:center 56%;filter:saturate(.82) contrast(.94)}
-.sp-immersive-root .intro::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,.88) 0%,rgba(255,255,255,.72) 45%,rgba(255,255,255,.42) 100%),linear-gradient(180deg,rgba(255,255,255,.18),rgba(247,250,252,.62))}
-.sp-immersive-root .intro .engine-stage,.sp-immersive-root .intro .glow,.sp-immersive-root .intro .tele,.sp-immersive-root .mhi-row,.sp-immersive-root .mhi-features,.sp-immersive-root .mhi-ambient,.sp-immersive-root .intro-video{display:none!important}
-.sp-immersive-root .hero{background:#070a12}
-.sp-immersive-root .hero-photo img{object-position:center 48%;filter:saturate(.82) contrast(1.02)}
-.sp-immersive-root .hero::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(4,8,15,.96) 0%,rgba(4,8,15,.86) 43%,rgba(4,8,15,.38) 72%,rgba(4,8,15,.66) 100%),linear-gradient(180deg,rgba(4,8,15,.35),rgba(4,8,15,.72))}
-.sp-immersive-root .hero>.wrap,.sp-immersive-root .hero>.scrollhint{position:relative;z-index:2}
-.sp-immersive-root .hero .strip{display:none}
-.sp-immersive-root .hero .sub{color:rgba(239,248,252,.78)}
-.sp-immersive-root .hero .tk-glow,.sp-immersive-root .hero .phone-orbit{opacity:.36}
-.sp-immersive-root .ev-all,.sp-immersive-root .ev-ghost{text-decoration:none}
-.sp-immersive-root [hidden]{display:none!important}.sp-immersive-root .ev-feat--empty .ev-poster img{filter:saturate(.8) brightness(.72)}.sp-immersive-root .ev-feat--empty .ev-detail{justify-content:center}.sp-immersive-root .ev-past-stats{display:none}.sp-immersive-root .ev-past-desc{margin-bottom:12px}
-.sp-immersive-root .photo-story{padding:clamp(84px,10vw,150px) 0;background:#f4f1ea;color:#111827;content-visibility:auto;contain-intrinsic-size:900px}
-.sp-immersive-root section[id],.sp-immersive-root footer[id]{scroll-margin-top:76px}
-.sp-immersive-root .photo-story__head{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.55fr);gap:clamp(30px,7vw,90px);align-items:end;margin-bottom:34px}
-.sp-immersive-root .photo-story .h2{max-width:760px;color:#111827}
-.sp-immersive-root .photo-story__head>p{max-width:48ch;color:#475569;font-size:15px;line-height:1.7}
-.sp-immersive-root .photo-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(2,minmax(220px,1fr));gap:12px;min-height:590px}
-.sp-immersive-root .photo-card{position:relative;overflow:hidden;border-radius:18px;color:#fff;text-decoration:none;background:#101827;isolation:isolate;outline:none}
-.sp-immersive-root .photo-card--event{grid-column:1/7;grid-row:1/3}.sp-immersive-root .photo-card--community{grid-column:7/11;grid-row:1}.sp-immersive-root .photo-card--recruitment{grid-column:7/9;grid-row:2}.sp-immersive-root .photo-card--interview{grid-column:9/11;grid-row:2}
-.sp-immersive-root .photo-card img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;transition:transform .55s cubic-bezier(.22,1,.36,1),filter .35s ease}
-.sp-immersive-root .photo-card--recruitment img{object-position:center 38%}.sp-immersive-root .photo-card--interview img{object-position:47% center}
-.sp-immersive-root .photo-card__shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 28%,rgba(3,7,15,.9) 100%);z-index:1}
-.sp-immersive-root .photo-card__copy{position:absolute;z-index:2;left:0;right:0;bottom:0;display:grid;gap:6px;padding:clamp(16px,2vw,26px)}
-.sp-immersive-root .photo-card__copy small{font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#7fe0ff}.sp-immersive-root .photo-card__copy b{max-width:30ch;font-size:clamp(15px,1.5vw,23px);line-height:1.15}.sp-immersive-root .photo-card__copy em{font-style:normal;font-size:11px;color:rgba(255,255,255,.72);opacity:0;transform:translateY(7px);transition:opacity .25s ease,transform .25s ease}
-.sp-immersive-root .photo-card:hover img,.sp-immersive-root .photo-card:focus-visible img{transform:scale(1.035);filter:saturate(1.06)}.sp-immersive-root .photo-card:hover .photo-card__copy em,.sp-immersive-root .photo-card:focus-visible .photo-card__copy em{opacity:1;transform:none}.sp-immersive-root .photo-card:focus-visible{box-shadow:0 0 0 3px #f4f1ea,0 0 0 6px #00a7e8}
-.sp-immersive-root .stats .gen-figure,.sp-immersive-root .stats .gen-bar,.sp-immersive-root .stats .gen-meta,.sp-immersive-root .stats .gen-foot,.sp-immersive-root .stats .gen-ghost{display:none!important}.sp-immersive-root .stats .gen-body{justify-content:center}.sp-immersive-root .stats .gen-story{margin-top:20px;max-width:48ch}
-@media(max-width:900px){.sp-immersive-root .photo-story__head{grid-template-columns:1fr}.sp-immersive-root .photo-grid{grid-template-columns:1.2fr .8fr;grid-template-rows:360px 280px 280px;min-height:0}.sp-immersive-root .photo-card--event{grid-column:1/3;grid-row:1}.sp-immersive-root .photo-card--community{grid-column:1;grid-row:2}.sp-immersive-root .photo-card--recruitment{grid-column:2;grid-row:2}.sp-immersive-root .photo-card--interview{grid-column:1/3;grid-row:3}}
-@media(max-width:760px){.sp-immersive-root .intro-photo img{object-position:center 58%}.sp-immersive-root .intro::after{background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.94) 70%,#f7fafc)}.sp-immersive-root .hero::after{background:linear-gradient(180deg,rgba(4,8,15,.66),rgba(4,8,15,.96) 66%)}.sp-immersive-root .hero-photo img{object-position:center 45%}.sp-immersive-root .photo-grid{display:grid;grid-template-columns:1fr;grid-template-rows:none;gap:10px}.sp-immersive-root .photo-card--event,.sp-immersive-root .photo-card--community,.sp-immersive-root .photo-card--recruitment,.sp-immersive-root .photo-card--interview{grid-column:1;grid-row:auto;min-height:310px}.sp-immersive-root .photo-card--recruitment{min-height:420px}.sp-immersive-root .photo-card__copy em{opacity:1;transform:none}}
-@media(hover:none){.sp-immersive-root .photo-card__copy em{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.sp-immersive-root *{scroll-behavior:auto!important}.sp-immersive-root .rv,.sp-immersive-root .hline>span{opacity:1!important;transform:none!important;filter:none!important;transition:none!important}.sp-immersive-root .photo-card img,.sp-immersive-root .photo-card__copy em{transition:none!important}.sp-immersive-root .gear,.sp-immersive-root .lane,.sp-immersive-root .tk-glow,.sp-immersive-root .phone-aurora,.sp-immersive-root .tk-live,.sp-immersive-root .eq span{animation:none!important}.sp-immersive-root .scrollhint{display:none!important}}
 `;
 
 export const BOARD_SHOWCASE_CSS = `

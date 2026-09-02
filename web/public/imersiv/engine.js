@@ -188,7 +188,7 @@ if(window.gsap && !reduce){
     /* hero headline mask reveal — fires as the hero scrolls up into view (not on load) */
     (function(){var spans=[].slice.call(document.querySelectorAll('.hline>span'));if(!spans.length)return;spans.forEach(function(s){s.style.transition='transform 1.1s cubic-bezier(.16,1,.3,1)';s.style.willChange='transform';});var go=function(){spans.forEach(function(s,i){setTimeout(function(){s.style.setProperty('transform','translateY(0)','important');},i*110);});};var h=document.getElementById('hero');if(h&&'IntersectionObserver'in window){var io=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){if(es[i].isIntersecting){go();io.disconnect();return;}}},{threshold:.12});io.observe(h);}else{go();}})();
     /* mobile (plan 004): the parallax/scrub set runs on ALL devices (tuned). The two heaviest — the background-video parallaxes + the ghost-numeral drift — skip low-end phones (deviceMemory<=4) to hold FPS; iOS reports no deviceMemory so it is treated as capable. Touch halves amplitudes via __vamp. */
-    var __touch=matchMedia('(hover:none)').matches; var __lowEnd=!!(navigator.deviceMemory&&navigator.deviceMemory<=4); var __vamp=__touch?0.5:1; {
+    var __touch=matchMedia('(hover:none)').matches; var __vamp=__touch?0.5:1; {
     if(!__touch) gsap.to('#tkwrap',{yPercent:-12*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:true}});
 
     /* seam connectors: thread + node draw in as each section arrives */
@@ -201,8 +201,6 @@ if(window.gsap && !reduce){
     /* ambient parallax — depth on the Higgsfield loops */
     if(!__touch){gsap.to('.hero-video',{yPercent:16*__vamp,ease:'none',scrollTrigger:{trigger:'#hero',start:'top bottom',end:'bottom top',scrub:true}});
     var footVideo=document.querySelector('.foot-video');if(footVideo)gsap.to(footVideo,{yPercent:14*__vamp,ease:'none',scrollTrigger:{trigger:'.foot',start:'top bottom',end:'bottom top',scrub:true}});}
-    /* event poster: slow scrub zoom as it passes through */
-    if(!__touch) gsap.fromTo('.ev-poster img',{scale:1.12},{scale:1,ease:'none',scrollTrigger:{trigger:'.ev-feat',start:'top bottom',end:'bottom top',scrub:true}});
     /* footer headline rises into place */
     if(!__touch) gsap.from('.foot .big',{yPercent:22*__vamp,opacity:.35,ease:'none',scrollTrigger:{trigger:'.foot',start:'top 88%',end:'top 48%',scrub:true}});
     /* time: the ghost year-numerals drift as each generation scrolls through */

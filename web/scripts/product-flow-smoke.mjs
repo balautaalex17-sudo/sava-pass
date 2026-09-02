@@ -26,8 +26,10 @@ function record(check, passed, detail) {
 
 let response = await page.goto(`${baseUrl}/`, { waitUntil: "networkidle", timeout: 60_000 });
 record("landing_load", response?.status() === 200, `status ${response?.status()}`);
-record("landing_truthful_empty_state", await page.getByText("Revenim curând cu o ediție nouă.").isVisible(), "past active event is not sold as upcoming");
-record("landing_no_stale_feature", !(await page.locator(".ev-feat").innerText()).includes("Echoes Unplugged"), "featured card excludes stale event");
+const showcaseCards = page.locator("#event .ev-showcase-grid .ev-past--managed");
+record("landing_unified_showcase", await showcaseCards.count() === 3, "exactly three dashboard-selected cards render");
+record("landing_no_separate_event_hero", await page.locator("#event .ev-feat, #event .ev-map").count() === 0, "legacy event hero and map are absent");
+record("landing_ended_cards_hide_price", await page.locator("#event .ev-past:not(.ev-past--active) .ev-past-price").count() === 0, "ended cards contain no ticket price");
 
 response = await page.goto(`${baseUrl}/echoes-unplugged`, { waitUntil: "networkidle", timeout: 60_000 });
 record("past_event_detail", response?.status() === 200 && await page.getByText("Încheiat").isVisible(), `status ${response?.status()}`);

@@ -174,40 +174,47 @@ if (mode === "audit") {
     const homepageUrl = new URL("/", targetUrl).toString();
     await page.goto(homepageUrl, { waitUntil: "networkidle", timeout: 45_000 });
     await page.locator("#event").waitFor({ state: "visible" });
-    const homepageFeaturedEvents = await page.locator("#event .ev-feat").count();
-    const homepageSecondaryCards = await page.locator("#event .ev-arch .ev-past").count();
+    const homepageCards = page.locator("#event .ev-showcase-grid .ev-past--managed");
+    const homepageShowcaseCards = await homepageCards.count();
     const homepageLeadCards = await page.locator("#event .ev-arch .ev-past--lead").count();
     const homepageSupportCards = await page.locator("#event .ev-arch .ev-past--support").count();
-    const homepageSecondaryActiveLabels = await page.locator("#event .ev-arch .ev-sold--active").count();
-    const homepageSecondaryReserveLabels = await page.locator("#event .ev-arch .ev-past-action").filter({ hasText: /Rezervă bilet/ }).count();
-    const homepageSecondaryTitles = (await page.locator("#event .ev-arch .ev-past-title").allTextContents()).map((title) => title.trim());
-    const homepageSecondaryActiveTitles = (await page.locator("#event .ev-arch .ev-past--active .ev-past-title").allTextContents()).map((title) => title.trim());
+    const homepageActiveCards = await page.locator("#event .ev-past--active").count();
+    const homepageActiveLabels = await page.locator("#event .ev-sold--active").count();
+    const homepageReserveLabels = await page.locator("#event .ev-past-action").filter({ hasText: /Rezervă bilet/ }).count();
+    const homepageTitles = (await page.locator("#event .ev-past-title").allTextContents()).map((title) => title.trim());
+    const homepageActiveTitles = (await page.locator("#event .ev-past--active .ev-past-title").allTextContents()).map((title) => title.trim());
     const homepagePastLabels = await page.locator("#event .ev-arch .ev-sold").filter({ hasText: /Eveniment încheiat/ }).count();
-    const homepageActiveLabels = await page.locator("#event .pbadge").getByText("Activ", { exact: true }).count();
-    const homepageEmptyHero = await page.locator("#event .ev-feat--empty").count();
-    const homepageEventTitle = (await page.locator("#event .ev-title").innerText()).trim();
-    if (homepageFeaturedEvents !== 1) throw new Error(`Homepage trebuie să aibă exact un eveniment principal, nu ${homepageFeaturedEvents}.`);
-    if (homepageSecondaryCards !== 3 || homepageLeadCards !== 1 || homepageSupportCards !== 2) throw new Error("Homepage nu pune toate cele trei sloturi promovate în ierarhia 1 + 2.");
-    const expectedHomepageActiveCards = homepageSecondaryTitles.filter((title) => activeTitles.includes(title)).length;
-    if (homepageSecondaryActiveLabels !== expectedHomepageActiveCards) throw new Error("Homepage calculează greșit statusul unui eveniment promovat.");
-    if (homepagePastLabels !== homepageSecondaryCards - homepageSecondaryActiveLabels) throw new Error("Cardurile de arhivă de pe homepage au statusuri greșite.");
-    if (homepageSecondaryReserveLabels !== homepageSecondaryActiveLabels) throw new Error("Doar evenimentele active secundare trebuie să afișeze „Rezervă bilet”.");
-    if (!homepageSecondaryActiveTitles.every((title) => activeTitles.includes(title))) throw new Error("Homepage afișează ca activ un eveniment încheiat.");
-    if (activeCards > 0) {
-      if (homepageEmptyHero !== 0 || homepageActiveLabels !== 1) throw new Error("Homepage nu marchează evenimentul principal ca Activ.");
-      if (!activeTitles.includes(homepageEventTitle)) throw new Error(`Homepage afișează un eveniment principal care nu este activ: ${homepageEventTitle}.`);
-    } else {
-      if (homepageEmptyHero !== 1 || homepageEventTitle !== "Revenim curând cu o ediție nouă.") throw new Error("Homepage nu folosește fallbackul corect când nu există evenimente active.");
-      if (homepageSecondaryCards < 1 || homepagePastLabels !== homepageSecondaryCards) throw new Error("Evenimentele încheiate dispar de sub fallbackul homepage-ului.");
-      if (homepageActiveLabels !== 0 || homepageSecondaryActiveLabels !== 0) throw new Error("Un eveniment încheiat este etichetat ca activ pe homepage.");
-    }
+    const homepageEndedPrices = await page.locator("#event .ev-past:not(.ev-past--active) .ev-past-price").count();
+    const homepageEndedReserveLabels = await page.locator("#event .ev-past:not(.ev-past--active) .ev-past-action").filter({ hasText: /Rezervă bilet/ }).count();
+    const homepageActivePriceLabels = await page.locator("#event .ev-past--active .ev-past-price").count();
+    const homepageActiveLocations = await page.locator("#event .ev-past--active .ev-active-location").count();
+    const homepageLegacyHero = await page.locator("#event .ev-feat, #event .ev-map").count();
+    const homepageActiveOrder = await homepageCards.evaluateAll((cards) => cards.map((card) => card.classList.contains("ev-past--active")));
+    const firstEndedPosition = homepageActiveOrder.indexOf(false);
+    const homepageSectionText = await page.locator("#event").innerText();
+    const homepageActiveHrefs = await page.locator("#event .ev-past--active").evaluateAll((cards) => cards.map((card) => card.getAttribute("href") || ""));
+    const homepageEndedHrefs = await page.locator("#event .ev-past:not(.ev-past--active)").evaluateAll((cards) => cards.map((card) => card.getAttribute("href") || ""));
+
+    if (homepageShowcaseCards !== 3 || homepageLeadCards !== 1 || homepageSupportCards !== 2) throw new Error("Homepage nu păstrează exact cele trei sloturi în ierarhia 1 + 2.");
+    if (homepageLegacyHero !== 0) throw new Error("Homepage păstrează hero-ul sau harta vechiului eveniment activ.");
+    if (/Evenimentul activ|Revenim curând|Calendar în pregătire/.test(homepageSectionText)) throw new Error("Homepage păstrează text din vechiul fallback activ.");
+    if (firstEndedPosition !== -1 && homepageActiveOrder.slice(firstEndedPosition).some(Boolean)) throw new Error("Un eveniment activ apare după un eveniment încheiat.");
+    const expectedHomepageActiveCards = homepageTitles.filter((title) => activeTitles.includes(title)).length;
+    if (homepageActiveCards !== expectedHomepageActiveCards || homepageActiveLabels !== homepageActiveCards) throw new Error("Homepage calculează greșit statusul unui eveniment promovat.");
+    if (homepagePastLabels !== homepageShowcaseCards - homepageActiveCards) throw new Error("Cardurile încheiate de pe homepage au statusuri greșite.");
+    if (homepageReserveLabels !== homepageActiveCards || homepageActivePriceLabels !== homepageActiveCards) throw new Error("Doar evenimentele active trebuie să afișeze rezervarea și prețul.");
+    if (homepageActiveLocations !== homepageActiveCards) throw new Error("Un eveniment activ nu afișează locația sub dată.");
+    if (homepageEndedPrices !== 0 || homepageEndedReserveLabels !== 0) throw new Error("Un eveniment încheiat afișează încă preț sau rezervare.");
+    if (!homepageActiveTitles.every((title) => activeTitles.includes(title))) throw new Error("Homepage afișează ca activ un eveniment încheiat.");
+    if (!homepageActiveHrefs.every((href) => href.endsWith("/checkout"))) throw new Error("Un card activ nu intră în fluxul de rezervare.");
+    if (homepageEndedHrefs.some((href) => href.endsWith("/checkout"))) throw new Error("Un card încheiat trimite spre checkout.");
 
     const aboutNavHref = await page.locator("nav a").filter({ hasText: /^Despre$/ }).first().getAttribute("href");
     if (aboutNavHref !== "/") throw new Error(`Legătura Despre de pe homepage duce la ${aboutNavHref || "nicăieri"}.`);
 
     if (criticalConsole.length) throw new Error(`Erori critice în consolă: ${criticalConsole.join("; ")}`);
     if (failedRequests.length) throw new Error(`Cereri eșuate în audit: ${failedRequests.join("; ")}`);
-    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, reserveLinkCount, reserveHrefs, filters, searchboxes, featuredTitle, featuredIsActive, featuredIsEnded, eventNavAboutHref, focusVisible, homepageFeaturedEvents, homepageSecondaryCards, homepageLeadCards, homepageSupportCards, homepageSecondaryActiveLabels, homepageSecondaryReserveLabels, homepageSecondaryTitles, homepagePastLabels, homepageActiveLabels, homepageEmptyHero, homepageEventTitle, aboutNavHref, criticalConsole, failedRequests } });
+    results.push({ audit: { visibleEventCards, activeCards, activeLabels, pastLabels, reserveLinkCount, reserveHrefs, filters, searchboxes, featuredTitle, featuredIsActive, featuredIsEnded, eventNavAboutHref, focusVisible, homepageShowcaseCards, homepageLeadCards, homepageSupportCards, homepageActiveCards, homepageReserveLabels, homepageTitles, homepagePastLabels, homepageActiveLabels, homepageEndedPrices, homepageActivePriceLabels, homepageActiveLocations, homepageLegacyHero, aboutNavHref, criticalConsole, failedRequests } });
   } finally {
     await context.close();
   }

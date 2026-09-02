@@ -110,12 +110,8 @@ cssOut = cssOut.replace(
   ".tk-wrap{margin-top:10px;justify-self:center;}",
 );
 
-// SavaPass mobile (plan 004 follow-up): the "baked tuning" translate shifts pull
-// sections up by 18-42px to overlap nicely on the 1280px canvas. On phones the
-// event section-head wraps (the "Toate edițiile" button drops below the heading)
-// and .ev-feat{translate:-42px} then drags the featured card UP over that button.
-// Neutralise these desktop-only micro-shifts on phones so nothing overlaps.
-cssOut += "@media(max-width:760px){#event .sec-head>div:first-child{translate:none;}.ev-feat{translate:none;}.ev-detail{translate:none;}#join{translate:none;}}";
+// Neutralise the remaining desktop-only join-section shift on phones.
+cssOut += "@media(max-width:760px){#join{translate:none;}}";
 
 // SavaPass mobile (plan 004 follow-up): the intro lockup hugged the LEFT edge on
 // phones (#logo-stage is align-items:flex-start ≤920px), leaving the right half a
@@ -183,14 +179,15 @@ const engineOut = engine
   // making fast scroll feel low-fps on real mid-range phones.
   .replace("if(!__lowEnd){gsap.to('.hero-video'", "if(!__touch){gsap.to('.hero-video'")
   .replace("if(!__lowEnd) document.querySelectorAll('.gen-ghost')", "if(!__touch) document.querySelectorAll('.gen-ghost')")
+  .replace(" var __lowEnd=!!(navigator.deviceMemory&&navigator.deviceMemory<=4);", "")
   // ...and gate the remaining pure-parallax scrubs off touch (the #tkwrap ticket parallax is
-  // the hero-region scrub the user felt stutter on; ev-poster/foot are decorative). The seam
+  // the hero-region scrub the user felt stutter on; the footer motion is decorative). The seam
   // draws stay (they start hidden at scaleY:0). NOTE: chrome() is ALSO hand-restructured in
   // public/imersiv/engine.js to skip its per-section getBoundingClientRect reflow on touch
   // (the .dots/.lrail are display:none on mobile) — re-apply that manually if regenerating;
   // it is not captured as a transform here.
   .replace("    gsap.to('#tkwrap',", "    if(!__touch) gsap.to('#tkwrap',")
-  .replace("    gsap.fromTo('.ev-poster img',", "    if(!__touch) gsap.fromTo('.ev-poster img',")
+  .replace("    gsap.fromTo('.ev-poster img',{scale:1.12},{scale:1,ease:'none',scrollTrigger:{trigger:'.ev-feat',start:'top bottom',end:'bottom top',scrub:true}});", "")
   .replace("    gsap.from('.foot .big',", "    if(!__touch) gsap.from('.foot .big',")
   // Snappier smooth-scroll (match v2's feel): lower lerp = less floaty/laggy.
   // Mobile perf (2026-06-23): syncTouch:false → touch uses NATIVE momentum scroll
@@ -318,12 +315,7 @@ const motionOut = [
   "      els.forEach((x) => io.observe(x));",
   "    };",
   "    const mark = (sel, cls) => { const els = Array.from(document.querySelectorAll(sel)); els.forEach((e) => e.classList.add(cls || 'im-rv')); return els; };",
-  "    /* featured card + live map */",
-  "    onceIO(mark('.ev-feat, .ev-map'), (el) => el.classList.add('im-in'));",
-  "    /* ticket progress bar fills */",
-  "    document.querySelectorAll('.ev-prog .ev-prog-bar i').forEach((b) => b.classList.add('im-bar'));",
-  "    onceIO(Array.from(document.querySelectorAll('.ev-prog')), (el) => { const b = el.querySelector('.ev-prog-bar i'); if (b) b.classList.add('im-in'); });",
-  "    /* archive cards stagger in */",
+  "    /* showcase cards stagger in */",
   "    const past = mark('.ev-past'); past.forEach((e, i) => { e.style.transitionDelay = (i * 0.1) + 's'; });",
   "    onceIO(past, (el) => el.classList.add('im-in'));",
   "    /* STATS · trei generatii: each row rises, its growth bar + time-thread draw in */",
@@ -453,6 +445,9 @@ const assert = (cond, msg) => { if (!cond) { console.error("[extract] ASSERT FAI
 assert(ctaCount === 3, `expected 3 CTAs rewired, got ${ctaCount}`);
 assert(applyCount === 1, `expected 1 apply CTA rewired, got ${applyCount}`);
 assert(engineOut !== engine, "engine transforms did not apply (engineOut === raw engine)");
+assert(!engineOut.includes("__lowEnd"), "obsolete low-end animation flag remains in engineOut");
+assert(!engineOut.includes("trigger:'.ev-feat'"), "legacy featured-event parallax remains in engineOut");
+assert(!motionOut.includes(".ev-feat") && !motionOut.includes(".ev-map") && !motionOut.includes(".ev-prog"), "legacy featured-event observers remain in motionOut");
 assert(runtimeEngineOut !== engineOut, "engine cleanup transforms did not apply");
 assert(scopedEngineOut.startsWith("(function immersiveEngineScope()"), "engine scope wrapper missing");
 assert(cssOut.includes(".mhi-b"), "mobile intro CSS (.mhi-b) missing from cssOut");

@@ -9,12 +9,7 @@
       return io;
     };
     const mark = (sel, cls) => { const els = Array.from(document.querySelectorAll(sel)); els.forEach((e) => e.classList.add(cls || 'im-rv')); return els; };
-    /* featured card + live map */
-    onceIO(mark('.ev-feat, .ev-map'), (el) => el.classList.add('im-in'));
-    /* ticket progress bar fills */
-    document.querySelectorAll('.ev-prog .ev-prog-bar i').forEach((b) => b.classList.add('im-bar'));
-    onceIO(Array.from(document.querySelectorAll('.ev-prog')), (el) => { const b = el.querySelector('.ev-prog-bar i'); if (b) b.classList.add('im-in'); });
-    /* archive cards stagger in */
+    /* showcase cards stagger in */
     const past = mark('.ev-past'); past.forEach((e, i) => { e.style.transitionDelay = (i * 0.1) + 's'; });
     onceIO(past, (el) => el.classList.add('im-in'));
     /* STATS · trei generatii: each row rises, its growth bar + time-thread draw in */
