@@ -5,9 +5,9 @@ import { ArrowLeft, Banknote, CalendarPlus } from "lucide-react";
 import { verifyTicket } from "@/lib/qr-token";
 import { resolveSiteUrl } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { HomeNav } from "@/app/HomeNav";
 import { Chip } from "@/components/ui/Chip";
 import { LiveClock } from "@/components/ui/LiveClock";
-import { FlowNav } from "@/components/ui/FlowNav";
 import { formatCompactEventDate } from "@/lib/event-display";
 import { getEventTicketTypes } from "@/lib/events";
 import type { Metadata } from "next";
@@ -67,7 +67,11 @@ export default async function TicketPage({ params }: Props) {
   return (
     <div className="sp-light ticket-page">
       <TicketStyles bandGradient={bandGradient} />
-      <FlowNav backHref="/" />
+      <HomeNav
+        active="bilete"
+        immersive
+        purchaseHref={event ? `/${event.slug}#bilete` : "/evenimente"}
+      />
 
       <main className="ticket-shell">
         <div className="ticket-head">
@@ -207,7 +211,7 @@ function googleCalendarUrl(event: Database["public"]["Tables"]["events"]["Row"])
 function TicketStyles({ bandGradient }: { bandGradient: string }) {
   return (
     <style>{`
-      .ticket-page { min-height: 100vh; background: var(--slate-50); color: var(--slate-900); }
+      .ticket-page { min-height: 100vh; padding-top: 92px; background: var(--slate-50); color: var(--slate-900); }
       .ticket-shell { width: min(900px, calc(100% - 40px)); margin: 0 auto; padding: 40px 0 72px; }
 
       .ticket-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
@@ -299,6 +303,10 @@ function TicketStyles({ bandGradient }: { bandGradient: string }) {
 
       @media (hover: hover) and (pointer: fine) {
         .ticket-head__actions a:hover { border-color: var(--slate-300); color: var(--slate-900); }
+      }
+
+      @media (max-width: 820px) {
+        .ticket-page { padding-top: 76px; }
       }
 
       @media (max-width: 760px) {
