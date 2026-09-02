@@ -418,7 +418,7 @@ export function renderImmersiveMarkup(
   const reservableEvent = showcaseEvents.find((event) => event.status === "active") ?? null;
   const heroHref = escapeHtml(reservableEvent?.checkoutHref ?? "/evenimente");
   const heroAction = reservableEvent ? "Rezervă bilet" : "Vezi evenimentele";
-  const heroSecondaryHref = reservableEvent ? "/evenimente#toate-evenimentele" : "/echipa";
+  const heroSecondaryHref = reservableEvent ? "/evenimente#toate-evenimentele" : "/#board";
   const heroSecondaryAction = reservableEvent ? "Toate evenimentele" : "Cunoaște echipa";
   const upgraded = applyEventsFooter(applyGenericTicketDemo(applyShowcaseContent(replaceLegacyStatsSection(markup), showcaseEvents)))
     .replace(SECTION_DOTS, SECTION_NAVIGATION)
