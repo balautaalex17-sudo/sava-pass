@@ -88,7 +88,7 @@ export default async function EventDetailPage({ params }: Props) {
           </section>
         )}
       </main>
-      <SiteFooter eventHref="/evenimente" />
+      <SiteFooter eventHref="/rezerva" />
     </div>
   );
 }

@@ -11,7 +11,7 @@ interface HomeNavProps {
   immersive?: boolean;
   /** Uses the elevated dark surface while preserving immersive geometry. */
   dark?: boolean;
-  /** Cash reservation route for the currently promoted event. */
+  /** Shared reservation gateway, overridable for isolated previews. */
   purchaseHref?: string;
 }
 
@@ -37,7 +37,7 @@ export function HomeNav({
   active,
   immersive = false,
   dark = false,
-  purchaseHref = "/evenimente",
+  purchaseHref = "/rezerva",
 }: HomeNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);

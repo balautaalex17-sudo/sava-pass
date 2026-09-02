@@ -136,7 +136,7 @@ export default async function EventPage({ params, searchParams }: Props) {
 
   return (
     <div className={`sp-light ${styles.page}`}>
-      <HomeNav active="rezerva" immersive purchaseHref={`/${event.slug}#bilete`} />
+      <HomeNav active="rezerva" immersive />
 
       <main id="continut-principal">
         <header className={styles.hero}>

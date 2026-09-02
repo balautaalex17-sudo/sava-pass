@@ -416,7 +416,7 @@ export function renderImmersiveMarkup(
   const recruitment = options.recruitment ?? null;
   const showcaseEvents = prepareShowcaseEvents(options.showcaseEvents ?? []);
   const reservableEvent = showcaseEvents.find((event) => event.status === "active") ?? null;
-  const heroHref = escapeHtml(reservableEvent?.checkoutHref ?? "/evenimente");
+  const heroHref = reservableEvent ? "/rezerva" : "/evenimente";
   const heroAction = reservableEvent ? "Rezervă bilet" : "Vezi evenimentele";
   const heroSecondaryHref = reservableEvent ? "/evenimente#toate-evenimentele" : "/#board";
   const heroSecondaryAction = reservableEvent ? "Toate evenimentele" : "Cunoaște echipa";

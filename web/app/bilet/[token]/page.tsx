@@ -70,7 +70,6 @@ export default async function TicketPage({ params }: Props) {
       <HomeNav
         active="bilete"
         immersive
-        purchaseHref={event ? `/${event.slug}#bilete` : "/evenimente"}
       />
 
       <main className="ticket-shell">

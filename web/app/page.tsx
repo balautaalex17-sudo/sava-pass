@@ -148,7 +148,7 @@ export default async function Home() {
 }
 
 function LandingBody({ showcaseEvents, recruitment }: { showcaseEvents: LandingShowcaseEvent[]; recruitment: Awaited<ReturnType<typeof getPublicRecruitmentState>> }) {
-  const ctaHref = showcaseEvents.find((event) => event.status === "active")?.checkoutHref ?? "/evenimente";
+  const ctaHref = showcaseEvents.some((event) => event.status === "active") ? "/rezerva" : "/evenimente";
   const markup = renderImmersiveMarkup(IMMERSIVE_MARKUP, { recruitment, showcaseEvents }).split("__CTA_HREF__").join(ctaHref);
 
   return (
@@ -161,7 +161,7 @@ function LandingBody({ showcaseEvents, recruitment }: { showcaseEvents: LandingS
       <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 821px)" />
       <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 821px)" />
       <style dangerouslySetInnerHTML={{ __html: LANDING_CRITICAL_CSS }} />
-      <HomeNav active="despre" immersive purchaseHref={ctaHref} />
+      <HomeNav active="despre" immersive />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
       <ImmersiveRuntime />
     </>

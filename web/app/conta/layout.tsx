@@ -5,7 +5,7 @@ import { HomeNav } from "@/app/HomeNav";
 export default function ContaLayout({ children }: { children: ReactNode }) {
   return (
     <div className="conta-layout">
-      <HomeNav active="bilete" immersive dark purchaseHref="/evenimente" />
+      <HomeNav active="bilete" immersive dark />
       <div className="conta-layout__content">{children}</div>
 
       <style>{`
