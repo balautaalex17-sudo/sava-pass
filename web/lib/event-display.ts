@@ -41,6 +41,17 @@ export function formatEventTime(event: Pick<EventRecord, "startTime" | "endTime"
   return event.endTime ? `${event.startTime}–${event.endTime}` : event.startTime;
 }
 
+export function formatCompactEventDate(value: string) {
+  const formatted = new Intl.DateTimeFormat("ro-RO", {
+    timeZone: "Europe/Bucharest",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(value));
+  const clean = formatted.replace(",", " ·").replaceAll(".", "");
+  return clean.charAt(0).toLocaleUpperCase("ro-RO") + clean.slice(1);
+}
+
 export function normalizeSearch(value = "") {
   return value
     .normalize("NFD")

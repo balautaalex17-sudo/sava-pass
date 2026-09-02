@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { Banknote } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Banknote, CalendarPlus } from "lucide-react";
 import { verifyTicket } from "@/lib/qr-token";
 import { resolveSiteUrl } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { Chip } from "@/components/ui/Chip";
 import { LiveClock } from "@/components/ui/LiveClock";
 import { FlowNav } from "@/components/ui/FlowNav";
+import { formatCompactEventDate } from "@/lib/event-display";
+import { getEventTicketTypes } from "@/lib/events";
 import type { Metadata } from "next";
 import type { Database } from "@/lib/supabase/types";
 
@@ -35,6 +38,9 @@ export default async function TicketPage({ params }: Props) {
   };
   const event = ticketWithEvent.events;
   const order = ticketWithEvent.orders;
+  const ticketType = event && ticket.ticket_type_id
+    ? (await getEventTicketTypes(event.id, true)).find((type) => type.id === ticket.ticket_type_id) ?? null
+    : null;
   const accent = event?.accent ?? "#009FE3";
   const isUsed = ticket.status === "checked_in";
   const isCancelled = ticket.status === "cancelled";
@@ -56,6 +62,7 @@ export default async function TicketPage({ params }: Props) {
 
   const siteUrl = resolveSiteUrl();
   const qrSrc = `${siteUrl}/api/qr/${token}`;
+  const calendarUrl = event ? googleCalendarUrl(event) : null;
 
   return (
     <div className="sp-light ticket-page">
@@ -64,35 +71,41 @@ export default async function TicketPage({ params }: Props) {
 
       <main className="ticket-shell">
         <div className="ticket-head">
-          <span className="ticket-head__eyebrow">BILETUL TĂU</span>
-          <h1>{isUsed ? "Bilet folosit" : isExpired ? "Bilet expirat" : isCancelled ? "Bilet anulat" : isAwaitingPayment ? "Rezervarea este confirmată" : "Ești gata de intrare"}</h1>
+          <div>
+            <span className="ticket-head__eyebrow">BILETUL TĂU</span>
+            <h1>{isUsed ? "Bilet folosit" : isExpired ? "Bilet expirat" : isCancelled ? "Bilet anulat" : isAwaitingPayment ? "Rezervarea este confirmată" : "Ne vedem acolo."}</h1>
+          </div>
+          {event && (
+            <div className="ticket-head__actions">
+              <Link href={`/${event.slug}`}><ArrowLeft size={16} strokeWidth={1.75} />Eveniment</Link>
+              {calendarUrl && !isVoid ? <a href={calendarUrl} target="_blank" rel="noopener noreferrer"><CalendarPlus size={16} strokeWidth={1.75} />Adaugă în calendar</a> : null}
+            </div>
+          )}
         </div>
 
         {/* Wallet ticket */}
         <div className="ticket-wallet anim-pop">
           {/* Band */}
           <div className="ticket-band">
-            <svg className="ticket-band__gear" width="240" height="240" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <circle cx="12" cy="12" r="3.2" stroke="#fff" strokeWidth="1.2" />
-              {Array.from({ length: 8 }, (_, i) => {
-                const a = (i / 8) * Math.PI * 2;
-                return (
-                  <line key={i}
-                    x1={12 + Math.cos(a) * 6} y1={12 + Math.sin(a) * 6}
-                    x2={12 + Math.cos(a) * 9.5} y2={12 + Math.sin(a) * 9.5}
-                    stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
-                );
-              })}
-            </svg>
             <div className="ticket-band__inner">
               <div className="ticket-band__brand">SAVAPASS · BILET</div>
-              <div className="ticket-band__serif">by Interact Sf. Sava</div>
-              <div className="ticket-band__title">{event?.title ?? "Eveniment"}</div>
+              <div className="ticket-band__event">
+                <div>
+                  <div className="ticket-band__serif">by Interact Sf. Sava</div>
+                  <div className="ticket-band__title">{event?.title ?? "Eveniment"}</div>
+                </div>
+                {event?.photo_url ? (
+                  <div className="ticket-band__poster">
+                    <Image src={event.photo_url} alt="" fill sizes="104px" />
+                  </div>
+                ) : null}
+              </div>
               <div className="ticket-band__stats">
-                <BandStat label="DATA" value={event?.date_label ?? ""} />
+                <BandStat label="DATA" value={event ? formatCompactEventDate(event.starts_at) : ""} />
+                <BandStat label="ORA" value={event?.doors ?? ""} />
                 <BandStat label="LOCUL" value={event?.venue ?? ""} />
                 <BandStat label="TITULAR" value={ticket.holder_name} />
-                <BandStat label="ACCES" value="General · 1 pers." />
+                <BandStat label="TIP BILET" value={ticketType?.name ?? "Acces · 1 persoană"} />
               </div>
             </div>
           </div>
@@ -113,6 +126,7 @@ export default async function TicketPage({ params }: Props) {
                 width={180}
                 height={180}
                 unoptimized
+                loading="eager"
                 style={{ display: "block", borderRadius: 10, opacity: isUsed ? 0.5 : isVoid ? 0.4 : 1 }}
               />
               {isVoid && (
@@ -141,6 +155,7 @@ export default async function TicketPage({ params }: Props) {
         <div className="ticket-details">
           <DetailRow k="Titular" v={ticket.holder_name} />
           <DetailRow k="Email" v={ticket.holder_email} />
+          <DetailRow k="Tip bilet" v={ticketType?.name ?? "Acces"} />
           {order && <DetailRow k="Plată" v={order.amount_bani === 0 ? "Gratuit" : order.status === "paid" ? "Cash confirmat" : `${(order.amount_bani / 100).toLocaleString("ro-RO")} RON · de achitat cash`} />}
           {ticket.checked_in_at && (
             <DetailRow
@@ -177,23 +192,43 @@ function DetailRow({ k, v, mono, last }: { k: string; v: string; mono?: boolean;
   );
 }
 
+function googleCalendarUrl(event: Database["public"]["Tables"]["events"]["Row"]) {
+  const calendarDate = (value: string) => new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  const query = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.title,
+    dates: `${calendarDate(event.starts_at)}/${calendarDate(event.ends_at)}`,
+    location: [event.venue, event.venue_line].filter(Boolean).join(", "),
+  });
+  if (event.about) query.set("details", event.about);
+  return `https://calendar.google.com/calendar/render?${query.toString()}`;
+}
+
 function TicketStyles({ bandGradient }: { bandGradient: string }) {
   return (
     <style>{`
       .ticket-page { min-height: 100vh; background: var(--slate-50); color: var(--slate-900); }
       .ticket-shell { width: min(900px, calc(100% - 40px)); margin: 0 auto; padding: 40px 0 72px; }
 
-      .ticket-head { margin-bottom: 22px; }
+      .ticket-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
       .ticket-head__eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-cyan-700); }
       .ticket-head h1 { margin: 8px 0 0; font-size: clamp(28px, 5vw, 36px); font-weight: 800; letter-spacing: -0.025em; color: var(--slate-900); }
+      .ticket-head__actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+      .ticket-head__actions a {
+        min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+        padding: 0 13px; border: 1px solid var(--slate-200); border-radius: var(--radius-md);
+        background: var(--white); color: var(--slate-700); font-size: 12px; font-weight: 700; text-decoration: none;
+        transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+      }
+      .ticket-head__actions a:focus-visible { border-color: var(--brand-cyan); outline: 3px solid var(--brand-cyan-100); outline-offset: 2px; }
 
       .ticket-wallet {
         display: flex;
         border-radius: var(--radius-xl);
         overflow: hidden;
         background: var(--white);
-        border: 1px solid var(--slate-200);
-        box-shadow: 0 40px 90px -36px rgba(15,23,42,0.4);
+        border: 0;
+        box-shadow: var(--shadow-lg);
         min-height: 340px;
       }
 
@@ -202,11 +237,17 @@ function TicketStyles({ bandGradient }: { bandGradient: string }) {
         padding: 36px 40px; color: #fff;
         background: ${bandGradient};
       }
-      .ticket-band__gear { position: absolute; right: -40px; bottom: -40px; opacity: 0.16; }
       .ticket-band__inner { position: relative; }
       .ticket-band__brand { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; opacity: 0.9; }
+      .ticket-band__event { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin-top: 22px; }
+      .ticket-band__event > div:first-child { min-width: 0; }
       .ticket-band__serif { margin-top: 24px; font-family: var(--font-display); font-style: italic; font-size: 16px; opacity: 0.85; }
       .ticket-band__title { margin-top: 4px; font-size: clamp(30px, 4vw, 40px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.02; }
+      .ticket-band__poster {
+        position: relative; width: 92px; height: 116px; flex: 0 0 auto; overflow: hidden;
+        border-radius: var(--radius-md); background: rgba(255,255,255,.12); box-shadow: 0 2px 6px rgba(15,23,42,.16);
+      }
+      .ticket-band__poster img { object-fit: cover; }
       .ticket-band__stats { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 36px; margin-top: 32px; }
       .ticket-band__stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; opacity: 0.75; }
       .ticket-band__stat-value { margin-top: 5px; font-size: 16px; font-weight: 700; }
@@ -256,7 +297,13 @@ function TicketStyles({ bandGradient }: { bandGradient: string }) {
 
       .ticket-foot { margin-top: 22px; text-align: center; font-size: 12px; color: var(--slate-500); }
 
+      @media (hover: hover) and (pointer: fine) {
+        .ticket-head__actions a:hover { border-color: var(--slate-300); color: var(--slate-900); }
+      }
+
       @media (max-width: 760px) {
+        .ticket-head { align-items: flex-start; flex-direction: column; }
+        .ticket-head__actions { justify-content: flex-start; }
         .ticket-wallet { flex-direction: column; min-height: 0; }
         .ticket-band { padding: 28px 24px; }
         .ticket-band__stats { gap: 18px 24px; margin-top: 24px; }
@@ -271,6 +318,11 @@ function TicketStyles({ bandGradient }: { bandGradient: string }) {
 
       @media (max-width: 480px) {
         .ticket-shell { width: calc(100% - 32px); padding-top: 32px; }
+        .ticket-head__actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+        .ticket-head__actions a { padding: 0 10px; }
+        .ticket-band__event { align-items: flex-start; }
+        .ticket-band__poster { width: 78px; height: 98px; }
+        .ticket-band__stats { grid-template-columns: 1fr; gap: 14px; }
         .ticket-detail { align-items: flex-start; flex-direction: column; gap: 5px; padding: 14px 18px; }
         .ticket-detail strong { max-width: 100%; overflow-wrap: anywhere; }
       }

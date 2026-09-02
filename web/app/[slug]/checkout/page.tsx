@@ -1,6 +1,5 @@
-import { notFound } from "next/navigation";
-import { eventIsBookable, getEventBySlug, getEventStats, getEventTicketTypes, getTicketTypeSoldCounts, priceRon, seatsLeft } from "@/lib/events";
-import { CheckoutClient } from "./CheckoutClient";
+import { notFound, redirect } from "next/navigation";
+import { eventIsBookable, getEventBySlug } from "@/lib/events";
 import type { Metadata } from "next";
 
 interface Props {
@@ -24,34 +23,5 @@ export default async function CheckoutPage({ params }: Props) {
   const event = await getEventBySlug(slug);
   if (!event || !eventIsBookable(event)) notFound();
 
-  const [stats, ticketTypes, typeSold] = await Promise.all([
-    getEventStats(event.id),
-    getEventTicketTypes(event.id),
-    getTicketTypeSoldCounts(event.id),
-  ]);
-  const left = seatsLeft(event, stats?.sold ?? 0);
-  const availableTypes = ticketTypes
-    .map((type) => ({
-      id: type.id,
-      name: type.name,
-      description: type.description,
-      priceRon: priceRon(type.price_bani),
-      seatsLeft: Math.max(0, type.capacity - (typeSold[type.id] ?? 0)),
-    }));
-
-  return (
-    <CheckoutClient
-      requestKey={crypto.randomUUID()}
-      event={{
-        slug: event.slug,
-        title: event.title,
-        subtitle: event.subtitle,
-        dateLabel: event.date_label,
-        venue: event.venue,
-        photoUrl: event.photo_url,
-      }}
-      seatsLeft={left}
-      ticketTypes={availableTypes}
-    />
-  );
+  redirect(`/${event.slug}?checkout=1`);
 }
