@@ -270,15 +270,19 @@
   font-weight: 600;
 }
 
+.locationCard {
+  overflow: hidden;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
 .venue {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   padding: 20px 22px;
-  border: 1px solid var(--slate-200);
-  border-radius: var(--radius-md);
-  background: var(--white);
 }
 
 .venue > div {
@@ -306,6 +310,75 @@
   font-size: 12px;
   font-weight: 800;
   text-decoration: none;
+}
+
+.venue a svg {
+  transition: transform 180ms var(--ease-out);
+}
+
+.mapFrame {
+  position: relative;
+  min-height: 230px;
+  overflow: hidden;
+  border-top: 1px solid var(--slate-200);
+  background: var(--slate-100);
+}
+
+.mapFrame iframe {
+  display: block;
+  width: 100%;
+  height: clamp(230px, 32vw, 300px);
+  border: 0;
+}
+
+.mapStatus {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+  color: var(--brand-cyan-700) !important;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.mapSignal {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--brand-cyan-700);
+}
+
+.mapSignal::after {
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--brand-cyan-700);
+  border-radius: 50%;
+  animation: map-signal 2.2s var(--ease-out) infinite;
+  content: "";
+}
+
+@keyframes map-signal {
+  0% {
+    opacity: .7;
+    transform: scale(.7);
+  }
+
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .venue a:hover svg {
+    transform: translate(2px, -2px);
+  }
 }
 
 .cause {
@@ -529,6 +602,10 @@
     flex-direction: column;
     gap: 8px;
     padding: 18px;
+  }
+
+  .mapFrame iframe {
+    height: 240px;
   }
 
   .cause {
