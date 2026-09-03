@@ -40,14 +40,102 @@ export function HomeNav({
   purchaseHref = "/rezerva",
 }: HomeNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [navCovered, setNavCovered] = useState(false);
+  const [navRecalled, setNavRecalled] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const links = immersive ? LANDING_LINKS : SITE_LINKS;
   const purchaseIsActive = active === "rezerva";
-  const navClassName = ["hnav", immersive && "hnav--immersive", dark && "hnav--dark"]
+  const navClassName = [
+    "hnav",
+    immersive && "hnav--immersive",
+    (dark || navRecalled) && "hnav--dark",
+    navRecalled && "hnav--recalled",
+  ]
     .filter(Boolean)
     .join(" ");
+
+  useEffect(() => {
+    if (!immersive) return;
+
+    const desktop = window.matchMedia("(min-width: 821px)");
+    const coveredSections = document.querySelectorAll<HTMLElement>(
+      ".sp-immersive-root > .intro ~ section, .sp-immersive-root > .intro ~ footer",
+    );
+    if (coveredSections.length === 0) return;
+
+    let observer: IntersectionObserver | null = null;
+    let coverageFrame: number | null = null;
+    const visibleSections = new Set<Element>();
+
+    const cancelCoverageCheck = () => {
+      if (coverageFrame === null) return;
+      window.cancelAnimationFrame(coverageFrame);
+      coverageFrame = null;
+    };
+
+    const confirmOriginalNavIsVisible = () => {
+      cancelCoverageCheck();
+      coverageFrame = window.requestAnimationFrame(() => {
+        coverageFrame = null;
+        const navBottom = navRef.current
+          ?.querySelector<HTMLElement>(".hnav__frame")
+          ?.getBoundingClientRect().bottom ?? window.innerHeight * 0.15;
+        const stillCovered = [...coveredSections].some((section) => {
+          const rect = section.getBoundingClientRect();
+          return rect.top < navBottom && rect.bottom > 0;
+        });
+
+        setNavCovered(stillCovered);
+        if (!stillCovered) setNavRecalled(false);
+      });
+    };
+
+    const stopObserving = () => {
+      cancelCoverageCheck();
+      observer?.disconnect();
+      observer = null;
+      visibleSections.clear();
+    };
+
+    const startObserving = () => {
+      stopObserving();
+      if (!desktop.matches) {
+        setNavCovered(false);
+        setNavRecalled(false);
+        return;
+      }
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) visibleSections.add(entry.target);
+            else visibleSections.delete(entry.target);
+          });
+
+          const covered = visibleSections.size > 0;
+          if (covered) {
+            cancelCoverageCheck();
+            setNavCovered(true);
+          } else {
+            confirmOriginalNavIsVisible();
+          }
+        },
+        { rootMargin: "0px 0px -85% 0px", threshold: 0 },
+      );
+
+      coveredSections.forEach((section) => observer?.observe(section));
+    };
+
+    startObserving();
+    desktop.addEventListener("change", startObserving);
+
+    return () => {
+      stopObserving();
+      desktop.removeEventListener("change", startObserving);
+    };
+  }, [immersive]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -99,7 +187,8 @@ export function HomeNav({
   }, [menuOpen]);
 
   return (
-    <nav ref={navRef} className={navClassName} aria-label="Navigare principală">
+    <>
+      <nav ref={navRef} className={navClassName} aria-label="Navigare principală">
       <div className="hnav__frame">
         {immersive && (
           <AnimatedNavLink href="/" className="hnav__brand" aria-label="ITC Sf. Sava — acasă">
@@ -176,8 +265,39 @@ export function HomeNav({
           border-bottom: 0;
           background: transparent;
         }
+        .hnav--immersive.hnav--recalled { z-index: 6; }
         .sp-immersive-root > .intro ~ section,
         .sp-immersive-root > .intro ~ footer { z-index: 4; }
+        .hnav__recall {
+          position: fixed;
+          top: max(14px, env(safe-area-inset-top));
+          right: clamp(14px, 2.4vw, 30px);
+          z-index: 7;
+          width: 44px;
+          height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border: 1px solid rgba(127,224,255,.34);
+          border-radius: 8px;
+          background: #0d131d;
+          color: #7fe0ff;
+          cursor: pointer;
+          animation: hnav-recall-in 220ms cubic-bezier(.22,1,.36,1) both;
+          transition: border-color 180ms cubic-bezier(.22,1,.36,1), background 180ms cubic-bezier(.22,1,.36,1), color 180ms cubic-bezier(.22,1,.36,1), transform 180ms cubic-bezier(.22,1,.36,1);
+        }
+        .hnav__recall:hover {
+          border-color: rgba(127,224,255,.72);
+          background: #14202c;
+          color: #fff;
+        }
+        .hnav__recall:active { transform: translateY(1px); }
+        .hnav__recall:focus-visible { outline: 2px solid #7fe0ff; outline-offset: 3px; }
+        @keyframes hnav-recall-in {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         .hnav__frame {
           width: max-content;
           margin: 0 auto;
@@ -331,6 +451,9 @@ export function HomeNav({
         .hnav--immersive.hnav--dark .hnav__link:hover,
         .hnav--immersive.hnav--dark .hnav__link--active,
         .hnav--immersive.hnav--dark .hnav__burger:hover { color: #fff; }
+        .hnav--immersive.hnav--recalled .hnav__link { color: #c6d5dd; }
+        .hnav--immersive.hnav--recalled .hnav__link:hover { color: #fff; }
+        .hnav--immersive.hnav--recalled .hnav__link--active { color: #7fe0ff; }
         .hnav--immersive.hnav--dark a:focus-visible,
         .hnav--immersive.hnav--dark button:focus-visible { outline-color: #7fe0ff; }
 
@@ -346,6 +469,7 @@ export function HomeNav({
         }
 
         @media (max-width: 820px) {
+          .hnav__recall { display: none; }
           .hnav {
             z-index: 70;
             padding: max(10px, env(safe-area-inset-top)) clamp(12px, 4vw, 18px) 10px;
@@ -464,9 +588,27 @@ export function HomeNav({
           .hnav__cta,
           .hnav__burger,
           .hnav__link::after,
-          .hnav__cta svg { transition: none; }
+          .hnav__cta svg,
+          .hnav__recall { transition: none; animation: none; }
         }
       `}</style>
-    </nav>
+      </nav>
+      {navCovered && (
+        <button
+          type="button"
+          className="hnav__recall"
+          aria-label={navRecalled ? "Ascunde navigarea" : "Arată navigarea"}
+          title={navRecalled ? "Ascunde navigarea" : "Arată navigarea"}
+          aria-pressed={navRecalled}
+          onClick={() => setNavRecalled((recalled) => !recalled)}
+        >
+          {navRecalled ? (
+            <X size={19} strokeWidth={1.75} aria-hidden="true" />
+          ) : (
+            <Menu size={19} strokeWidth={1.75} aria-hidden="true" />
+          )}
+        </button>
+      )}
+    </>
   );
 }
