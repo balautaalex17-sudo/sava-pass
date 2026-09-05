@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 
 // Loads the v3 immersive engine in strict order after the SSR'd markup exists.
-// Lenis + GSAP + ScrollTrigger (CDN) must load before engine.js (it reads those
-// globals); the Framer Motion module is independent. On back-navigation into the
+// Lenis + GSAP + ScrollTrigger must load before engine.js (it reads those
+// globals); the secondary motion engine follows. On back-navigation into the
 // homepage we tear down the previous Lenis instance + ScrollTriggers so a remount
 // re-arms cleanly against the fresh DOM instead of stacking duplicates.
 
@@ -32,17 +32,42 @@ const VENDOR = {
   scrollTrigger: "/imersiv/vendor/ScrollTrigger.min.js",
 };
 
-const ENGINE_VERSION = "20260902-unified-showcase-v14";
+const ENGINE_VERSION = "20260905-viewport-video-v15";
 
-function loadScript(src: string, type?: string) {
-  return new Promise<void>((resolve, reject) => {
+const vendorLoads = new Map<string, Promise<void>>();
+
+function loadScript(src: string) {
+  const existing = vendorLoads.get(src);
+  if (existing) return existing;
+  const pending = new Promise<void>((resolve, reject) => {
     const s = document.createElement("script");
     s.src = src;
-    if (type) s.type = type;
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`failed to load ${src}`));
+    s.onerror = () => {
+      vendorLoads.delete(src);
+      s.remove();
+      reject(new Error(`failed to load ${src}`));
+    };
     document.body.appendChild(s);
   });
+  vendorLoads.set(src, pending);
+  return pending;
+}
+
+// Removing a pending external <script> does not reliably cancel its execution.
+// Fetch these two pinned, same-origin engines first, then synchronously execute
+// only a still-mounted run. Neither engine has imports/exports; a function scope
+// gives engine-motion the isolation its former module tag provided. This uses
+// the same inline-script CSP permission as the existing Next/landing scripts.
+async function loadEngine(src: string, signal: AbortSignal) {
+  const response = await fetch(src, { signal });
+  if (!response.ok) throw new Error(`failed to load ${src}`);
+  const source = await response.text();
+  signal.throwIfAborted();
+  const script = document.createElement("script");
+  script.textContent = `(function(){\n${source}\n})();`;
+  document.body.appendChild(script);
+  script.remove();
 }
 
 function cleanupImmersive() {
@@ -94,6 +119,7 @@ function scrollToLocationHash() {
 export function ImmersiveRuntime() {
   useEffect(() => {
     let cancelled = false;
+    const engineRequest = new AbortController();
     let hashFrame = 0;
     const isMobile = window.matchMedia("(max-width: 820px)").matches;
 
@@ -118,22 +144,22 @@ export function ImmersiveRuntime() {
 
         // Lenis and GSAP are desktop-only. Native touch scrolling avoids switching
         // scroll engines during the user's first gesture.
-        if (!isMobile && !window.Lenis) {
+        if (!isMobile) {
           await Promise.all([loadScript(VENDOR.lenis), loadScript(VENDOR.gsap)]);
           if (cancelled) return;
           await loadScript(VENDOR.scrollTrigger);
           if (cancelled) return;
         }
 
-        await loadScript(`/imersiv/engine.js?v=${ENGINE_VERSION}`);
+        await loadEngine(`/imersiv/engine.js?v=${ENGINE_VERSION}`, engineRequest.signal);
         if (cancelled) return;
         alignToHash();
         if (!isMobile) {
-          await loadScript(`/imersiv/engine-motion.mjs?v=${ENGINE_VERSION}`, "module");
+          await loadEngine(`/imersiv/engine-motion.mjs?v=${ENGINE_VERSION}`, engineRequest.signal);
         }
       } catch {
         // Engine is progressive enhancement: the page still renders without it.
-        console.error("immersive_engine_load_failed");
+        if (!cancelled) console.error("immersive_engine_load_failed");
       }
     };
 
@@ -145,6 +171,7 @@ export function ImmersiveRuntime() {
 
     return () => {
       cancelled = true;
+      engineRequest.abort();
       window.removeEventListener("hashchange", alignToHash);
       window.cancelAnimationFrame(startFrame);
       cancelAnimationFrame(hashFrame);

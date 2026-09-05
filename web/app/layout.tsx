@@ -1,14 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Commissioner, Manrope, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { WebVitals } from "@/components/performance/WebVitals";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { resolveSiteUrl } from "@/lib/site-url";
-import { NavRouteTransitionCoordinator } from "./AnimatedNavLink";
-
-// Runs before first paint so reveal targets never flash fully visible before
-// IntersectionObserver arms them. If motion is reduced or JS fails to boot, the
-// page stays visible and usable.
-const SCROLL_REVEAL_BOOT = `(function(){try{if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;}catch(e){}var d=document.documentElement;d.classList.add('sr-on');setTimeout(function(){d.classList.remove('sr-on');},4000);})();`;
+import { PublicNavigation } from "./PublicNavigation";
 
 // preload:false on the body font too. With `swap` + `adjustFontFallback` the text
 // paints immediately in a metric-matched fallback (no FCP block, no layout shift) and
@@ -97,9 +93,9 @@ export default function RootLayout({
           fontFamily: "var(--font-manrope), ui-sans-serif, system-ui, sans-serif",
         }}
       >
-        <script dangerouslySetInnerHTML={{ __html: SCROLL_REVEAL_BOOT }} />
-        <NavRouteTransitionCoordinator />
+        <PublicNavigation />
         {children}
+        {process.env.NEXT_PUBLIC_PERFORMANCE_DEBUG === "1" && <WebVitals />}
         <ScrollReveal />
       </body>
     </html>

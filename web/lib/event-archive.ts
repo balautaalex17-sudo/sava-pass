@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 
 import generatedEvents from "@/data/instagram-events.generated.json";
 import eventOverrides from "@/data/event-overrides.json";
@@ -206,15 +207,15 @@ export function getPublishedEvents() {
 }
 
 /** Imported/public events after applying edits saved from Board. */
-export async function getManagedArchiveEvents() {
+export const getManagedArchiveEvents = cache(async () => {
   return getGeneratedEvents(await getBoardEventOverrides());
-}
+});
 
-export async function getManagedPublishedEvents() {
+export const getManagedPublishedEvents = cache(async () => {
   return (await getManagedArchiveEvents())
     .filter((event) => event.publishingStatus === "published")
     .sort((a, b) => (b.startDate || "").localeCompare(a.startDate || ""));
-}
+});
 
 export async function getManagedEventBySlug(slug: string, includeDraft = false) {
   const events = includeDraft ? await getManagedArchiveEvents() : await getManagedPublishedEvents();

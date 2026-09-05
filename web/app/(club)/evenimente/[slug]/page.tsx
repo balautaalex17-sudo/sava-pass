@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { AnimatedNavLink as Link } from "@/app/AnimatedNavLink";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
-import { HomeNav } from "@/app/HomeNav";
 import { SiteFooter } from "@/components/club/SiteFooter";
 import { getManagedEventBySlug, getManagedRelatedEvents } from "@/lib/event-archive";
 import { CATEGORY_LABELS, STATUS_LABELS, formatEventDate, formatEventTime } from "@/lib/event-display";
@@ -35,7 +34,6 @@ export default async function EventDetailPage({ params }: Props) {
 
   return (
     <div className={`${styles.detailShell} ${detailStyles.detailPage}`}>
-      <HomeNav active="evenimente" immersive dark />
       <main className={styles.detailMain} id="continut-principal">
         <Link href="/evenimente" className={styles.backLink}><ArrowLeft size={18} aria-hidden="true" />Înapoi la evenimente</Link>
         <header className={`${styles.detailHero} ${detailStyles.hero}`}>
@@ -54,7 +52,7 @@ export default async function EventDetailPage({ params }: Props) {
               {event.venueName && <div><dt>Locul</dt><dd>{event.venueName}</dd></div>}
               {(event.donationText || event.ticketPrice) && <div><dt>Participare</dt><dd>{event.ticketPrice || event.donationText}</dd></div>}
             </dl>
-            {ctaHref && <a href={ctaHref} className={styles.primaryLink} target={ctaHref.startsWith("http") ? "_blank" : undefined} rel={ctaHref.startsWith("http") ? "noopener noreferrer" : undefined}>Deschide înscrierea<ArrowUpRight size={18} aria-hidden="true" /></a>}
+            {ctaHref && <Link href={ctaHref} className={styles.primaryLink} target={ctaHref.startsWith("http") ? "_blank" : undefined} rel={ctaHref.startsWith("http") ? "noopener noreferrer" : undefined}>Deschide înscrierea<ArrowUpRight size={18} aria-hidden="true" /></Link>}
           </div>
           <EventVisual event={event} priority className={styles.detailVisual} />
         </header>
@@ -88,7 +86,7 @@ export default async function EventDetailPage({ params }: Props) {
           </section>
         )}
       </main>
-      <SiteFooter eventHref="/rezerva" />
+      <SiteFooter />
     </div>
   );
 }

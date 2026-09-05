@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, Search, X } from "lucide-react";
 import type { EventCategory, EventRecord, EventStatus } from "@/lib/event-types";
 import { CATEGORY_LABELS, filterArchiveEvents } from "@/lib/event-display";
@@ -17,7 +17,6 @@ function readPeriod(value: string | null, years: readonly string[]) {
 }
 
 export function EventsExplorer({ events, years }: { events: EventRecord[]; years: readonly string[] }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamsKey = searchParams.toString();
@@ -52,10 +51,10 @@ export function EventsExplorer({ events, years }: { events: EventRecord[]; years
       next.delete("status");
       next.delete("year");
       const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
     }, 280);
     return () => window.clearTimeout(timeout);
-  }, [pathname, queryDraft, queryParam, router, searchParamsKey]);
+  }, [pathname, queryDraft, queryParam, searchParamsKey]);
 
   function updateParam(name: "category" | "period", value: string) {
     const next = new URLSearchParams(searchParamsKey);
@@ -64,13 +63,14 @@ export function EventsExplorer({ events, years }: { events: EventRecord[]; years
     if (!value || value === "all") next.delete(name);
     else next.set(name, value);
     const query = next.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    // All events are already loaded. Keep URL filters shareable without a server trip.
+    window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
   }
 
   function clearFilters() {
     setQueryEdit(null);
     setPagination({ signature: "all|all|", count: PAGE_SIZE });
-    router.replace(pathname, { scroll: false });
+    window.history.replaceState(null, "", pathname);
   }
 
   return (

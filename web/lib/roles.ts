@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 
@@ -13,7 +14,8 @@ export function hasStaffRole(role: StaffRole | null | undefined, allowed: readon
   return !!role && allowed.includes(role);
 }
 
-export async function getCurrentUserRole() {
+// React cache only shares this result within one server render/request.
+export const getCurrentUserRole = cache(async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { user: null, role: null, roles: [] as StaffRole[] };
@@ -42,7 +44,7 @@ export async function getCurrentUserRole() {
     role: [...roles][0] ?? null,
     roles: [...roles],
   };
-}
+});
 
 export async function requireStaffRole(allowed: readonly StaffRole[]) {
   const current = await getCurrentUserRole();

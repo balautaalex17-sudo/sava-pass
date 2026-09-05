@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { HomeNav } from "@/app/HomeNav";
 
 export default function MembershipLayout({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +12,6 @@ export default function MembershipLayout({ children }: { children: ReactNode }) 
           color-scheme: light;
         }
       `}</style>
-      <HomeNav active="membru" immersive />
       {children}
     </div>
   );

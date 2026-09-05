@@ -42,10 +42,9 @@ const nextConfig: NextConfig = {
       // Actions now carry only small form data and metadata.
       bodySizeLimit: "1mb",
     },
-    // The public landing is measured as a cold first visit. Inlining avoids two
-    // render-blocking stylesheet requests; mobile containment keeps its layout
-    // cost bounded while the rest of the app still shares the same build.
-    inlineCss: true,
+    // Keep shared styles cacheable across routes. Experimental inlineCss in
+    // 16.3.1 crashes cold streamed mobile navigation (React stylesheet #137).
+    inlineCss: false,
   },
 };
 

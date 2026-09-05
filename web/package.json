@@ -11,6 +11,9 @@
     "not dead"
   ],
   "scripts": {
+    "perf:profile": "node --env-file=.env.local scripts/performance-profile.mjs",
+    "perf:budget": "node scripts/performance-budget.mjs",
+    "perf:browser": "node scripts/performance-browser.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Mail } from "lucide-react";
 
 // lucide-react dropped brand icons; inline IG/FB at the lucide stroke style.
@@ -21,10 +20,9 @@ function FbIcon() {
 
 /**
  * Shared club-register footer (spec §6.5). The catch-all that lets the top nav
- * stay short — secondary identity links (Sponsori, District, Biletele mele,
- * Check-in, Contact) live here. Dark, hairline dividers, mono © line.
+ * stay short. Dark, hairline dividers, mono © line.
  */
-export function SiteFooter({ eventHref }: { eventHref: string }) {
+export function SiteFooter() {
   return (
     <footer className="cl-footer">
       <div className="cl-footer__inner">
@@ -32,23 +30,6 @@ export function SiteFooter({ eventHref }: { eventHref: string }) {
           <p className="cl-footer__desc">
             Clubul de voluntariat Interact Sf. Sava — proiecte, evenimente și oameni care schimbă comunitatea.
           </p>
-        </div>
-        <div className="cl-footer__col">
-          <h4>Identitate</h4>
-          <Link href="/despre">Despre</Link>
-          <Link href="/proiecte">Proiecte</Link>
-          <Link href="/echipa">Echipă</Link>
-          <Link href="/sponsori">Sponsori</Link>
-          <Link href="/district">District 2241</Link>
-        </div>
-        <div className="cl-footer__col">
-          <h4>Acțiuni</h4>
-          <Link href="/evenimente">Evenimente</Link>
-          <Link href={eventHref}>Bilete</Link>
-          <Link href="/devino-membru">Devino membru</Link>
-          <Link href="/conta">Biletele mele</Link>
-          <Link href="/scanner">Check-in</Link>
-          <Link href="/contact">Contact</Link>
         </div>
         <div className="cl-footer__col">
           <h4>Urmărește-ne</h4>

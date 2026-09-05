@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { AnimatedNavLink } from "./AnimatedNavLink";
 
 interface HomeNavProps {
@@ -39,31 +40,53 @@ export function HomeNav({
   dark = false,
   purchaseHref = "/rezerva",
 }: HomeNavProps) {
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPathname, setMenuPathname] = useState(pathname);
+  const [landingReady, setLandingReady] = useState(0);
   const [navCovered, setNavCovered] = useState(false);
   const [navRecalled, setNavRecalled] = useState(false);
+  // Adjust this component's state when its route changes, before painting.
+  // The existing menu effect then releases scroll/focus listeners immediately.
+  if (menuPathname !== pathname) {
+    setMenuPathname(pathname);
+    setMenuOpen(false);
+    setNavCovered(false);
+    setNavRecalled(false);
+  }
   const navRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const links = immersive ? LANDING_LINKS : SITE_LINKS;
   const purchaseIsActive = active === "rezerva";
+  const homeCovered = pathname === "/" && navCovered;
+  const homeRecalled = pathname === "/" && navRecalled;
   const navClassName = [
     "hnav",
     immersive && "hnav--immersive",
-    (dark || navRecalled) && "hnav--dark",
-    navRecalled && "hnav--recalled",
+    (dark || homeRecalled) && "hnav--dark",
+    homeRecalled && "hnav--recalled",
   ]
     .filter(Boolean)
     .join(" ");
 
   useEffect(() => {
-    if (!immersive) return;
+    if (!immersive || pathname !== "/") return;
 
     const desktop = window.matchMedia("(min-width: 821px)");
     const coveredSections = document.querySelectorAll<HTMLElement>(
       ".sp-immersive-root > .intro ~ section, .sp-immersive-root > .intro ~ footer",
     );
-    if (coveredSections.length === 0) return;
+    if (coveredSections.length === 0) {
+      // Root navigation can hydrate before the streamed landing artwork arrives.
+      const observer = new MutationObserver(() => {
+        if (!document.querySelector(".sp-immersive-root > .intro ~ section")) return;
+        observer.disconnect();
+        setLandingReady((ready) => ready + 1);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      return () => observer.disconnect();
+    }
 
     let observer: IntersectionObserver | null = null;
     let coverageFrame: number | null = null;
@@ -135,7 +158,7 @@ export function HomeNav({
       stopObserving();
       desktop.removeEventListener("change", startObserving);
     };
-  }, [immersive]);
+  }, [immersive, pathname, landingReady]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -593,7 +616,7 @@ export function HomeNav({
         }
       `}</style>
       </nav>
-      {navCovered && (
+      {homeCovered && (
         <button
           type="button"
           className="hnav__recall"

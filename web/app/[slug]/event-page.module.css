@@ -148,6 +148,14 @@
   margin-top: 26px;
 }
 
+.availabilitySlot {
+  min-height: 76px;
+}
+
+@media (max-width: 860px) {
+  .availabilitySlot { display: none; }
+}
+
 .heroAction > div {
   display: grid;
   gap: 1px;

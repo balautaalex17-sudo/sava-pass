@@ -1,0 +1,4 @@
+.block { display: block; flex-shrink: 0; border-radius: 5px; background: currentColor; opacity: .1; }
+.form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+.form > div { display: grid; gap: 10px; }
+@media(max-width:620px) { .form { grid-template-columns:1fr; } }

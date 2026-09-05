@@ -5,7 +5,6 @@ import { getPublicRecruitmentState } from "@/lib/recruitment-public";
 import { IMMERSIVE_CSS, IMMERSIVE_MARKUP } from "./_immersive/content";
 import { ImmersiveRuntime } from "./_immersive/ImmersiveRuntime";
 import { renderImmersiveMarkup, type LandingShowcaseEvent } from "./_immersive/upgrade";
-import { HomeNav } from "./HomeNav";
 
 // Homepage = the v3 immersive port, served responsively at ALL widths. The phone
 // breakpoint lives inside IMMERSIVE_CSS (@media <=760/<=520) and the engine runs
@@ -161,7 +160,6 @@ function LandingBody({ showcaseEvents, recruitment }: { showcaseEvents: LandingS
       <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 821px)" />
       <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 821px)" />
       <style dangerouslySetInnerHTML={{ __html: LANDING_CRITICAL_CSS }} />
-      <HomeNav active="despre" immersive />
       <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
       <ImmersiveRuntime />
     </>

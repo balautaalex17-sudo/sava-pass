@@ -129,14 +129,15 @@ export function ScrollReveal() {
 
     const prepare = (el: HTMLElement) => {
       if (!eligible(el)) return;
-      if (reduce) {
+      const rect = el.getBoundingClientRect();
+      // Already-visible content must keep its server-rendered first paint,
+      // including destination content inserted during a route transition.
+      if (reduce || rect.top < window.innerHeight) {
         revealed.add(el);
+        if (el.hasAttribute("data-reveal-sequence")) el.dataset.srRevealed = "true";
         return;
       }
-
-      const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.95 && rect.bottom > 0) reveal(el);
-      else observer.observe(el);
+      observer.observe(el);
     };
 
     const observeAll = (scope: ParentNode) =>
@@ -146,23 +147,7 @@ export function ScrollReveal() {
 
     observeAll(document);
 
-    // The pre-paint gate is only needed until visible targets have their WAAPI
-    // animations. Removing one class from <html> does not mutate React-owned
-    // page elements, so hydration remains stable.
-    document.documentElement.classList.remove("sr-on");
     window.__srReady = true;
-
-    // Covers elements already in view if the observer misses an edge during
-    // hydration, font swapping, or a fast client-side route change.
-    const sweep = () => {
-      document.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
-        if (revealed.has(el) || inImmersive(el)) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < window.innerHeight * 0.95 && rect.bottom > 0) reveal(el);
-      });
-    };
-    const sweepTimer = window.setTimeout(sweep, 250);
-    window.addEventListener("load", sweep);
 
     // Catch elements added after first paint: client-nav routes, realtime rows,
     // dynamically rendered form rows / verdicts. Skip the immersive subtree.
@@ -179,8 +164,6 @@ export function ScrollReveal() {
     return () => {
       observer.disconnect();
       mo.disconnect();
-      window.clearTimeout(sweepTimer);
-      window.removeEventListener("load", sweep);
     };
   }, []);
 

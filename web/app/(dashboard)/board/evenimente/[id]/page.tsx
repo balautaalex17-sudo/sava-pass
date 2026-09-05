@@ -16,22 +16,15 @@ export default async function BoardEventEditorPage({ params }: { params: Promise
   await requirePagePermission("manage_public_events");
   const { id } = await params;
   const isNew = id === "new";
-  const eventResult = isNew ? null : await supabaseAdmin.from("events").select("*").eq("id", id).maybeSingle();
+  // All inputs are known after authorization; no query depends on the event row.
+  const [eventResult, { count }, { data: ticketTypes }, { data: mediaAssets }, { data: featuredEvents }] = await Promise.all([
+    isNew ? Promise.resolve(null) : supabaseAdmin.from("events").select("*").eq("id", id).maybeSingle(),
+    isNew ? Promise.resolve({ count: 0 }) : supabaseAdmin.from("orders").select("id", { count: "exact", head: true }).eq("event_id", id),
+    isNew ? Promise.resolve({ data: [] }) : supabaseAdmin.from("event_ticket_types").select("*").eq("event_id", id).order("sort").order("created_at"),
+    supabaseAdmin.from("media_assets").select("id, file_name, public_url, source_kind").eq("archived", false).eq("excluded", false).order("quality_score", { ascending: false }),
+    supabaseAdmin.from("events").select("id, title, status, ends_at, manually_ended_at, featured_slot").not("featured_slot", "is", null).order("featured_slot"),
+  ]);
   if (!isNew && !eventResult?.data) notFound();
-
-  const [{ count }, { data: ticketTypes }, { data: mediaAssets }, { data: featuredEvents }] = isNew
-    ? [
-        { count: 0 },
-        { data: [] },
-        await supabaseAdmin.from("media_assets").select("id, file_name, public_url, source_kind").eq("archived", false).eq("excluded", false).order("quality_score", { ascending: false }),
-        await supabaseAdmin.from("events").select("id, title, status, ends_at, manually_ended_at, featured_slot").not("featured_slot", "is", null).order("featured_slot"),
-      ]
-    : await Promise.all([
-        supabaseAdmin.from("orders").select("id", { count: "exact", head: true }).eq("event_id", id),
-        supabaseAdmin.from("event_ticket_types").select("*").eq("event_id", id).order("sort").order("created_at"),
-        supabaseAdmin.from("media_assets").select("id, file_name, public_url, source_kind").eq("archived", false).eq("excluded", false).order("quality_score", { ascending: false }),
-        supabaseAdmin.from("events").select("id, title, status, ends_at, manually_ended_at, featured_slot").not("featured_slot", "is", null).order("featured_slot"),
-      ]);
 
   const featuredSlots = ([1, 2, 3] as const).map((slot) => {
     const occupant = featuredEvents?.find((candidate) => candidate.featured_slot === slot) ?? null;

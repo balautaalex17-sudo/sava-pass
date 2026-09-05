@@ -5,7 +5,6 @@ import { ArrowLeft, Banknote, CalendarPlus } from "lucide-react";
 import { verifyTicket } from "@/lib/qr-token";
 import { resolveSiteUrl } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { HomeNav } from "@/app/HomeNav";
 import { Chip } from "@/components/ui/Chip";
 import { LiveClock } from "@/components/ui/LiveClock";
 import { formatCompactEventDate } from "@/lib/event-display";
@@ -67,10 +66,6 @@ export default async function TicketPage({ params }: Props) {
   return (
     <div className="sp-light ticket-page">
       <TicketStyles bandGradient={bandGradient} />
-      <HomeNav
-        active="bilete"
-        immersive
-      />
 
       <main className="ticket-shell">
         <div className="ticket-head">

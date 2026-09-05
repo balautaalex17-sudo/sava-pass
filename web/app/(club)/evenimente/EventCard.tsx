@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AnimatedNavLink as Link } from "@/app/AnimatedNavLink";
 import { ArrowUpRight } from "lucide-react";
 import type { EventRecord } from "@/lib/event-types";
 import { CATEGORY_LABELS, formatEventDate } from "@/lib/event-display";

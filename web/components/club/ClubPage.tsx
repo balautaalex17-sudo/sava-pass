@@ -1,15 +1,12 @@
-import { HomeNav } from "@/app/HomeNav";
 import { SiteFooter } from "./SiteFooter";
 
 /**
  * The one shell every public club page shares (spec §6.3): nav → ONE hero moment
  * → calm content body → optional CTA band → footer, plus a single faint gear
  * watermark ("same building" cue). Dark immersive register (inherits
- * `.theme-immersive` from <body>). The nav + footer use the shared reservation
- * gateway, which can route to one event or show the multi-event chooser.
+ * `.theme-immersive` from <body>).
  */
 export function ClubPage({
-  active,
   hero,
   cta,
   showWatermark = true,
@@ -23,16 +20,13 @@ export function ClubPage({
   showWatermark?: boolean;
   children: React.ReactNode;
 }) {
-  const eventHref = "/rezerva";
-
   return (
     <div className="cl-shell">
       {showWatermark ? <GearWatermark /> : null}
-      <HomeNav active={active} immersive dark purchaseHref={eventHref} />
       {hero}
       <div className="cl-body">{children}</div>
       {cta}
-      <SiteFooter eventHref={eventHref} />
+      <SiteFooter />
     </div>
   );
 }

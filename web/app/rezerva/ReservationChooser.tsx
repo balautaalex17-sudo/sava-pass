@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { AnimatedNavLink as Link } from "@/app/AnimatedNavLink";
 import {
   ArrowRight,
   CalendarDays,
@@ -8,7 +8,6 @@ import {
   Ticket,
 } from "lucide-react";
 
-import { HomeNav } from "@/app/HomeNav";
 
 import styles from "./rezerva.module.css";
 
@@ -27,7 +26,6 @@ export interface ReservationChoice {
 export function ReservationChooser({ choices }: { choices: ReservationChoice[] }) {
   return (
     <div className={`sp-light ${styles.page}`}>
-      <HomeNav active="rezerva" immersive />
 
       <main className={styles.main} id="continut-principal">
         <header className={styles.header}>
@@ -48,7 +46,7 @@ export function ReservationChooser({ choices }: { choices: ReservationChoice[] }
           {choices.map((event, index) => (
             <li key={event.id}>
               <Link
-                href={`/${event.slug}/checkout`}
+                href={`/${event.slug}?checkout=1`}
                 className={`${styles.eventChoice} pressable`}
                 aria-label={`Rezervă bilet pentru ${event.title}`}
               >

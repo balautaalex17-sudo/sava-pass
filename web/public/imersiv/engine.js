@@ -314,19 +314,27 @@ dotEls.forEach(a=>a.addEventListener('click',e=>{const id=dotTargetId(a),t=docum
   history.replaceState(null,'','#'+id);
   if(lenis)lenis.scrollTo(top,{immediate:reduce});else window.scrollTo({top,left:0,behavior:reduce?'auto':'smooth'});}));
 
-/* hydrate decorative video sources after intent, then autoplay/resume them */
-function kickVideos(){document.querySelectorAll('video').forEach(v=>{
+/* Hydrate only visible decorative videos, keeping hidden/offscreen clips off
+   the critical network path. The observer starts them as they enter view. */
+const __videos=[...document.querySelectorAll('.sp-immersive-root video')];
+const __visibleVideos=new Set();
+function playVisibleVideo(v){
+  const rect=v.getBoundingClientRect();
+  if(document.hidden||!rect.width||!rect.height||rect.bottom<=0||rect.top>=innerHeight){v.pause();return;}
   let hydrated=false;
-  v.querySelectorAll('source[data-src]').forEach(s=>{const src=s.getAttribute('data-src');if(src){s.setAttribute('src',src);s.removeAttribute('data-src');hydrated=true;}});
+  v.querySelectorAll('source[data-src]').forEach(s=>{const media=s.getAttribute('media');if(media&&!matchMedia(media).matches)return;const src=s.getAttribute('data-src');if(src){s.setAttribute('src',src);s.removeAttribute('data-src');hydrated=true;}});
   if(hydrated)v.load();
+  if(!v.querySelector('source[src]')&&!v.getAttribute('src'))return;
   v.style.visibility='';v.muted=true;if(v.__rev)return;const p=v.play();if(p&&p.catch)p.catch(()=>{});
-});}
+}
+function kickVideos(){('IntersectionObserver'in window?__visibleVideos:__videos).forEach(playVisibleVideo);}
 kickVideos();
 addEventListener('pointerdown',kickVideos,{once:true});
 addEventListener('scroll',kickVideos,{once:true,passive:true});
-function __visibilityVideos(){if(!document.hidden)kickVideos();}
+addEventListener('resize',kickVideos,{passive:true});
+function __visibilityVideos(){kickVideos();}
 document.addEventListener('visibilitychange',__visibilityVideos);
-if('IntersectionObserver'in window){var __vio=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){v.muted=true;var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{threshold:.05});document.querySelectorAll('video').forEach(function(v){__vio.observe(v);});}
+if('IntersectionObserver'in window){var __vio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&e.intersectionRatio>=.05){__visibleVideos.add(e.target);playVisibleVideo(e.target);}else{__visibleVideos.delete(e.target);e.target.pause();}});},{threshold:.05});__videos.forEach(function(v){__vio.observe(v);});}
 
 /* seamless ping-pong loop — the Higgsfield clips don't loop cleanly (first and
    last frames differ, so a plain loop shows a hard cut). Play forward, then
@@ -348,8 +356,10 @@ function __cleanup(){
   removeEventListener('scroll',__chromeT);
   removeEventListener('pointerdown',kickVideos);
   removeEventListener('scroll',kickVideos);
+  removeEventListener('resize',kickVideos);
   document.removeEventListener('visibilitychange',__visibilityVideos);
   if(typeof __vio!=='undefined'&&__vio)__vio.disconnect();
+  __videos.forEach(v=>v.pause());
   if(__lenisTick&&window.gsap)gsap.ticker.remove(__lenisTick);
   if(__lenisRaf)cancelAnimationFrame(__lenisRaf);
   if(lenis)try{lenis.destroy();}catch{}

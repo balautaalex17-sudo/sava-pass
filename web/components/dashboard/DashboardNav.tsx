@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AnimatedNavLink as Link } from "@/app/AnimatedNavLink";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -270,7 +270,6 @@ export function DashboardNav({
                 <Link
                   ref={firstLinkRef}
                   href="/membru"
-                  prefetch
                   aria-current={!isBoardSpace ? "true" : undefined}
                   onClick={closeMenu}
                 >
@@ -278,7 +277,6 @@ export function DashboardNav({
                 </Link>
                 <Link
                   href={firstBoardHref}
-                  prefetch
                   aria-current={isBoardSpace ? "true" : undefined}
                   onClick={closeMenu}
                 >
@@ -316,7 +314,6 @@ function DashboardBrand({ onNavigate }: { onNavigate?: () => void }) {
     <Link
       href="/membru"
       className="dash-brand"
-      prefetch
       aria-label="ITC Sf. Sava, SavaPass, pagina membrului"
       onClick={onNavigate}
     >
@@ -335,7 +332,7 @@ function DashboardBrand({ onNavigate }: { onNavigate?: () => void }) {
 function NavLink({ item, active, onNavigate, linkRef }: { item: NavItem; active: boolean; onNavigate: () => void; linkRef?: React.Ref<HTMLAnchorElement> }) {
   const Icon = item.icon;
   return (
-    <Link ref={linkRef} href={item.href} className="dash-nav-link" prefetch aria-current={active ? "page" : undefined} onClick={onNavigate}>
+    <Link ref={linkRef} href={item.href} className="dash-nav-link" aria-current={active ? "page" : undefined} onClick={onNavigate}>
       <Icon size={18} strokeWidth={1.9} />
       <span>{item.label}</span>
     </Link>

@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { ArrowDown, ArrowRight } from "lucide-react";
-import { HomeNav } from "@/app/HomeNav";
 import styles from "./events-index.module.css";
 
 export default function LoadingEvents() {
   return (
     <div className="cl-shell" aria-live="polite" aria-busy="true">
-      <HomeNav active="evenimente" immersive dark />
       <header className={styles.hero}>
         <div className={styles.heroInner}>
           <div className={styles.heroCopy}>

@@ -355,14 +355,6 @@ body {
   border-color: var(--brand-cyan);
 }
 
-/* 4.4 Scroll reveals stay visible in server-rendered HTML. The pre-paint gate
-   hides them only when JS is available, with a timeout failsafe in layout.tsx. */
-html.sr-on .anim-rise,
-html.sr-on .anim-rise-fast {
-  animation: none !important;
-  opacity: 0;
-}
-
 /* 4.4c Immersive homepage scroll reveals (engine-motion.mjs).
    CSS-class based on purpose: the cards have NO opacity:0 base of their own, so a
    WAAPI/Motion reveal made them paint at full opacity then snap to 0 (a blink) —
@@ -716,7 +708,7 @@ html.sr-on .anim-rise-fast {
 
 /* Footer */
 .cl-footer { margin-top: clamp(64px,10vh,128px); border-top: 1px solid var(--im-line); background: var(--im-ink); position: relative; z-index: 1; }
-.cl-footer__inner { width: min(1120px, calc(100% - 2*clamp(20px,5vw,56px))); margin: 0 auto; padding: clamp(40px,6vh,72px) 0 28px; display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: clamp(24px,4vw,48px); }
+.cl-footer__inner { width: min(1120px, calc(100% - 2*clamp(20px,5vw,56px))); margin: 0 auto; padding: clamp(40px,6vh,72px) 0 28px; display: grid; grid-template-columns: 1fr auto; gap: clamp(24px,4vw,48px); }
 .cl-footer__desc { margin: 14px 0 0; font-size: 14px; line-height: 1.6; color: var(--im-fg-2); max-width: 30ch; }
 .cl-footer__col h4 { margin: 0 0 12px; font-family: var(--font-sans); font-size: 13px; font-weight: 750; letter-spacing: 0; text-transform: none; color: var(--im-fg); }
 .cl-footer__col a { display: block; padding: 5px 0; color: var(--im-fg-2); font-size: 14px; text-decoration: none; }
@@ -814,28 +806,6 @@ html.sr-on .anim-rise-fast {
 .cl-teasers__join-h { margin: 0; font-family: var(--font-brand); font-variation-settings: "FLAR" 28, "VOLM" 10; font-size: clamp(22px,2.8vw,31px); font-weight: 700; letter-spacing: -0.02em; color: var(--im-fg); }
 .cl-teasers__join .cl-text { margin-top: 8px; max-width: 52ch; }
 .cl-teasers__join-cta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-
-/* Interact route reveal: a restrained gear wipe with a stable shared navbar. */
-html[data-sava-route-vt="active"] .hnav--immersive {
-  view-transition-name: sava-primary-nav;
-}
-
-html[data-sava-route-vt="active"]::view-transition-old(root),
-html[data-sava-route-vt="active"]::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-html[data-sava-route-vt="active"]::view-transition-new(root) {
-  clip-path: var(--sava-route-vt-clip-from);
-}
-
-html[data-sava-route-vt="active"]::view-transition-group(sava-primary-nav),
-html[data-sava-route-vt="active"]::view-transition-old(sava-primary-nav),
-html[data-sava-route-vt="active"]::view-transition-new(sava-primary-nav) {
-  animation-duration: 220ms;
-  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
-}
 
 /* Club pages: the desktop composition translated fluidly for tablets and phones. */
 @media (max-width: 820px) {
