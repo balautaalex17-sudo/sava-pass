@@ -327,6 +327,7 @@ function InterviewCentralizer({
             <p id="interview-confirm-description">
               Folosim emailul original din formular și trimitem un cod de activare care nu expiră,
               valabil până la prima folosire.
+              {" "}Conturile noi vor avea statutul Recrut. Conturile deja active își păstrează accesul.
             </p>
           </div>
           <button

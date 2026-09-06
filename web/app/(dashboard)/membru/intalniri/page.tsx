@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { MemberMeetingHistory } from "@/components/dashboard/MemberMeetingHistory";
-import { requirePermission } from "@/lib/dashboard/auth";
+import { requirePagePermission } from "@/lib/dashboard/auth";
 import { getMemberDashboardData } from "@/lib/dashboard/member-data";
 
 export const metadata: Metadata = { title: "Întâlniri", robots: { index: false, follow: false } };
 
 export default async function MemberMeetingsPage() {
-  const viewer = await requirePermission("view_own_attendance");
+  const viewer = await requirePagePermission("view_own_attendance");
   const data = await getMemberDashboardData(viewer.profile.id);
   const upcoming = data.results.filter((row) => row.result === "upcoming").reverse();
   const previous = data.results.filter((row) => row.result !== "upcoming");

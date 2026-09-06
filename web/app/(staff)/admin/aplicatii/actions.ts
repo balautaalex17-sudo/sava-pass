@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { requireStaffRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { updateApplicationOperations } from "@/app/(dashboard)/board/inscrieri/actions";
 
 const statusSchema = z.object({
   id: z.string().uuid(),
@@ -46,6 +47,21 @@ export async function updateApplication(
     .eq("id", parsed.data.id)
     .maybeSingle();
   if (!existing) return { error: "Aplicația nu există." };
+
+  // Both administration screens must use the same acceptance/account workflow.
+  if (parsed.data.status === "accepted") {
+    const result = await updateApplicationOperations({
+      applicationId: existing.id, status: "accepted", reviewerId: current.user.id,
+    });
+    if (!result.ok) return { error: result.message };
+    const { error: notesError } = await supabaseAdmin.from("membership_applications").update({
+      private_notes: parsed.data.private_notes?.trim() || null,
+      result_message: parsed.data.result_message?.trim() || null,
+    }).eq("id", existing.id);
+    revalidatePath("/admin/aplicatii");
+    revalidatePath(`/admin/aplicatii/${existing.id}`);
+    return { ok: true, message: notesError ? `${result.message} Notele nu au putut fi salvate.` : result.message };
+  }
 
   const { error } = await supabaseAdmin.from("membership_applications").update({
     status: parsed.data.status,

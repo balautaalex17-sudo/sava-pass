@@ -557,6 +557,7 @@ export function SignupsTable({
               {acceptanceEligible.length === 1
                 ? "Se folosește emailul original din formular și se trimite un cod de activare care nu expiră până la prima folosire."
                 : "Se folosesc emailurile originale din formulare și se trimit coduri de activare care nu expiră până la prima folosire."}
+              {" "}Conturile noi vor avea statutul Recrut. Conturile deja active își păstrează accesul.
             </p>
           </div>
           <button

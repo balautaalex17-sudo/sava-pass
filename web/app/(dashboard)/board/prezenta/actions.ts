@@ -28,7 +28,10 @@ export async function correctAttendance(input: unknown) {
     if (error) throw error;
     const result = resultObject(data);
     if (result.result !== "corrected") return { ok: false as const, message: result.result === "not_found" ? "Nu există o prezență de anulat." : "Corecția nu a fost acceptată." };
-    revalidatePath(`/board/prezenta?meeting=${parsed.data.meetingId}`);
+    revalidatePath("/board/prezenta");
+    revalidatePath("/membru");
+    revalidatePath("/membru/prezenta");
+    revalidatePath("/membru/intalniri");
     return { ok: true as const, message: "Corecția a fost înregistrată în audit." };
   } catch {
     return { ok: false as const, message: "Corecția nu a putut fi salvată." };

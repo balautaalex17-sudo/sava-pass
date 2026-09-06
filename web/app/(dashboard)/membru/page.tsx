@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarDays, Clock3, MapPin, QrCode } from "lucide-react";
 import { MemberMeetingHistory } from "@/components/dashboard/MemberMeetingHistory";
-import { requirePermission } from "@/lib/dashboard/auth";
+import { requirePagePermission } from "@/lib/dashboard/auth";
 import { formatDateTime } from "@/lib/dashboard/format";
 import { getMemberDashboardData } from "@/lib/dashboard/member-data";
 import { MEETING_STATUS_LABELS } from "@/lib/dashboard/meeting-constants";
@@ -10,7 +10,7 @@ import { MEETING_STATUS_LABELS } from "@/lib/dashboard/meeting-constants";
 export const metadata: Metadata = { title: "Dashboard membru", robots: { index: false, follow: false } };
 
 export default async function MemberOverviewPage({ searchParams }: { searchParams: Promise<{ acces?: string }> }) {
-  const viewer = await requirePermission("view_member_dashboard");
+  const viewer = await requirePagePermission("view_member_dashboard");
   const query = await searchParams;
   const data = await getMemberDashboardData(viewer.profile.id);
   const firstName = viewer.profile.full_name.split(/\s+/)[0];

@@ -25,7 +25,7 @@ const schema = z.object({
   email: z.string().trim().email("Email invalid."),
   phone: z.string().max(30),
   grade: z.string().max(30),
-  membershipStatus: z.enum(["active", "inactive", "suspended", "alumni"]),
+  membershipStatus: z.enum(["recruit", "active", "inactive", "suspended", "alumni"]),
   role: z.enum(["", "admin", "board", "statistici"]),
 });
 
@@ -33,7 +33,8 @@ type Values = z.infer<typeof schema>;
 type MessageTone = "success" | "warning" | "error";
 
 const statusLabels: Record<string, string> = {
-  active: "Activ",
+  recruit: "Recrut",
+  active: "Membru activ",
   inactive: "Inactiv",
   suspended: "Suspendat",
   alumni: "Alumni",
@@ -175,7 +176,7 @@ export function MembersManager({
           <div className="dash-section-head">
             <div>
               <h2>{editingId ? "Editează membrul" : "Adaugă membru"}</h2>
-              {!editingId && <p>Contul este creat acum, iar membrul primește pe email un cod numeric de activare.</p>}
+              {!editingId && <p>Contul este creat acum, iar persoana primește pe email un cod numeric de activare.</p>}
             </div>
             <button type="button" className="meeting-close" onClick={() => setOpen(false)} aria-label="Închide">
               <X size={18} />
@@ -195,7 +196,7 @@ export function MembersManager({
             <Field label="Clasa" error={errors.grade?.message}>
               <input {...register("grade")} />
             </Field>
-            <Field label="Statut membru">
+            <Field label="Statut în club">
               <select {...register("membershipStatus")}>
                 {Object.entries(statusLabels).map(([value, label]) => (
                   <option value={value} key={value}>{label}</option>
@@ -204,7 +205,7 @@ export function MembersManager({
             </Field>
             <Field label="Rol principal">
               <select {...register("role")}>
-                <option value="">Membru normal</option>
+                <option value="">Fără rol administrativ</option>
                 {Object.entries(assignableRoleLabels).map(([value, label]) => (
                   <option value={value} key={value}>{label}</option>
                 ))}
@@ -213,6 +214,7 @@ export function MembersManager({
           </div>
 
           <p className="dash-form-message">
+            După acceptarea finală, candidații primesc statutul Recrut. Pentru promovare, alege „Membru activ” și salvează. {" "}
             Poți administra doar roluri aflate sub rolul tău. Scanner bilete și
             Intervievator se combină din pagina „Roluri operaționale”.
           </p>
@@ -248,14 +250,14 @@ export function MembersManager({
                     {statusLabels[member.membershipStatus] ?? member.membershipStatus}
                   </span>
                 </td>
-                <td>{member.role ? roleLabels[member.role] ?? member.role : "Membru"}</td>
+                <td>{member.role ? roleLabels[member.role] ?? member.role : member.membershipStatus === "recruit" ? "Recrut" : "Membru"}</td>
                 <td>
                   <div className="members-table-actions">
                     <button
                       type="button"
                       onClick={() => resend(member)}
-                      disabled={pending || member.membershipStatus !== "active" || !member.email}
-                      title={member.membershipStatus === "active" ? "Trimite un cod nou" : "Membrul trebuie să fie activ"}
+                      disabled={pending || !["active", "recruit"].includes(member.membershipStatus) || !member.email}
+                      title={["active", "recruit"].includes(member.membershipStatus) ? "Trimite un cod nou" : "Contul trebuie să fie de recrut sau membru activ"}
                     >
                       <Mail size={15} /> {resendingId === member.id ? "Se trimite..." : "Cod nou"}
                     </button>

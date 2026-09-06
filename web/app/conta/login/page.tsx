@@ -14,11 +14,13 @@ function LoginForm() {
   const params = useSearchParams();
   const hasError = params.get("error") === "1";
   const safeNext = safeLocalPath(params.get("next"), "/conta");
+  const isGalleryDestination = safeNext === "/conta/galerie" || safeNext.startsWith("/conta/galerie?");
+  const isRecruitDestination = safeNext === "/conta/recrut";
   const isMemberDestination = safeNext === "/membru"
     || safeNext.startsWith("/membru/")
     || safeNext.startsWith("/membru?");
 
-  const [method, setMethod] = useState<LoginMethod>(isMemberDestination ? "password" : "magic");
+  const [method, setMethod] = useState<LoginMethod>(isMemberDestination || isRecruitDestination ? "password" : "magic");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
@@ -103,7 +105,7 @@ function LoginForm() {
             </h1>
             <p style={{ fontSize: 14, color: "var(--im-fg-2)", lineHeight: 1.6, margin: 0 }}>
               Am trimis un link de acces la <strong>{email}</strong>.
-              Deschide-l pentru {isMemberDestination ? "a intra în portalul membrilor" : "a-ți vedea biletele"}.
+              Deschide-l pentru {isRecruitDestination ? "a intra în contul de recrut" : isMemberDestination ? "a intra în portalul membrilor" : isGalleryDestination ? "a intra în galeria comunității" : "a-ți vedea biletele"}.
             </p>
             <button
               onClick={() => { setSent(false); setEmail(""); }}
@@ -124,7 +126,7 @@ function LoginForm() {
         ) : (
           <div className="anim-fade">
             <h1 style={{ fontWeight: 800, fontSize: 22, color: "var(--im-fg)", margin: "0 0 4px" }}>
-              {isMemberDestination ? "Portal membri" : "Biletele mele"}
+              {isRecruitDestination ? "Cont de recrut" : isMemberDestination ? "Portal membri și recruți" : isGalleryDestination ? "Galeria comunității" : "Biletele mele"}
             </h1>
             <p style={{ fontSize: 13, color: "var(--im-fg-2)", margin: "0 0 28px" }}>
               {method === "password"

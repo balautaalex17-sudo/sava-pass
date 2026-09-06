@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ConfidentialitatePage() {
   return (
-    <LegalPage title="Politica de confidențialitate" lastUpdated="28 iunie 2026">
+    <LegalPage title="Politica de confidențialitate" lastUpdated="6 septembrie 2026">
       <p>
         Această politică explică ce date personale colectăm prin SavaPass, de ce, cui le transmitem și ce
         drepturi ai, conform Regulamentului General privind Protecția Datelor (GDPR).
@@ -27,6 +27,7 @@ export default function ConfidentialitatePage() {
         <li><strong>La aplicația de membru:</strong> nume, email, telefon, clasa/liceul, motivația, direcțiile de interes și disponibilitatea.</li>
         <li><strong>La intrarea în eveniment:</strong> momentul scanării biletului (check-in).</li>
         <li><strong>Plata:</strong> se face cash; SavaPass nu colectează și nu stochează date de card.</li>
+        <li><strong>În galeria comunității:</strong> fotografiile încărcate, numele autorului, descrierea opțională și data încărcării.</li>
       </ul>
 
       <h2>Scopuri și temei legal</h2>
@@ -42,8 +43,24 @@ export default function ConfidentialitatePage() {
         <li><strong>Resend</strong> — trimiterea emailurilor (biletul, confirmarea aplicației);</li>
         <li><strong>Supabase</strong> — găzduirea bazei de date;</li>
         <li><strong>Vercel</strong> — găzduirea aplicației.</li>
+        <li><strong>Google Drive</strong> — păstrarea fotografiilor galeriei în contul conectat de board.</li>
       </ul>
       <p>Nu vindem datele tale și nu le folosim pentru publicitate către terți.</p>
+
+      <h2>Galeria și conectarea Google Drive</h2>
+      <p>
+        Fotografiile din galerie pot fi văzute și descărcate de persoanele autentificate în SavaPass,
+        inclusiv recruți, membri și board. Originalele sunt păstrate în Google Drive, inclusiv informațiile
+        deja incluse în fișier. Poți elimina propriile fotografii, iar board-ul poate modera galeria.
+        Eliminarea din aplicație mută originalul în coșul contului Google Drive conectat.
+      </p>
+      <p>
+        Doar board-ul conectează contul Google folosit de galerie. Solicităm acces la fișierele create
+        sau deschise prin aplicație, pentru încărcarea, afișarea și eliminarea fotografiilor galeriei.
+        Nu solicităm parola Google. Păstrăm adresa contului conectat și o autorizație criptată pentru
+        funcționarea galeriei; aceste date nu sunt accesibile celorlalți utilizatori. Accesul Google
+        poate fi revocat din setările de securitate ale contului conectat.
+      </p>
 
       <h2>Cât păstrăm datele</h2>
       <p>

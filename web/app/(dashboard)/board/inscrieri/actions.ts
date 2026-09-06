@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { logAudit } from "@/lib/audit";
 import { requirePermission } from "@/lib/dashboard/auth";
-import { ensureInvitedAuthUser, sendMemberInvitation } from "@/lib/dashboard/member-auth";
+import { acceptRecruitAccount } from "@/lib/dashboard/recruit-account";
+import { resolveSiteUrl } from "@/lib/site-url";
 import {
   classifyFormDecision,
   type ApplicationRating,
@@ -87,56 +88,6 @@ async function getApplication(id: string) {
   return data as ApplicationRow | null;
 }
 
-async function provisionMemberAccount(application: ApplicationRow) {
-  const ensured = await ensureInvitedAuthUser({
-    email: application.email,
-    fullName: application.full_name,
-  });
-  const userId = ensured.user.id;
-  let profileSaved = false;
-
-  try {
-    const { data: existingProfile, error: profileReadError } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("id", userId)
-      .maybeSingle();
-    if (profileReadError) throw profileReadError;
-
-    const profile = {
-      full_name: application.full_name,
-      email: application.email.toLocaleLowerCase("ro"),
-      phone: application.phone || null,
-      grade: application.grade,
-      membership_status: "active",
-    };
-
-    const profileResult = existingProfile
-      ? await supabaseAdmin.from("profiles").update(profile).eq("id", userId)
-      : await supabaseAdmin.from("profiles").insert({
-        id: userId,
-        ...profile,
-        role: null,
-      });
-    if (profileResult.error) throw profileResult.error;
-    profileSaved = true;
-
-    const delivery = ensured.invitation
-      ? await sendMemberInvitation(ensured.invitation, null)
-      : null;
-    return {
-      invitationSent: delivery?.ok ?? false,
-      invitationEmailFailed: delivery ? !delivery.ok : false,
-    };
-  } catch (error) {
-    if (ensured.authUserCreated && !profileSaved) {
-      const { error: cleanupError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      if (cleanupError) logServerError("accepted_member_auth_cleanup_failed", cleanupError);
-    }
-    throw error;
-  }
-}
-
 async function ensureInterviewRecord(applicationId: string) {
   const { data: existing, error: readError } = await supabaseAdmin
     .from("interviews")
@@ -180,7 +131,9 @@ async function notifyCandidate(
     first_name: application.full_name.split(" ")[0] || application.full_name,
     result_message: nextStatus === "rejected"
       ? "De această dată nu ai fost selectat(ă) pentru etapa următoare, dar îți mulțumim pentru interesul acordat clubului."
-      : "",
+      : nextStatus === "accepted"
+        ? `Contul tău SavaPass este pregătit. Dacă aveai deja cont, folosește aceeași parolă. Pentru un cont nou primești separat codul de activare. Intră aici: ${new URL("/conta/login?next=/membru", resolveSiteUrl()).toString()}`
+        : "",
   };
   const emailResult = await createNotification({
     templateKey,
@@ -257,70 +210,63 @@ async function transitionApplication(
         reason: "Candidatul trebuie să ajungă mai întâi în etapa de interviu.",
       };
     }
-    const invitation = await provisionMemberAccount(application);
+    const invitation = await acceptRecruitAccount(application, actorId, reviewerId);
+    if (!invitation.changed) {
+      return { ...invitation, reason: "Aplicația a fost modificată între timp. Reîncarcă pagina." };
+    }
     invitationSent = invitation.invitationSent;
-    invitationEmailFailed = invitation.invitationEmailFailed;
+    invitationEmailFailed = invitation.emailFailed;
   }
 
-  const { data: updated, error } = await supabaseAdmin
-    .from("membership_applications")
-    .update({ status: nextStatus, reviewer_id: reviewerId })
-    .eq("id", application.id)
-    .eq("status", application.status)
-    .select("id")
-    .maybeSingle();
-  if (error) throw error;
-  if (!updated) {
-    return {
-      changed: false,
-      emailFailed: false,
-      invitationSent,
-      reason: "Aplicația a fost modificată între timp. Reîncarcă pagina.",
-    };
+  if (nextStatus !== "accepted") {
+    const { data: updated, error } = await supabaseAdmin
+      .from("membership_applications")
+      .update({ status: nextStatus, reviewer_id: reviewerId })
+      .eq("id", application.id)
+      .eq("status", application.status)
+      .select("id")
+      .maybeSingle();
+    if (error) throw error;
+    if (!updated) {
+      return {
+        changed: false,
+        emailFailed: false,
+        invitationSent,
+        reason: "Aplicația a fost modificată între timp. Reîncarcă pagina.",
+      };
+    }
   }
 
   let interviewId: string | null = null;
   if (nextStatus === "selected_for_interview") {
     interviewId = await ensureInterviewRecord(application.id);
-  } else if (nextStatus === "accepted") {
-    const { data: completedInterviews, error: interviewError } = await supabaseAdmin
-      .from("interviews")
-      .update({
-        status: "completed",
-        decision: "accepted",
-        completed_at: new Date().toISOString(),
-      })
-      .eq("application_id", application.id)
-      .neq("status", "cancelled")
-      .select("id");
-    if (interviewError) throw interviewError;
-    interviewId = completedInterviews?.[0]?.id ?? null;
   }
 
-  const { error: historyError } = await supabaseAdmin
-    .from("application_status_events")
-    .insert({
-      application_id: application.id,
-      actor_id: actorId,
-      from_status: application.status,
-      to_status: nextStatus,
-      note: nextStatus === "accepted"
-        ? "Candidatul a fost acceptat și contul de membru a fost activat."
-        : nextStatus === "selected_for_interview"
+  if (nextStatus !== "accepted") {
+    const { error: historyError } = await supabaseAdmin
+      .from("application_status_events")
+      .insert({
+        application_id: application.id,
+        actor_id: actorId,
+        from_status: application.status,
+        to_status: nextStatus,
+        note: nextStatus === "selected_for_interview"
           ? "Candidatul a fost selectat pentru interviu. Emailul nu a fost trimis automat."
           : nextStatus === "rejected"
             ? "Candidatul a fost anunțat că nu a avansat la etapa următoare."
-          : "Actualizare din workspace-ul Board.",
-      visible_to_candidate: true,
-    });
-  if (historyError) logServerError("recruitment_history_insert_failed", historyError);
+            : "Actualizare din workspace-ul Board.",
+        visible_to_candidate: true,
+      });
+    if (historyError) logServerError("recruitment_history_insert_failed", historyError);
+  }
 
-  const statusEmailFailed = await notifyCandidate(
-    application,
-    nextStatus,
-    actorId,
-    interviewId,
-  );
+  let statusEmailFailed = false;
+  try {
+    statusEmailFailed = await notifyCandidate(application, nextStatus, actorId, interviewId);
+  } catch (error) {
+    logServerError("recruitment_status_email_failed", error);
+    statusEmailFailed = true;
+  }
   const emailFailed = statusEmailFailed || invitationEmailFailed;
 
   await logAudit({
@@ -378,7 +324,7 @@ export async function updateApplicationOperations(input: unknown) {
       message: result.emailFailed
         ? "Statusul a fost salvat, dar cel puțin un email nu a plecat. Codul de cont se retrimite din Membri, iar celelalte mesaje din Notificări."
         : result.invitationSent
-          ? "Candidatul a fost acceptat. Contul și emailul pentru setarea parolei au fost create."
+          ? "Candidatul a fost acceptat, iar invitația pentru contul de recrut a fost trimisă."
           : result.changed && parsed.data.status === "selected_for_interview"
             ? "Candidatul a fost selectat pentru interviu. Niciun email nu a fost trimis."
           : result.changed
@@ -569,7 +515,7 @@ export async function runRecruitmentBatchAction(input: unknown) {
         ? `${processed} emailuri de invitație trimise manual.`
       : parsed.data.action === "reject"
         ? `${processed} candidați au fost anunțați că nu au avansat.`
-        : `${processed} candidați acceptați, ${invitationsSent} conturi noi invitate.`;
+        : `${processed} candidați acceptați ca recruți, ${invitationsSent} invitații de cont trimise. Conturile deja active își păstrează accesul.`;
     const details = [
       skipped ? `${skipped} omiși deoarece erau în altă etapă.` : "",
       emailFailed ? `${emailFailed} emailuri trebuie retrimise.` : "",

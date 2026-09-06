@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 // ISR — the page has no per-request data, only cached public event/content reads.
 export const revalidate = 300;
 
-const LANDING_STYLESHEET = "/landing.css?v=20260902-unified-showcase-15";
+const LANDING_STYLESHEET = "/landing.css?v=20260906-recruitment-spacing";
 const introCssEnd = IMMERSIVE_CSS.indexOf("/* scrolling brand marquee");
 
 if (introCssEnd < 0) {

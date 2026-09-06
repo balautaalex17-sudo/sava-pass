@@ -166,6 +166,7 @@ export async function requirePagePermission(
 ): Promise<DashboardViewer> {
   const viewer = await getDashboardViewer();
   if (!viewer) redirect(`/conta/login?next=${encodeURIComponent("/membru")}`);
+  if (viewer.profile.membership_status === "recruit") redirect("/conta/recrut");
   if (viewer.profile.membership_status !== "active") {
     redirect("/conta?acces=membru-inactiv");
   }
@@ -180,6 +181,7 @@ export async function requireAnyPagePermission(
 ): Promise<DashboardViewer> {
   const viewer = await getDashboardViewer();
   if (!viewer) redirect(`/conta/login?next=${encodeURIComponent("/membru")}`);
+  if (viewer.profile.membership_status === "recruit") redirect("/conta/recrut");
   if (viewer.profile.membership_status !== "active") {
     redirect("/conta?acces=membru-inactiv");
   }

@@ -7,6 +7,7 @@ interface MemberInvitationEmailInput {
   code: string;
   activationUrl: string;
   role: StaffRole | null;
+  membershipStatus?: string;
 }
 
 const accessLabels: Record<StaffRole, string> = {
@@ -31,26 +32,33 @@ export function renderMemberInvitationEmail({
   code,
   activationUrl,
   role,
+  membershipStatus = "active",
 }: MemberInvitationEmailInput) {
+  const isRecruit = membershipStatus === "recruit";
+  const accountLabel = isRecruit ? "recrut" : "membru";
+  const label = isRecruit ? "Recrut Interact" : accessLabel(role);
+  const features = isRecruit
+    ? "Contul tău de recrut și galeria foto a comunității, unde poți vedea și încărca poze. Board-ul te poate trece ulterior la membru activ."
+    : "Dashboard-ul tău de membru, codul QR pentru prezență, întâlnirile clubului, istoricul personal și orice instrumente suplimentare oferite rolului tău.";
   const firstName = fullName.trim().split(/\s+/)[0] || "Bun venit";
   const safeFirstName = escapeHtml(firstName);
   const safeEmail = escapeHtml(email);
   const safeCode = escapeHtml(code);
   const safeActivationUrl = escapeHtml(activationUrl);
-  const safeAccessLabel = escapeHtml(accessLabel(role));
+  const safeAccessLabel = escapeHtml(label);
 
-  const subject = "Contul tău de membru SavaPass este pregătit";
+  const subject = `Contul tău de ${accountLabel} SavaPass este pregătit`;
   const text = [
     `Salut, ${firstName}.`,
     "",
-    "Contul tău de membru Interact Sf. Sava este pregătit.",
+    `Contul tău de ${accountLabel} Interact Sf. Sava este pregătit.`,
     `Cod de activare: ${code}`,
     `Activează contul: ${activationUrl}`,
     "",
     `Email: ${email}`,
-    `Acces: ${accessLabel(role)}`,
+    `Acces: ${label}`,
     "",
-    "Introdu emailul și codul, apoi alege o parolă. După activare vei avea acces la dashboard, codul QR de prezență, întâlniri, istoricul tău și instrumentele rolului tău.",
+    `Introdu emailul și codul, apoi alege o parolă. ${features}`,
     "",
     "Codul nu expiră, dar poate fi folosit o singură dată și nu trebuie trimis altcuiva.",
     "Dacă nu te așteptai la această invitație, ignoră mesajul și anunță echipa Interact Sf. Sava.",
@@ -85,9 +93,9 @@ export function renderMemberInvitationEmail({
             </tr>
             <tr>
               <td style="padding:32px 28px 12px;">
-                <div style="margin-bottom:12px;color:#006FA1;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">Cont de membru</div>
+                <div style="margin-bottom:12px;color:#006FA1;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">Cont de ${accountLabel}</div>
                 <h1 style="margin:0;color:#0F172A;font-size:27px;line-height:1.2;letter-spacing:-0.025em;">Salut, ${safeFirstName}.</h1>
-                <p style="margin:12px 0 0;color:#334155;font-size:16px;line-height:1.65;">Ai fost adăugat în echipa Interact Sf. Sava. Folosește codul de mai jos pentru a-ți activa contul și a intra în dashboard.</p>
+                <p style="margin:12px 0 0;color:#334155;font-size:16px;line-height:1.65;">${isRecruit ? "Ai fost acceptat în Interact Sf. Sava ca recrut." : "Ai fost adăugat în echipa Interact Sf. Sava."} Folosește codul de mai jos pentru a-ți activa contul.</p>
               </td>
             </tr>
             <tr>
@@ -121,7 +129,7 @@ export function renderMemberInvitationEmail({
             <tr>
               <td style="padding:4px 28px 28px;">
                 <h2 style="margin:0 0 12px;color:#0F172A;font-size:16px;line-height:1.4;">Ce găsești după activare</h2>
-                <p style="margin:0;color:#334155;font-size:14px;line-height:1.75;">Dashboard-ul tău de membru, codul QR pentru prezență, întâlnirile clubului, istoricul personal și orice instrumente suplimentare oferite rolului tău.</p>
+                <p style="margin:0;color:#334155;font-size:14px;line-height:1.75;">${features}</p>
               </td>
             </tr>
             <tr>

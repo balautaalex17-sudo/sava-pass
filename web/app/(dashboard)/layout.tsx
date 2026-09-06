@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const viewer = await getDashboardViewer();
   if (!viewer) redirect("/conta/login?next=/membru");
+  if (viewer.profile.membership_status === "recruit") redirect("/conta/recrut");
   if (
     viewer.profile.membership_status !== "active" ||
     !viewer.permissions.has("view_member_dashboard")

@@ -163,7 +163,7 @@ export function InviteClient({ initiallyVerified }: { initiallyVerified: boolean
   return pageShell(
     <section className={styles.panel}>
       <div className={styles.step} aria-label={`Pasul ${stage === "code" ? 1 : 2} din 2`}>
-        <span>{isRecovery ? "Resetare parolă" : "Cont de membru"}</span>
+        <span>{isRecovery ? "Resetare parolă" : "Cont SavaPass"}</span>
         <span>Pasul {stage === "code" ? "1" : "2"} din 2</span>
       </div>
 

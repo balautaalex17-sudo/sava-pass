@@ -22,7 +22,7 @@ const memberSchema = z.object({
   email: z.string().trim().email().transform((value) => value.toLocaleLowerCase("ro")),
   phone: z.string().trim().max(30).optional(),
   grade: z.string().trim().max(30).optional(),
-  membershipStatus: z.enum(["active", "inactive", "suspended", "alumni"]),
+  membershipStatus: z.enum(["recruit", "active", "inactive", "suspended", "alumni"]),
   role: z.enum(["admin", "board", "statistici"]).nullable(),
 }).strict();
 
@@ -52,6 +52,9 @@ export async function saveMember(input: unknown) {
     }
 
     const values = parsed.data;
+    if (values.membershipStatus === "recruit" && values.role !== null) {
+      return { ok: false as const, tone: "error" as const, message: "Un recrut nu poate primi un rol administrativ. Trece-l mai întâi la membru activ." };
+    }
     let userId = values.id;
     let previous: {
       role: PrimaryRole;
@@ -94,6 +97,15 @@ export async function saveMember(input: unknown) {
         fullName: values.fullName,
       });
       userId = ensured.user.id;
+      // An email may already belong to a member or Board account. Check that
+      // profile before upsert, just as when editing it from the list.
+      const existing = await supabaseAdmin.from("profiles")
+        .select("role, membership_status, email").eq("id", userId).maybeSingle();
+      if (existing.error) throw existing.error;
+      previous = existing.data;
+      if (previous) {
+        return { ok: false as const, tone: "error" as const, message: "Acest email are deja un profil. Editează contul existent din listă." };
+      }
     }
 
     if (previous?.email && previous.email.toLocaleLowerCase("ro") !== values.email) {
@@ -136,7 +148,7 @@ export async function saveMember(input: unknown) {
     profileSaved = true;
 
     const invitationDelivery = ensured?.invitation
-      ? await sendMemberInvitation(ensured.invitation, values.role)
+      ? await sendMemberInvitation(ensured.invitation, values.role, values.membershipStatus)
       : null;
 
     await logAudit({
@@ -155,13 +167,15 @@ export async function saveMember(input: unknown) {
     });
 
     revalidatePath("/board/membri");
+    revalidatePath("/conta", "layout");
+    revalidatePath("/membru", "layout");
     revalidatePath("/board", "layout");
 
     if (invitationDelivery && !invitationDelivery.ok) {
       return {
         ok: true as const,
         tone: "warning" as const,
-        message: "Membrul a fost salvat, dar emailul cu codul nu a putut fi trimis. Îl poți retrimite din listă după configurarea domeniului de email.",
+        message: "Contul a fost salvat, dar emailul cu codul nu a putut fi trimis. Îl poți retrimite din listă după configurarea domeniului de email.",
       };
     }
 
@@ -169,10 +183,10 @@ export async function saveMember(input: unknown) {
       ok: true as const,
       tone: "success" as const,
       message: invitationDelivery
-        ? "Membrul a fost creat, iar codul de activare a fost trimis pe email."
+        ? "Contul a fost creat, iar codul de activare a fost trimis pe email."
         : ensured
-          ? "Membrul a fost salvat. Contul existent era deja activat."
-        : "Membrul a fost salvat.",
+          ? "Profilul a fost salvat. Contul existent era deja activat."
+        : "Contul a fost salvat.",
     };
   } catch (error) {
     if (!profileSaved) await removeNewAuthUser(ensured);
@@ -202,8 +216,8 @@ export async function resendMemberInvitation(input: unknown) {
     if (!profile?.email) {
       return { ok: false as const, message: "Membrul nu are un email de autentificare." };
     }
-    if (profile.membership_status !== "active") {
-      return { ok: false as const, message: "Reactivează membrul înainte să trimiți un cod de acces." };
+    if (!["active", "recruit"].includes(profile.membership_status)) {
+      return { ok: false as const, message: "Contul trebuie să fie de recrut sau membru activ înainte să trimiți un cod de acces." };
     }
 
     const ensured = await ensureInvitedAuthUser({
@@ -225,7 +239,7 @@ export async function resendMemberInvitation(input: unknown) {
       };
     }
 
-    const delivery = await sendMemberInvitation(ensured.invitation, profile.role);
+    const delivery = await sendMemberInvitation(ensured.invitation, profile.role, profile.membership_status);
     await logAudit({
       actorId: viewer.profile.id,
       action: "member.invitation_resent",

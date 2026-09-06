@@ -10,6 +10,7 @@ import {
   ClipboardList,
   History,
   House,
+  Images,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -42,6 +43,7 @@ const memberItems: NavItem[] = [
   { href: "/membru/qr", label: "Codul meu QR", icon: QrCode },
   { href: "/membru/intalniri", label: "Întâlniri", icon: CalendarDays },
   { href: "/membru/prezenta", label: "Prezență", icon: ClipboardList },
+  { href: "/conta/galerie", label: "Galerie foto", icon: Images },
   { href: "/membru/profil", label: "Profil", icon: UserRound },
 ];
 
@@ -59,6 +61,7 @@ const boardGroups: NavGroup[] = [
       { href: "/board/intalniri", label: "Întâlniri", icon: CalendarDays, permission: "manage_meetings" },
       { href: "/board/scaneaza-prezenta", label: "Scanează prezența", icon: ScanLine, permission: "scan_meeting_attendance" },
       { href: "/board/prezenta", label: "Evidență prezență", icon: ClipboardList, permission: "view_attendance_roster" },
+      { href: "/conta/galerie", label: "Galerie foto", icon: Images, permission: "view_board_dashboard" },
       { href: "/board/membri", label: "Membri", icon: UserRound, permission: "manage_members" },
     ],
   },

@@ -14,6 +14,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 interface EnsureInvitedAuthUserInput {
   email: string;
   fullName: string;
+  deferActivation?: boolean;
 }
 
 export interface EnsuredAuthUser {
@@ -54,6 +55,7 @@ async function findAuthUser(email: string) {
 export async function ensureInvitedAuthUser({
   email,
   fullName,
+  deferActivation = false,
 }: EnsureInvitedAuthUserInput): Promise<EnsuredAuthUser> {
   const normalizedEmail = email.trim().toLocaleLowerCase("ro");
   const existing = await findAuthUser(normalizedEmail);
@@ -80,29 +82,38 @@ export async function ensureInvitedAuthUser({
     authUserCreated = true;
   }
 
+  if (deferActivation) return { user, authUserCreated, invitation: null };
+
+  try {
+    const invitation = await prepareMemberInvitation(user.id, normalizedEmail, fullName);
+    return { user, authUserCreated, invitation };
+  } catch (error) {
+    if (authUserCreated) await supabaseAdmin.auth.admin.deleteUser(user.id);
+    throw error;
+  }
+}
+
+/** Issue only after acceptance wins, so concurrent retries cannot replace its code. */
+export async function prepareMemberInvitation(userId: string, email: string, fullName: string): Promise<MemberInvitation> {
+  const normalizedEmail = email.trim().toLocaleLowerCase("ro");
   const code = generateMemberActivationCode();
   const { data: issued, error: issueError } = await supabaseAdmin.rpc(
     "issue_member_activation_code",
     {
-      p_user_id: user.id,
+      p_user_id: userId,
       p_email: normalizedEmail,
       p_code_hash: hashMemberActivationCode(normalizedEmail, code),
     },
   );
 
   if (issueError || issued !== true) {
-    if (authUserCreated) await supabaseAdmin.auth.admin.deleteUser(user.id);
     throw issueError ?? new Error("member_activation_code_generation_failed");
   }
 
   return {
-    user,
-    authUserCreated,
-    invitation: {
-      email: normalizedEmail,
-      fullName,
-      code,
-    },
+    email: normalizedEmail,
+    fullName,
+    code,
   };
 }
 
@@ -110,6 +121,7 @@ export async function ensureInvitedAuthUser({
 export async function sendMemberInvitation(
   invitation: MemberInvitation,
   role: StaffRole | null,
+  membershipStatus = "active",
 ): Promise<SendEmailResult> {
   const activationUrl = new URL("/invite", resolveSiteUrl());
   activationUrl.searchParams.set("email", invitation.email);
@@ -119,6 +131,7 @@ export async function sendMemberInvitation(
     code: invitation.code,
     activationUrl: activationUrl.toString(),
     role,
+    membershipStatus,
   });
 
   return sendEmail({

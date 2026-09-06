@@ -334,6 +334,33 @@ body:has(.dashboard-shell) {
 .roster-toolbar > div button { min-height: 32px; padding: 6px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--dash-muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
 .roster-toolbar > div button[aria-pressed="true"] { background: var(--dash-green-soft); color: var(--dash-green-dark); }
 .roster-table-wrap { overflow-x: auto; }
+.attendance-views { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.attendance-views a { padding: 10px 14px; border: 1px solid var(--dash-line); border-radius: 9px; color: var(--dash-muted); font-size: 13px; font-weight: 700; text-decoration: none; }
+.attendance-views a[aria-current="page"] { background: var(--dash-green-soft); border-color: var(--dash-green); color: var(--dash-green-dark); }
+.attendance-table-options { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; font-size: 12px; color: var(--dash-muted); }
+.attendance-table-options label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.attendance-table-options select { min-height: 40px; max-width: 100%; padding: 8px; border: 1px solid var(--dash-line-strong); border-radius: 8px; background: #fff; color: var(--dash-ink); font: inherit; }
+.attendance-table-options > a { margin-left: auto; }
+.attendance-table td { vertical-align: top; }
+.attendance-table td > small { display: block; margin-top: 5px; color: var(--dash-muted); }
+.attendance-table td:nth-child(5) { min-width: 230px; max-width: 320px; }
+.absence-control { display: grid; gap: 8px; font-size: 12px; }
+.absence-control form { display: grid; gap: 8px; }
+.absence-control label { font-size: 12px; font-weight: 700; }
+.absence-control small { display: block; color: var(--dash-muted); line-height: 1.5; }
+.absence-control textarea { width: 100%; min-height: 70px; box-sizing: border-box; padding: 10px; border: 1px solid var(--dash-line-strong); border-radius: 8px; font: inherit; background: #fff; color: var(--dash-ink); resize: vertical; }
+.absence-control summary { width: fit-content; cursor: pointer; color: var(--dash-green-dark); }
+.absence-control .dash-status { width: fit-content; }
+.absence-control .dash-button { width: fit-content; min-height: 38px; font-size: 12px; }
+.absence-control .dash-form-message { margin: 0; }
+.absence-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.absence-reason { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.absence-inbox { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,340px),1fr)); gap: 16px; }
+.absence-inbox-card { min-width: 0; padding: 20px; }
+.absence-inbox-card h2 { margin: 0; font-size: 18px; }
+.absence-inbox-card header p { margin: 6px 0 14px; color: var(--dash-muted); font-size: 12px; }
+.member-history-entry + .member-history-entry { border-top: 1px solid var(--dash-line); }
+.member-absence-request { padding: 0 18px 16px; }
 .roster-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 12px; }
 .roster-table th { position: sticky; top: 0; padding: 10px 13px; background: var(--slate-50); border-bottom: 1px solid var(--dash-line); color: var(--dash-muted); text-align: left; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
 .roster-table td { height: 52px; padding: 9px 13px; border-bottom: 1px solid var(--dash-line); color: var(--slate-600); }

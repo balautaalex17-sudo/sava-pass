@@ -2,6 +2,8 @@ import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Meeting } from "@/lib/supabase/types";
+import { attendanceResult, type AttendanceResult, type AbsenceRequest } from "./attendance";
+import { readAllAttendanceRows } from "./attendance-data";
 
 export interface MemberAttendanceEntry {
   id: string;
@@ -14,7 +16,8 @@ export interface MemberAttendanceEntry {
 export interface MemberMeetingResult {
   meeting: Meeting;
   attendance: MemberAttendanceEntry | null;
-  result: "present" | "absent" | "upcoming" | "cancelled";
+  result: AttendanceResult;
+  request: AbsenceRequest | null;
 }
 
 type AttendanceQueryRow = {
@@ -26,24 +29,23 @@ type AttendanceQueryRow = {
 };
 
 export async function getMemberDashboardData(memberId: string) {
-  const [{ data: meetingsData, error: meetingsError }, { data: attendanceData, error: attendanceError }] =
+  const [meetingsData, attendanceData, requests] =
     await Promise.all([
-      supabaseAdmin
+      readAllAttendanceRows((from, to) => supabaseAdmin
         .from("meetings")
         .select("*")
         .in("status", ["upcoming", "attendance_open", "finished", "cancelled"])
-        .order("starts_at", { ascending: false }),
-      supabaseAdmin
+        .order("starts_at", { ascending: false }).order("id").range(from, to)),
+      readAllAttendanceRows((from, to) => supabaseAdmin
         .from("meeting_attendance")
         .select(
           "id, status, checked_in_at, meetings(*), profiles!meeting_attendance_checked_in_by_fkey(full_name)",
         )
         .eq("member_id", memberId)
-        .order("checked_in_at", { ascending: false }),
+        .order("checked_in_at", { ascending: false }).order("id").range(from, to)),
+      readAllAttendanceRows((from, to) => supabaseAdmin.from("absence_requests").select("*")
+        .eq("member_id", memberId).order("id").range(from, to)),
     ]);
-
-  if (meetingsError) throw meetingsError;
-  if (attendanceError) throw attendanceError;
 
   const meetings = (meetingsData ?? []) as Meeting[];
   const attendanceRows = (attendanceData ?? []) as unknown as AttendanceQueryRow[];
@@ -61,6 +63,7 @@ export async function getMemberDashboardData(memberId: string) {
     attendance.map((entry) => [entry.meeting.id, entry]),
   );
   const now = Date.now();
+  const requestsByMeeting = new Map(requests.map((request) => [request.meeting_id, request]));
   const nextMeeting = [...meetings]
     .filter(
       (meeting) =>
@@ -74,16 +77,13 @@ export async function getMemberDashboardData(memberId: string) {
 
   const results: MemberMeetingResult[] = meetings.map((meeting) => {
     const ownAttendance = attendanceByMeeting.get(meeting.id) ?? null;
-    const attendanceClosesAt = new Date(meeting.attendance_closes_at).getTime();
-    let result: MemberMeetingResult["result"] = "upcoming";
-    if (meeting.status === "cancelled") result = "cancelled";
-    else if (ownAttendance?.status === "present") result = "present";
-    else if (attendanceClosesAt < now || meeting.status === "finished") result = "absent";
-    return { meeting, attendance: ownAttendance, result };
+    const request = requestsByMeeting.get(meeting.id) ?? null;
+    const result = attendanceResult(meeting, ownAttendance?.status ?? null, request?.status ?? null, now);
+    return { meeting, attendance: ownAttendance, result, request };
   });
 
   const eligible = results.filter(
-    (item) => item.result === "present" || item.result === "absent",
+    (item) => ["present", "absent", "excused"].includes(item.result),
   );
   const attended = eligible.filter((item) => item.result === "present").length;
 
@@ -93,6 +93,7 @@ export async function getMemberDashboardData(memberId: string) {
     results,
     summary: {
       attended,
+      excused: eligible.filter((item) => item.result === "excused").length,
       eligible: eligible.length,
       percentage: eligible.length ? Math.round((attended / eligible.length) * 100) : 0,
     },

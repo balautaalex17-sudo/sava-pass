@@ -57,10 +57,12 @@ export default async function ContaPage({
     return <TicketLookupPage initialError={params.error === "1"} />;
   }
 
-  const { data } = await supabase
-    .from("tickets")
-    .select("id, code, qr_token, status, issued_at, events(title, date_label, venue, status, ends_at, manually_ended_at)")
-    .order("issued_at", { ascending: false });
+  const [{ data }, { data: profile }] = await Promise.all([
+    supabase.from("tickets")
+      .select("id, code, qr_token, status, issued_at, events(title, date_label, venue, status, ends_at, manually_ended_at)")
+      .order("issued_at", { ascending: false }),
+    supabase.from("profiles").select("membership_status").eq("id", claims.sub).maybeSingle(),
+  ]);
 
   const tickets = (data ?? []) as unknown as TicketRow[];
   const activeTickets = tickets.filter((ticket) => ticket.events?.status === "active" && !isEventEnded(ticket.events));
@@ -74,8 +76,20 @@ export default async function ContaPage({
             <h1>Biletele tale</h1>
             <p>{typeof claims.email === "string" ? claims.email : ""}</p>
           </div>
-          <SignOutButton />
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <Link href="/conta/galerie" style={{ color: "var(--im-fg)", fontSize: 13 }}>Galerie foto</Link>
+            <SignOutButton />
+          </div>
         </header>
+
+        {profile?.membership_status === "recruit" && (
+          <section className={styles.walletSection}>
+            <Link href="/conta/recrut" className={styles.historyItem}>
+              <span className={styles.historyEvent}><strong>Contul tău de recrut</strong><span>Ai fost acceptat în Interact Sf. Sava.</span></span>
+              <ArrowUpRight size={20} aria-hidden="true" />
+            </Link>
+          </section>
+        )}
 
         {tickets.length === 0 ? (
           <EmptyState />

@@ -26,13 +26,7 @@ const SECTION_DOTS = `<nav class="dots" aria-hidden="true">
   <a href="#join" data-s="join">05<span class="b"></span></a>
 </nav>`;
 
-const SECTION_NAVIGATION = `<nav class="dots" aria-label="Navigare între secțiunile paginii">
-  <a href="#intro" data-s="intro" class="on" aria-label="01 · Introducere" aria-current="location">01<span class="b"></span></a>
-  <a href="#hero" data-s="hero" aria-label="02 · SavaPass">02<span class="b"></span></a>
-  <a href="#event" data-s="event" aria-label="03 · Evenimente">03<span class="b"></span></a>
-  <a href="#board" data-s="board" aria-label="04 · Board">04<span class="b"></span></a>
-  <a href="#join" data-s="join" aria-label="05 · Devino membru">05<span class="b"></span></a>
-</nav>`;
+const LEFT_PROGRESS_RAIL = `<div class="lrail" aria-hidden="true"><span class="fill"></span><span class="tag">SavaPass · Interact Sf. Sava</span></div>`;
 
 function buildInteractWheelSvg() {
   const center = 120;
@@ -301,7 +295,6 @@ function applyShowcaseContent(markup: string, events: readonly LandingShowcaseEv
   if (events.length === 0) return markup.replace(EVENT_SECTION_PATTERN, "");
 
   return markup.replace(EVENT_SECTION_PATTERN, `<section class="sec" id="event" data-screen-label="Evenimente" aria-labelledby="showcase-title">
-  <div class="seam" aria-hidden="true"><i></i><b></b></div>
   <div class="wrap">
     <div class="ev-showcase-head rv">
       <div class="ev-showcase-copy"><h2 class="ev-showcase-title" id="showcase-title">Seri care ne aduc împreună</h2><p>O selecție de evenimente SavaPass, fiecare cu atmosfera, energia și povestea ei.</p></div>
@@ -421,7 +414,15 @@ export function renderImmersiveMarkup(
   const heroSecondaryHref = reservableEvent ? "/evenimente#toate-evenimentele" : "/#board";
   const heroSecondaryAction = reservableEvent ? "Toate evenimentele" : "Cunoaște echipa";
   const upgraded = applyEventsFooter(applyGenericTicketDemo(applyShowcaseContent(replaceLegacyStatsSection(markup), showcaseEvents)))
-    .replace(SECTION_DOTS, SECTION_NAVIGATION)
+    .replace(SECTION_DOTS, "")
+    .replace(LEFT_PROGRESS_RAIL, "")
+    .replace('<div class="rail"><i id="rail"></i></div>', "")
+    .replace('<span>Biletul tău,</span>', '<span>Biletul tău</span>')
+    .replace('Scanezi, <em>intri</em>.', 'Scanezi și intri.')
+    .replace(
+      "SavaPass e modul prin care Interact Sf. Sava vinde bilete la concerte, baluri și proiecte caritabile — fără cont, fără hârtie. Cumperi în 30 de secunde, primești QR-ul pe loc.",
+      "Cumperi online, primești QR-ul instant și intri. Vezi ce pregătim la Interact Sf. Sava, alege evenimentul care îți place și cheamă-ți prietenii. Ne vedem acolo.",
+    )
     .replace(INTRO_VIDEOS, DESKTOP_INTRO_VIDEOS)
     .replace(HERO_VIDEO, DESKTOP_HERO_VIDEO)
     .replace('<div class="ll-wheel" id="ll-wheel"></div>', `<div class="ll-wheel" id="ll-wheel">${INTERACT_WHEEL_SVG}</div>`)
@@ -438,6 +439,10 @@ export function renderImmersiveMarkup(
     .replace(FOOTER_NAVIGATION, "")
     .replace("3 ediții · 264 bilete · cca 13.500 RON donați", "Evenimente și proiecte Interact Sf. Sava")
     .replace("Devino membru · Toamna 2025", "Devino membru")
+    .replace(
+      '<span class="pic" data-i="spark"></span>',
+      '<span class="pic" aria-hidden="true"><img src="/icon.svg" width="24" height="24" alt="" /></span>',
+    )
     .replace(
       "Înscrierile pentru noua generație de membri sunt deschise până pe 30 noiembrie. Patru minute de aplicație, un scurt interviu, apoi ești în echipă.",
       "Vezi dacă recrutarea este deschisă și parcurge pașii aplicației. După formular, primești pe email detaliile pentru conversația cu board-ul.",
@@ -500,6 +505,7 @@ export const LANDING_REFINEMENT_CSS = `
 .sp-immersive-root .eyebrow { gap: 0; }
 .sp-immersive-root .hero .eyebrow {
   gap: 11px;
+  margin-bottom: 22px;
   color: var(--cyan);
   font-family: var(--f-mono);
   font-size: 11.5px;
@@ -508,6 +514,24 @@ export const LANDING_REFINEMENT_CSS = `
   text-transform: uppercase;
 }
 .sp-immersive-root .hero .eyebrow::before { display: block; }
+.sp-immersive-root .hero { box-shadow: none; }
+.sp-immersive-root .hero .wrap { width: 100%; top: -12px; }
+.sp-immersive-root .hero .grid > div:first-child { container-type: inline-size; min-width: 0; }
+.sp-immersive-root .hero h1 {
+  max-width: none;
+  margin-top: 0 !important;
+  font-size: clamp(20px, 14cqi, 88px);
+  line-height: 1.06;
+}
+.sp-immersive-root .hero .hline { white-space: nowrap; }
+.sp-immersive-root .hero .sub { margin-top: 30px; }
+.sp-immersive-root .hero .cta { margin-top: 36px; gap: 18px; }
+@media (min-width: 1024px) {
+  .sp-immersive-root .hero .wrap { max-width: 1280px; }
+  .sp-immersive-root .hero .grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); }
+  .sp-immersive-root .hero .sub { font-size: 18px; }
+  .sp-immersive-root .hero .cta .btn { font-size: 15px; }
+}
 .sp-immersive-root .ev-when,
 .sp-immersive-root .ev-cat,
 .sp-immersive-root .ev-arch-head .t,
@@ -630,46 +654,9 @@ export const LANDING_REFINEMENT_CSS = `
 
 /* The four membership steps remain a real sequence. Phosphor's duotone icons
    add optical weight without returning to repeated icon tiles. */
-.sp-immersive-root .join {
-  isolation: isolate;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 84% 24%, rgba(0,167,232,.09), transparent 30%),
-    radial-gradient(circle at 12% 88%, rgba(37,99,235,.055), transparent 25%),
-    linear-gradient(180deg, var(--paper-2), var(--paper));
-}
-.sp-immersive-root .join::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  top: clamp(72px, 9vw, 126px);
-  right: clamp(-360px, -17vw, -180px);
-  width: clamp(390px, 48vw, 720px);
-  aspect-ratio: 1;
-  border: 1px solid rgba(0,167,232,.13);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 clamp(46px, 5vw, 76px) rgba(0,167,232,.038),
-    0 0 0 clamp(92px, 10vw, 152px) rgba(37,99,235,.026);
-  pointer-events: none;
-  animation: join-orbit-drift 16s cubic-bezier(.22,1,.36,1) infinite alternate;
-}
-.sp-immersive-root .join::after {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  top: 31%;
-  right: -5%;
-  width: min(46vw, 680px);
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0,167,232,.22), transparent);
-  transform: rotate(-15deg);
-  pointer-events: none;
-}
-.sp-immersive-root .join > .wrap { position: relative; z-index: 1; }
-@keyframes join-orbit-drift {
-  from { transform: translate3d(0, 0, 0) rotate(-2deg); }
-  to { transform: translate3d(-18px, 12px, 0) rotate(2deg); }
+.sp-immersive-root .sec.join {
+  background: var(--paper);
+  padding-top: clamp(40px, 6vw, 72px);
 }
 .sp-immersive-root .prow::before { display: none; }
 .sp-immersive-root .prow .pic {
@@ -709,17 +696,7 @@ export const LANDING_REFINEMENT_CSS = `
 .sp-immersive-root .prow:hover .pic { transform: none; background: transparent; color: var(--cyan-2); }
 .sp-immersive-root .prow:hover .pic svg { transform: translateY(-2px); }
 
-@media(max-width:760px) {
-  .sp-immersive-root .join::before {
-    top: 38%;
-    right: -250px;
-    width: 430px;
-    opacity: .72;
-  }
-  .sp-immersive-root .join::after { top: 48%; right: -28%; width: 88vw; }
-}
 @media(prefers-reduced-motion:reduce) {
-  .sp-immersive-root .join::before { animation: none; }
   .sp-immersive-root .prow .pic svg { transition: none; }
 }
 
@@ -902,18 +879,12 @@ export const LANDING_REFINEMENT_CSS = `
     height: clamp(6px, 1.5vw, 8px);
     box-shadow: 0 0 10px rgba(0, 167, 232, .55);
   }
-  .sp-immersive-root .hero h1 {
-    max-width: 11ch;
-    margin-top: 18px !important;
-    font-size: clamp(43px, 13.6vw, 64px);
-    line-height: .93;
-  }
   .sp-immersive-root .hero .hline > span {
     transform: none !important;
     will-change: auto;
   }
-  .sp-immersive-root .hero .sub { max-width: 38ch; margin-top: 20px; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.58; }
-  .sp-immersive-root .hero .cta { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 26px; }
+  .sp-immersive-root .hero .sub { max-width: 38ch; margin-top: 26px; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.58; }
+  .sp-immersive-root .hero .cta { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 32px; }
   .sp-immersive-root .hero .cta .btn { width: 100%; }
   .sp-immersive-root .hero .tk-wrap { min-height: clamp(440px, 138vw, 540px); display: grid; place-items: center; }
   .sp-immersive-root .hero .phone {
@@ -1070,7 +1041,6 @@ export const LANDING_REFINEMENT_CSS = `
 @media (min-width: 640px) and (max-width: 820px) {
   .sp-immersive-root #logo-stage .ll-text { flex-basis: 260px; }
   .sp-immersive-root .hero .grid { grid-template-columns: minmax(0, 1fr) minmax(250px, .78fr); align-items: center; gap: 34px; }
-  .sp-immersive-root .hero h1 { font-size: clamp(48px, 7.4vw, 58px); }
   .sp-immersive-root .hero .tk-wrap { min-height: 540px; }
   .sp-immersive-root .hero .phone { width: min(35vw, 280px); }
   .sp-immersive-root .ev-feat { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
@@ -1088,10 +1058,15 @@ export const LANDING_REFINEMENT_CSS = `
 }
 
 /* The three admin-selected events form one editorial showcase, not a small archive row. */
+.sp-immersive-root #event {
+  padding-top: clamp(80px, 7vw, 96px);
+  border-top: 1px solid var(--paper-2);
+}
 .sp-immersive-root .ev-showcase-head {
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: clamp(24px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
   margin-top: 0;
 }
 .sp-immersive-root .ev-showcase-copy { max-width: 680px; }
@@ -1105,7 +1080,7 @@ export const LANDING_REFINEMENT_CSS = `
 }
 .sp-immersive-root .ev-showcase-copy p {
   max-width: 52ch;
-  margin-top: 14px;
+  margin-top: 24px;
   color: var(--mut-l);
   font-size: clamp(.94rem, 1.2vw, 1.05rem);
   line-height: 1.65;

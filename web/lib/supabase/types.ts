@@ -14,6 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
+      gallery_drive_connection: {
+        Row: {
+          account_email: string
+          connected_at: string
+          connected_by: string | null
+          encrypted_refresh_token: string
+          folder_id: string
+          singleton: boolean
+        }
+        Insert: {
+          account_email: string
+          connected_at?: string
+          connected_by?: string | null
+          encrypted_refresh_token: string
+          folder_id: string
+          singleton?: boolean
+        }
+        Update: {
+          account_email?: string
+          connected_at?: string
+          connected_by?: string | null
+          encrypted_refresh_token?: string
+          folder_id?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      gallery_photos: {
+        Row: {
+          caption: string
+          created_at: string
+          drive_file_id: string
+          height: number | null
+          id: string
+          mime_type: string
+          original_name: string
+          size_bytes: number
+          uploader_id: string | null
+          uploader_name: string
+          width: number | null
+        }
+        Insert: {
+          caption?: string
+          created_at?: string
+          drive_file_id: string
+          height?: number | null
+          id: string
+          mime_type: string
+          original_name: string
+          size_bytes: number
+          uploader_id?: string | null
+          uploader_name: string
+          width?: number | null
+        }
+        Update: {
+          caption?: string
+          created_at?: string
+          drive_file_id?: string
+          height?: number | null
+          id?: string
+          mime_type?: string
+          original_name?: string
+          size_bytes?: number
+          uploader_id?: string | null
+          uploader_name?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
+      absence_requests: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          member_id: string
+          reason: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          member_id: string
+          reason: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          member_id?: string
+          reason?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "absence_requests_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absence_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absence_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applicants: {
         Row: {
           applied_at: string
@@ -2342,6 +2469,29 @@ export type Database = {
       }
     }
     Functions: {
+      accept_recruit_application: {
+        Args: {
+          p_actor_id: string
+          p_application_id: string
+          p_expected_status: string
+          p_reviewer_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      review_absence_request: {
+        Args: {
+          p_actor_id: string
+          p_decision: string
+          p_note?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      submit_absence_request: {
+        Args: { p_meeting_id: string; p_member_id: string; p_reason: string }
+        Returns: Json
+      }
       admin_assign_featured_slot: {
         Args: {
           expected_occupant_id?: string

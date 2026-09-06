@@ -8,7 +8,9 @@ const stylesheet = `${IMMERSIVE_CSS}\n${LANDING_REFINEMENT_CSS}\n${BOARD_SHOWCAS
 export function GET() {
   return new Response(stylesheet, {
     headers: {
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": process.env.NODE_ENV === "development"
+        ? "no-store"
+        : "public, max-age=31536000, immutable",
       "Content-Type": "text/css; charset=utf-8",
       "X-Content-Type-Options": "nosniff",
     },
