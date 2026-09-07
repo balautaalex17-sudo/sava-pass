@@ -10,11 +10,28 @@ import { build } from "esbuild";
 const root = process.cwd();
 const req = createRequire(resolve(root, "package.json"));
 const key = randomBytes(32);
-const fixture = { viewer: null, photos: [], driveCalls: 0, revalidated: [], key };
+const fixture = { viewer: null, photos: [], driveCalls: 0, revalidated: [], connection: null, connectionError: false, key };
 globalThis.__galleryFixture = fixture;
-beforeEach(() => { fixture.viewer = null; fixture.photos = []; fixture.driveCalls = 0; fixture.cookie = undefined; fixture.revalidated = []; });
+beforeEach(() => { fixture.viewer = null; fixture.photos = []; fixture.driveCalls = 0; fixture.cookie = undefined; fixture.revalidated = []; fixture.connection = null; fixture.connectionError = false; });
 
 function from(table) {
+  if (table === "gallery_drive_connection") {
+    const filters = [];
+    let deleting = false;
+    const query = {
+      delete() { deleting = true; return query; },
+      eq(field, value) { filters.push([field, value]); return query; },
+      select(fields) { assert.equal(fields, "singleton"); return query; },
+      then(resolve) {
+        assert.equal(deleting, true);
+        if (fixture.connectionError) return resolve({ data: null, error: new Error("Fixture database failure") });
+        const found = fixture.connection && filters.every(([field, value]) => fixture.connection[field] === value);
+        if (found) fixture.connection = null;
+        resolve({ data: found ? [{ singleton: true }] : [], error: null });
+      },
+    };
+    return query;
+  }
   assert.equal(table, "gallery_photos");
   const filters = [];
   let operation = "select", input;
@@ -94,6 +111,45 @@ fixtureModule._compile(bundle.outputFiles[0].text, fixtureModule.filename);
 const actions = fixtureModule.exports;
 const recruit = { userId: "10000000-0000-4000-8000-000000000001", name: "Recruit", role: null, membershipStatus: null };
 const input = { fileName: "large.jpg", mimeType: "image/jpeg", size: 12884901888, caption: "Club photo" };
+
+test("only active board and admins can disconnect Drive, without touching any photos", async () => {
+  const connectedAt = "2026-09-07T16:00:00.000+00:00";
+  const confirmed = { accountEmail: "club@example.invalid", connectedAt };
+  fixture.connection = { singleton: true, account_email: confirmed.accountEmail, connected_at: connectedAt };
+  fixture.photos = [{ id: "photo-to-keep", drive_file_id: "original-to-keep" }];
+  const originalPhotos = structuredClone(fixture.photos);
+  for (const viewer of [null, recruit, { ...recruit, role: "board", membershipStatus: "inactive" }, { ...recruit, role: "scanner", membershipStatus: "active" }]) {
+    fixture.viewer = viewer;
+    assert.equal((await actions.disconnectGalleryDrive(confirmed)).ok, false);
+    assert.ok(fixture.connection);
+  }
+  fixture.viewer = { ...recruit, role: "board", membershipStatus: "active" };
+  assert.equal((await actions.disconnectGalleryDrive({ ...confirmed, connectedAt: "invalid" })).ok, false);
+  assert.ok(fixture.connection);
+  assert.equal((await actions.disconnectGalleryDrive(confirmed)).ok, true);
+  assert.equal(fixture.connection, null);
+  assert.deepEqual(fixture.photos, originalPhotos);
+  assert.equal(fixture.driveCalls, 0);
+  assert.deepEqual(fixture.revalidated, ["/conta/galerie", "/membru/galerie", "/board/galerie"]);
+});
+
+test("stale confirmations and database failures preserve the current Drive connection", async () => {
+  fixture.viewer = { ...recruit, role: "admin", membershipStatus: "active" };
+  const current = { singleton: true, account_email: "club@example.invalid", connected_at: "2026-09-07T17:00:00.000Z" };
+  fixture.connection = { ...current };
+  const stale = { accountEmail: current.account_email, connectedAt: "2026-09-07T16:00:00.000Z" };
+  assert.equal((await actions.disconnectGalleryDrive(stale)).ok, false);
+  assert.deepEqual(fixture.connection, current);
+  assert.deepEqual(fixture.revalidated, []);
+  const confirmed = { accountEmail: current.account_email, connectedAt: current.connected_at };
+  fixture.connectionError = true;
+  assert.equal((await actions.disconnectGalleryDrive(confirmed)).ok, false);
+  assert.deepEqual(fixture.connection, current);
+  fixture.connectionError = false;
+  assert.equal((await actions.disconnectGalleryDrive(confirmed)).ok, true);
+  assert.equal(fixture.connection, null);
+  assert.equal(fixture.driveCalls, 0);
+});
 
 test("real actions enforce authentication, ownership, Drive metadata and safe retries", async () => {
   assert.equal((await actions.prepareGalleryUpload(input)).ok, false);

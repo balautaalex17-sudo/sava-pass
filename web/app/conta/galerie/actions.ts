@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { canManageGalleryPhoto, galleryTicketSchema, galleryUploadSchema, matchesPhotoSignature } from "@/lib/gallery";
+import { canConnectGalleryDrive, canManageGalleryPhoto, galleryTicketSchema, galleryUploadSchema, matchesPhotoSignature } from "@/lib/gallery";
 import { getGalleryViewer } from "@/lib/gallery-auth";
 import { openGalleryValue, sealGalleryValue } from "@/lib/gallery-crypto";
 import { createDriveUpload, driveFetch, driveFile, galleryKey, getDriveAccess } from "@/lib/gallery-drive";
@@ -12,6 +12,37 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logServerError } from "@/lib/server-log";
 
 export type GalleryActionResult = { ok: true; message: string } | { ok: false; error: string };
+
+export async function disconnectGalleryDrive(input: unknown): Promise<GalleryActionResult> {
+  try {
+    const viewer = await getGalleryViewer();
+    if (!viewer || !canConnectGalleryDrive(viewer.role, viewer.membershipStatus)) {
+      return { ok: false, error: "Doar board-ul și administratorii pot elimina contul Google Drive." };
+    }
+    const parsed = z.object({
+      accountEmail: z.string().email(),
+      connectedAt: z.string().datetime({ offset: true }),
+    }).strict().safeParse(input);
+    if (!parsed.success) return { ok: false, error: "Conexiune invalidă. Reîncarcă pagina și încearcă din nou." };
+
+    // Match the connection the user confirmed, not a newer account or reconnect.
+    // Only its saved credentials are removed. Photo records and Drive files stay.
+    const { data, error } = await supabaseAdmin.from("gallery_drive_connection")
+      .delete().eq("singleton", true).eq("account_email", parsed.data.accountEmail)
+      .eq("connected_at", parsed.data.connectedAt).select("singleton");
+    if (error) throw error;
+    if (!data?.length) {
+      return { ok: false, error: "Conexiunea s-a schimbat între timp. Reîncarcă pagina înainte de a elimina contul." };
+    }
+    revalidatePath("/conta/galerie");
+    revalidatePath("/membru/galerie");
+    revalidatePath("/board/galerie");
+    return { ok: true, message: "Contul Google Drive a fost eliminat din galerie. Pozele au rămas în Drive." };
+  } catch (error) {
+    logServerError("gallery_drive_disconnect_failed", error);
+    return { ok: false, error: "Contul nu a putut fi eliminat. Încearcă din nou." };
+  }
+}
 
 export async function prepareGalleryUpload(input: unknown): Promise<
   { ok: true; ticket: string; sessionUrl: string } | { ok: false; error: string }

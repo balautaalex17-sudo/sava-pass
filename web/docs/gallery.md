@@ -8,6 +8,9 @@ Pagina `/conta/galerie` este accesibilă tuturor conturilor autentificate, inclu
 2. Alege contul Google al clubului și aprobă accesul. SavaPass creează automat folderul privat **SavaPass - Galerie**. Niciun alt utilizator nu trebuie să se conecteze la Google.
 3. Orice utilizator autentificat poate adăuga mai multe fotografii, cu o descriere opțională. Toate conturile pot vedea și descărca pozele.
 4. Autorul poate elimina pozele proprii; board-ul și administratorii pot modera toate pozele. Originalele eliminate ajung în coșul Drive.
+5. Board-ul și administratorii pot apăsa **Elimină contul**, apoi confirma deconectarea. Se elimină doar conexiunea și autorizația salvată în SavaPass, fără ștergerea pozelor din Drive sau a evidenței lor din galerie. Confirmarea este legată de conexiunea afișată, ca să nu elimine un cont reconectat între timp.
+
+După deconectare, galeria are nevoie de un cont cu acces la originale pentru a afișa sau descărca fotografiile. Un alt cont Google nu primește automat acest acces. Conectarea după eliminare poate crea un folder nou pentru încărcările viitoare; fotografiile vechi rămân în folderul original. Butonul nu revocă celelalte permisiuni Google acordate aplicației.
 
 Nu există limită suplimentară de mărime sau redimensionare în aplicație. Se aplică limitele furnizorului și spațiul disponibil în contul Drive. Fișierele acceptate sunt JPG, PNG, WebP, AVIF, HEIC și HEIF. Unele formate pot avea temporar doar descărcare, până când Google generează previzualizarea.
 

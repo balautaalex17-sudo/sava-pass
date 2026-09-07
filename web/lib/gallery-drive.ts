@@ -22,7 +22,7 @@ export function galleryCallbackUrl() {
 
 export const getDriveConnection = cache(async () => {
   const { data, error } = await supabaseAdmin.from("gallery_drive_connection")
-    .select("folder_id, account_email, encrypted_refresh_token").eq("singleton", true).maybeSingle();
+    .select("folder_id, account_email, encrypted_refresh_token, connected_at").eq("singleton", true).maybeSingle();
   if (error) throw error;
   return data;
 });

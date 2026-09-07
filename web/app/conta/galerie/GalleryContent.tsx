@@ -1,13 +1,13 @@
-/* eslint-disable @next/next/no-html-link-for-pages -- OAuth needs a full document navigation, not an RSC request. */
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { FolderOpen, Images } from "lucide-react";
+import { Images } from "lucide-react";
 import { canConnectGalleryDrive, canManageGalleryPhoto, GALLERY_PAGE_SIZE, type GalleryPhoto } from "@/lib/gallery";
 import { getGalleryViewer } from "@/lib/gallery-auth";
 import { galleryDriveConfigured, getDriveConnection } from "@/lib/gallery-drive";
 import { logServerError } from "@/lib/server-log";
 import { GalleryClient } from "./GalleryClient";
 import { GalleryFrame } from "./GalleryFrame";
+import { GalleryDrivePanel } from "./GalleryDrivePanel";
 import styles from "./gallery.module.css";
 
 export const metadata: Metadata = { title: "Galeria comunității | SavaPass", robots: { index: false, follow: false } };
@@ -53,12 +53,9 @@ export default async function GalleryContent({ searchParams }: { searchParams: P
           <Images size={42} strokeWidth={1.3} aria-hidden="true" />
         </header>
         {query.drive && driveMessages[query.drive] && board && (query.drive !== "connected" || connection) && <p className={styles.notice} role="status">{driveMessages[query.drive]}</p>}
-        {board && <section className={styles.connection} aria-label="Conexiune Google Drive">
-          <div><strong><FolderOpen size={18} aria-hidden="true" /> Google Drive</strong><p>{connection ? `Conectat la ${connection.account_email}` : "Conectează contul clubului. Creăm automat un folder privat pentru galerie."}</p></div>
-          {configured ? <a className={styles.secondary} href="/api/gallery/drive/connect">{connection ? "Reconectează" : "Conectează Google Drive"}</a>
-            : <span className={styles.muted}>Configurarea Google este în așteptare.</span>}
-          {connection && <a className={styles.textLink} href={`https://drive.google.com/drive/folders/${encodeURIComponent(connection.folder_id)}`} target="_blank" rel="noreferrer">Deschide folderul</a>}
-        </section>}
+        {board && <GalleryDrivePanel configured={configured} connection={connection ? {
+          accountEmail: connection.account_email, folderId: connection.folder_id, connectedAt: connection.connected_at,
+        } : null} />}
         {failed ? <p className={styles.notice} role="alert">Galeria nu a putut fi încărcată. Reîncarcă pagina pentru a încerca din nou.</p>
           : <GalleryClient photos={photos} connected={Boolean(connection && configured)} />}
     </GalleryFrame>

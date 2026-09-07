@@ -11,6 +11,13 @@
 .connection > div { flex: 1 1 290px; }
 .connection strong { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .connection p, .muted { color: var(--im-fg-3, #b6b5b4); font-size: 13px; line-height: 1.6; margin: 8px 0 0; overflow-wrap: anywhere; }
+.connection > .connectionConfirmation { flex: 1 0 100%; min-width: 0; padding-top: 18px; border-top: 1px solid var(--dash-line, #ffffff25); }
+.connectionConfirmation > strong { overflow-wrap: anywhere; }
+.connectionConfirmationActions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.connection .connectionMessage { flex: 1 0 100%; margin: 0; }
+.connection .connectionError { color: var(--danger, #b42318); }
+.connection .disconnectButton { color: var(--danger, #b42318); border-color: var(--danger, #b42318); }
+.connection a[aria-disabled="true"] { opacity: .55; cursor: wait; }
 .primary, .secondary { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 12px 17px; min-height: 44px; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; text-decoration: none; }
 .primary { background: #ecc877; color: #211b12; border: 1px solid #ecc877; }
 .secondary { background: #ffffff08; color: inherit; border: 1px solid #ffffff30; }
