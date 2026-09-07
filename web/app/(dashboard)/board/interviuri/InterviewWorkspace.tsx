@@ -1,7 +1,6 @@
 "use client";
 
 import { useDeferredValue, useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Mail, Phone, Plus, Search, Trash2, UserRoundCheck, X } from "lucide-react";
 import {
   isValidInterviewCategoryScores,
@@ -185,7 +184,6 @@ function InterviewCentralizer({
   selectedInterviewId: string;
   onSelect: (interviewId: string) => void;
 }) {
-  const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [acceptanceIds, setAcceptanceIds] = useState<string[]>([]);
   const [processedIds, setProcessedIds] = useState<string[]>([]);
@@ -248,7 +246,6 @@ function InterviewCentralizer({
         setProcessedIds((current) => [...new Set([...current, ...result.processedIds])]);
         setSelectedIds((current) => current.filter((id) => !result.processedIds.includes(id)));
       }
-      router.refresh();
     });
   }
 
@@ -398,7 +395,6 @@ function CandidateInterview({
 }
 
 function InterviewEvaluationsBoard({ candidate }: { candidate: InterviewCandidate }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -407,7 +403,6 @@ function InterviewEvaluationsBoard({ candidate }: { candidate: InterviewCandidat
     startTransition(async () => {
       const result = await addInterviewEvaluation({ interviewId: candidate.interviewId });
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) router.refresh();
     });
   }
 
@@ -452,7 +447,6 @@ function InterviewEvaluationEditor({
   evaluation: InterviewEvaluationView;
   index: number;
 }) {
-  const router = useRouter();
   const isPrefilled = !evaluation.needsUpdate && evaluation.categoryScores !== null;
   const initialComment = evaluation.comment.trim() === "Fără observații." ? "" : evaluation.comment;
   const [categoryScores, setCategoryScores] = useState<Partial<InterviewCategoryScores>>(() => (
@@ -485,7 +479,6 @@ function InterviewEvaluationEditor({
         comment,
       });
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) router.refresh();
     });
   }
 
@@ -496,7 +489,6 @@ function InterviewEvaluationEditor({
     startTransition(async () => {
       const result = await deleteInterviewEvaluation({ evaluationId: evaluation.evaluationId });
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) router.refresh();
     });
   }
 

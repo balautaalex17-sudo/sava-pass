@@ -57,6 +57,7 @@ export function StaffAssignments({
   }, [members, query]);
 
   function toggleRole(member: StaffMember, role: OperationalRole, checked: boolean) {
+    if (pendingId) return;
     const previous = roles.get(member.id) ?? [];
     const nextRoles = checked
       ? [...new Set([...previous, role])]
@@ -66,18 +67,25 @@ export function StaffAssignments({
     setMessage(null);
     setRoles((current) => new Map(current).set(member.id, nextRoles));
     startTransition(async () => {
-      const result = await setOperationalRoles({ profileId: member.id, roles: nextRoles });
-      if (result.ok) {
-        setRoles((current) => new Map(current).set(member.id, result.roles));
-      } else {
+      try {
+        const result = await setOperationalRoles({ profileId: member.id, roles: nextRoles });
+        if (result.ok) {
+          setRoles((current) => new Map(current).set(member.id, result.roles));
+        } else {
+          setRoles((current) => new Map(current).set(member.id, previous));
+        }
+        setMessage({ ok: result.ok, text: result.message });
+      } catch {
         setRoles((current) => new Map(current).set(member.id, previous));
+        setMessage({ ok: false, text: "Conexiunea a fost întreruptă. Încearcă din nou." });
+      } finally {
+        setPendingId(null);
       }
-      setMessage({ ok: result.ok, text: result.message });
-      setPendingId(null);
     });
   }
 
   function toggleBoard(member: StaffMember, enabled: boolean) {
+    if (pendingId) return;
     const previousRole = primaryRoles.get(member.id) ?? null;
     const nextRole = enabled ? "board" as const : null;
 
@@ -85,14 +93,20 @@ export function StaffAssignments({
     setMessage(null);
     setPrimaryRoles((current) => new Map(current).set(member.id, nextRole));
     startTransition(async () => {
-      const result = await setBoardMembership({ profileId: member.id, enabled });
-      if (result.ok) {
-        setPrimaryRoles((current) => new Map(current).set(member.id, result.primaryRole));
-      } else {
+      try {
+        const result = await setBoardMembership({ profileId: member.id, enabled });
+        if (result.ok) {
+          setPrimaryRoles((current) => new Map(current).set(member.id, result.primaryRole));
+        } else {
+          setPrimaryRoles((current) => new Map(current).set(member.id, previousRole));
+        }
+        setMessage({ ok: result.ok, text: result.message });
+      } catch {
         setPrimaryRoles((current) => new Map(current).set(member.id, previousRole));
+        setMessage({ ok: false, text: "Conexiunea a fost întreruptă. Încearcă din nou." });
+      } finally {
+        setPendingId(null);
       }
-      setMessage({ ok: result.ok, text: result.message });
-      setPendingId(null);
     });
   }
 
@@ -164,7 +178,7 @@ export function StaffAssignments({
                   <td>{member.grade ?? "—"}</td>
                   <td>
                     {!protectedRole ? (
-                      <fieldset className="staff-role-toggles" disabled={pendingId === member.id}>
+                      <fieldset className="staff-role-toggles" disabled={pendingId !== null}>
                         <legend className="sr-only">Roluri pentru {member.fullName}</legend>
                         <label className="staff-role-toggle--board">
                           <input

@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { ExternalLink, LockKeyhole, Radio, Save } from "lucide-react";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import {
   RECRUITMENT_QUESTIONS,
   type RecruitmentQuestion,

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { CalendarDays, Clock3, MapPin, QrCode } from "lucide-react";
 import { MemberMeetingHistory } from "@/components/dashboard/MemberMeetingHistory";
 import { requirePagePermission } from "@/lib/dashboard/auth";

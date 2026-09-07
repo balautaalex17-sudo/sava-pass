@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import {
   CalendarDays,
   ClipboardList,

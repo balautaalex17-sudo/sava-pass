@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import {
   assignFeaturedSlot,
@@ -39,13 +38,9 @@ function MutationMessage({ state }: { state: EventActionState }) {
 export function EndEventDialog({ eventId, eventTitle }: { eventId: string; eventTitle: string }) {
   const [state, action, pending] = useActionState(endEvent, {} as EventActionState);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const router = useRouter();
-
   useEffect(() => {
     if (!state.ok) return;
-    dialogRef.current?.close();
-    router.refresh();
-  }, [router, state.ok]);
+    dialogRef.current?.close();  }, [state.ok]);
 
   return (
     <>

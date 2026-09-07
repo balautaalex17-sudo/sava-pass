@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Download, Search, X } from "lucide-react";
 import { formatDateTime } from "@/lib/dashboard/format";
 import { ATTENDANCE_LABELS, attendanceClass, filterAttendanceRows, type AttendanceTableRow, type AttendanceFilter, type AttendanceSort } from "@/lib/dashboard/attendance";
@@ -16,7 +15,6 @@ export function RosterTable({ rows, view, selectedId, canCorrect, canReview, vie
   canReview: boolean;
   viewerId: string;
 }) {
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<AttendanceFilter>("all");
   const [sort, setSort] = useState<AttendanceSort>(view === "member" ? "meeting-desc" : "person-asc");
@@ -40,7 +38,7 @@ export function RosterTable({ rows, view, selectedId, canCorrect, canReview, vie
         newStatus: selected.attendanceStatus === "present" ? "reversed" : "present", reason,
       });
       setMessage(result.message);
-      if (result.ok) { dialogRef.current?.close(); setSelected(null); router.refresh(); }
+      if (result.ok) { dialogRef.current?.close(); setSelected(null); }
     });
   }
 

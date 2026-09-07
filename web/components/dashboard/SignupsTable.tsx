@@ -7,7 +7,6 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useRouter } from "next/navigation";
 import {
   CalendarCheck,
   ChevronDown,
@@ -108,7 +107,6 @@ export function SignupsTable({
   reviewers: ReviewerOption[];
   canManage: boolean;
 }) {
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [completion, setCompletion] = useState<"all" | "complete" | "incomplete">("all");
   const [status, setStatus] = useState("all");
@@ -248,7 +246,6 @@ export function SignupsTable({
       });
       setWorkflowMessage({ text: result.message, ok: result.ok });
       if (result.ok) setSelectedIds(new Set());
-      router.refresh();
     });
   }
 
@@ -634,7 +631,6 @@ function ApplicationManagement({
   application: SignupApplication;
   reviewers: ReviewerOption[];
 }) {
-  const router = useRouter();
   const [status, setStatus] = useState(application.status);
   const [reviewer, setReviewer] = useState(application.reviewerId ?? "");
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -648,7 +644,6 @@ function ApplicationManagement({
         reviewerId: reviewer || null,
       });
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) router.refresh();
     });
   }
 

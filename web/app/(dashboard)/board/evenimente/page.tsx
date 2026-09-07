@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { CalendarPlus, Eye, Pencil } from "lucide-react";
 import { requirePagePermission } from "@/lib/dashboard/auth";
 import { formatDateTime } from "@/lib/dashboard/format";

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PortalFilterForm } from "@/components/dashboard/PortalFilterForm";
 import { requirePagePermission } from "@/lib/dashboard/auth";
 import {
   formatDateTime,
@@ -143,7 +144,7 @@ export default async function ScanHistoryPage({
         </div>
       </header>
 
-      <form method="get" className="scan-history-filter">
+      <PortalFilterForm action="/board/istoric-scanari" className="scan-history-filter" submitLabel="Filtrează">
         <label htmlFor="scan-type">
           Tip
           <select id="scan-type" name="type" defaultValue={type}>
@@ -152,10 +153,7 @@ export default async function ScanHistoryPage({
             <option value="attendance">Prezență ședințe</option>
           </select>
         </label>
-        <button className="dash-button" type="submit">
-          Filtrează
-        </button>
-      </form>
+      </PortalFilterForm>
 
       {type !== "attendance" && (
         <section className="scan-history-section" aria-labelledby="ticket-history-title">

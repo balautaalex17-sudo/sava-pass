@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { Eye, Pencil, Search } from "lucide-react";
 import { requirePagePermission } from "@/lib/dashboard/auth";
 import { formatDateTime } from "@/lib/dashboard/format";

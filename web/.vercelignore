@@ -1,0 +1,13 @@
+# Keep local development files out of deployment uploads.
+node_modules/
+.next/
+out/
+build/
+coverage/
+.env*
+.vercel/
+active/
+*.log
+*.tsbuildinfo
+.DS_Store
+*.pem

@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- OAuth needs a full document navigation, not an RSC request. */
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { redirect } from "next/navigation";
 import { ArrowLeft, FolderOpen, Images } from "lucide-react";
 import { canConnectGalleryDrive, canManageGalleryPhoto, GALLERY_PAGE_SIZE, type GalleryPhoto } from "@/lib/gallery";

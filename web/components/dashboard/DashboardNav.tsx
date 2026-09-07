@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatedNavLink as Link } from "@/app/AnimatedNavLink";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -12,6 +12,7 @@ import {
   House,
   Images,
   LayoutDashboard,
+  LoaderCircle,
   LogOut,
   Menu,
   QrCode,
@@ -114,6 +115,8 @@ export function DashboardNav({
   membershipStatus?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const sidebarRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
@@ -203,10 +206,19 @@ export function DashboardNav({
   }, [menuOpen]);
 
   async function signOut() {
-    setMenuOpen(false);
-    await createClient().auth.signOut();
-    router.replace("/");
-    router.refresh();
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError("");
+    try {
+      const { error } = await createClient().auth.signOut();
+      if (error) throw error;
+      setMenuOpen(false);
+      router.replace("/");
+      router.refresh();
+    } catch {
+      setSignOutError("Ieșirea din cont a eșuat. Încearcă din nou.");
+      setSigningOut(false);
+    }
   }
 
   const closeMenu = () => setMenuOpen(false);
@@ -305,8 +317,9 @@ export function DashboardNav({
               {fullName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}
             </div>
             <div><strong>{fullName}</strong><span>{roleLabel}</span></div>
-            <button type="button" onClick={signOut} aria-label="Ieși din cont"><LogOut size={17} /></button>
+            <button type="button" onClick={signOut} disabled={signingOut} aria-busy={signingOut} aria-label={signingOut ? "Se închide sesiunea…" : "Ieși din cont"}>{signingOut ? <LoaderCircle size={17} className="scanner-spin" /> : <LogOut size={17} />}</button>
           </div>
+          {signOutError && <p role="alert" className="dash-form-message dash-form-message--error">{signOutError}</p>}
         </div>
       </aside>
       {menuOpen && <button type="button" className="dash-menu-backdrop" aria-label="Închide meniul" onClick={() => setMenuOpen(false)} />}

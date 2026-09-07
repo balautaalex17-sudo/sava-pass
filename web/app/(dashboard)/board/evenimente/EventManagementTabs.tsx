@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 
 export function EventManagementTabs({
   active,

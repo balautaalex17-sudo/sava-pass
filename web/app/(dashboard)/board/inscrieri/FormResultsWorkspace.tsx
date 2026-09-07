@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { useDeferredValue, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CheckCircle2,
@@ -89,7 +88,6 @@ export function FormResultsWorkspace({
   canManage: boolean;
   canEvaluate: boolean;
 }) {
-  const router = useRouter();
   const [selectedId, setSelectedId] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FormFilter>("all");
@@ -269,7 +267,6 @@ export function FormResultsWorkspace({
       setMessage({ text: result.message, ok: result.ok });
       applyProcessedStatuses(result.selectedIds, "selected_for_interview");
       applyProcessedEmails(result.emailedIds);
-      router.refresh();
     });
   }
 
@@ -361,7 +358,6 @@ export function FormResultsWorkspace({
       setBulkMessage({ text: result.message, ok: result.ok });
       applyProcessedStatuses(result.selectedIds, "selected_for_interview");
       applyProcessedEmails(result.emailedIds);
-      router.refresh();
     });
   }
 
@@ -398,7 +394,6 @@ export function FormResultsWorkspace({
         for (const id of result.processedIds) next.delete(id);
         return next;
       });
-      router.refresh();
     });
   }
 

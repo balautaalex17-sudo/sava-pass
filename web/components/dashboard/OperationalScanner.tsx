@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import {
   Camera,
   CameraOff,
@@ -124,6 +124,7 @@ export function OperationalScanner({
   const resultRef = useRef<HTMLDivElement>(null);
 
   const [cameraState, setCameraState] = useState<CameraState>("not_requested");
+  const [checking, setChecking] = useState(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDevice, setSelectedDevice] = useState("");
   const [torchSupported, setTorchSupported] = useState(false);
@@ -195,6 +196,7 @@ export function OperationalScanner({
     if (previous?.value === trimmed && Date.now() - previous.at < 2500) return;
     lastScanRef.current = { value: trimmed, at: Date.now() };
     processingRef.current = true;
+    setChecking(true);
     setCameraState("paused");
 
     const input = scanInput(trimmed);
@@ -220,6 +222,8 @@ export function OperationalScanner({
       showResult(data);
     } catch {
       showResult({ result: "error", message: "Conexiunea a eșuat. Verifică internetul și încearcă din nou." });
+    } finally {
+      setChecking(false);
     }
   }, [meetingId, mode, showResult]);
 
@@ -341,14 +345,14 @@ export function OperationalScanner({
         </div>
         <div className="scanner-controls">
           <label><span className="sr-only">Camera folosită</span><select value={selectedDevice} onChange={(event) => { setSelectedDevice(event.target.value); void startCamera(event.target.value); }} disabled={devices.length < 2}>{devices.length ? devices.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>) : <option value="">Camera din spate</option>}</select></label>
-          <button type="button" onClick={() => cameraState === "running" ? (stopCamera(), setCameraState("paused")) : void startCamera(selectedDevice || undefined)} aria-label={cameraState === "running" ? "Oprește scanerul" : "Pornește scanerul"}>{cameraState === "running" ? <Pause size={18} /> : <Play size={18} />}{cameraState === "running" ? "Oprește" : "Pornește"}</button>
+          <button type="button" disabled={checking || cameraState === "requesting"} onClick={() => cameraState === "running" ? (stopCamera(), setCameraState("paused")) : void startCamera(selectedDevice || undefined)} aria-label={cameraState === "running" ? "Oprește scanerul" : "Pornește scanerul"}>{cameraState === "running" ? <Pause size={18} /> : <Play size={18} />}{cameraState === "requesting" ? "Se deschide…" : cameraState === "running" ? "Oprește" : "Pornește"}</button>
           <button type="button" disabled={!torchSupported} onClick={() => void toggleTorch()} aria-label={torchOn ? "Oprește lanterna" : "Pornește lanterna"}>{torchOn ? <FlashlightOff size={18} /> : <Flashlight size={18} />} Lanternă</button>
           <button type="button" onClick={() => { const next = !muted; setMuted(next); mutedRef.current = next; }} aria-label={muted ? "Pornește sunetul" : "Oprește sunetul"}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />} Sunet</button>
         </div>
       </section>
 
       <aside className="scanner-result-panel">
-        <div className="scanner-live-status" role="status" aria-live="polite">{result ? result.message : cameraMessage(cameraState)}</div>
+        <div className="scanner-live-status" role="status" aria-live="polite">{checking ? "Se verifică codul…" : result ? result.message : cameraMessage(cameraState)}</div>
         {result ? (
           <div ref={resultRef} tabIndex={-1} className={`scanner-result scanner-result--${tone}`}>
             {tone === "success" ? <CheckCircle2 size={34} /> : tone === "warning" ? <RotateCcw size={34} /> : <XCircle size={34} />}
@@ -362,7 +366,7 @@ export function OperationalScanner({
           <div className="scanner-ready"><ScanIcon mode={mode} /><h2>Pregătit pentru scanare</h2><p>{mode === "attendance" ? "Codurile de membru sunt validate pentru întâlnirea selectată." : "O scanare confirmă plata cash și intrarea, într-un singur pas."}</p></div>
         )}
 
-        <form className="scanner-manual" onSubmit={(event) => { event.preventDefault(); void processCode(manualCode, true); setManualCode(""); }}><label htmlFor={`manual-${mode}`}><Keyboard size={16} /> Introducere manuală</label><div><input id={`manual-${mode}`} value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder={mode === "tickets" ? "Cod bilet sau token QR" : "Tokenul codului QR"} autoComplete="off" /><button type="submit" disabled={!manualCode.trim()}>Verifică</button></div></form>
+        <form className="scanner-manual" aria-busy={checking} onSubmit={(event) => { event.preventDefault(); if (processingRef.current) return; void processCode(manualCode, true); setManualCode(""); }}><label htmlFor={`manual-${mode}`}><Keyboard size={16} /> Introducere manuală</label><div><input id={`manual-${mode}`} value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder={mode === "tickets" ? "Cod bilet sau token QR" : "Tokenul codului QR"} autoComplete="off" /><button type="submit" disabled={checking || Boolean(result) || !manualCode.trim()}>{checking ? "Se verifică…" : "Verifică"}</button></div></form>
 
         <section className="scanner-recent" aria-labelledby={`recent-${mode}`}><h3 id={`recent-${mode}`}>Scanări recente</h3>{recent.length ? <ol>{recent.map((item, index) => <li key={`${item.at}-${index}`}><span className={`scanner-dot scanner-dot--${positiveResults.has(item.result) ? "success" : warningResults.has(item.result) ? "warning" : "danger"}`} /><div><strong>{item.member_name ?? item.ticket?.holderName ?? item.message}</strong><span>{item.message}</span></div><time>{new Date(item.at).toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time></li>)}</ol> : <p>Nicio scanare în această sesiune.</p>}</section>
       </aside>

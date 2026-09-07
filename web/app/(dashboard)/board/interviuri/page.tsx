@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { ClipboardList, ClipboardPenLine } from "lucide-react";
 import { requireAnyPagePermission } from "@/lib/dashboard/auth";
 import {
@@ -293,7 +293,6 @@ function FormsPageShell({
           <Link
             className="forms-tab"
             href="/board/interviuri?view=raspunsuri"
-            prefetch
             aria-current={activeView === "raspunsuri" ? "page" : undefined}
           >
             <ClipboardList size={18} />
@@ -304,7 +303,6 @@ function FormsPageShell({
           <Link
             className="forms-tab"
             href="/board/interviuri?view=interviuri"
-            prefetch
             aria-current={activeView === "interviuri" ? "page" : undefined}
           >
             <ClipboardPenLine size={18} />

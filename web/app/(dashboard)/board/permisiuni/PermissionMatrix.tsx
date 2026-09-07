@@ -13,8 +13,29 @@ export function PermissionMatrix({ permissions, initialMappings }: { permissions
   const [mappings,setMappings] = useState(() => new Set(initialMappings.map((row) => `${row.role_key}:${row.permission_key}`)));
   const [pending,startTransition] = useTransition(); const [message,setMessage] = useState<string|null>(null);
   const categories = [...new Set(permissions.map((permission) => permission.category))];
-  function change(role: Exclude<(typeof roles)[number],"admin"|"board">, permission: PermissionKey, allowed: boolean) { setMessage(null); startTransition(async () => { const result = await setRolePermission({ role, permission, allowed }); setMessage(result.message); if (result.ok) setMappings((current) => { const next = new Set(current); const key = `${role}:${permission}`; if (allowed) next.add(key); else next.delete(key); return next; }); }); }
-  return <><div className="dash-card permission-matrix-wrap"><table className="permission-matrix"><thead><tr><th>Permisiune</th>{roles.map((role) => <th key={role}>{roleLabels[role]}</th>)}</tr></thead><tbody>{categories.map((category) => <PermissionCategory key={category} category={category} permissions={permissions.filter((permission) => permission.category === category)} mappings={mappings} pending={pending} onChange={change} />)}</tbody></table></div>{message && <p className="dash-form-message" role="status">{message}</p>}</>;
+  function change(role: Exclude<(typeof roles)[number], "admin" | "board">, permission: PermissionKey, allowed: boolean) {
+    if (pending) return;
+    const key = `${role}:${permission}`;
+    const previous = mappings.has(key);
+    const update = (value: boolean) => setMappings((current) => {
+      const next = new Set(current);
+      if (value) next.add(key); else next.delete(key);
+      return next;
+    });
+    setMessage(null);
+    update(allowed);
+    startTransition(async () => {
+      try {
+        const result = await setRolePermission({ role, permission, allowed });
+        setMessage(result.message);
+        if (!result.ok) update(previous);
+      } catch {
+        update(previous);
+        setMessage("Conexiunea a fost întreruptă. Încearcă din nou.");
+      }
+    });
+  }
+  return <><div className="dash-card permission-matrix-wrap" aria-busy={pending}><table className="permission-matrix"><thead><tr><th>Permisiune</th>{roles.map((role) => <th key={role}>{roleLabels[role]}</th>)}</tr></thead><tbody>{categories.map((category) => <PermissionCategory key={category} category={category} permissions={permissions.filter((permission) => permission.category === category)} mappings={mappings} pending={pending} onChange={change} />)}</tbody></table></div>{(pending || message) && <p className="dash-form-message" role="status">{pending ? "Se salvează…" : message}</p>}</>;
 }
 
 function PermissionCategory({ category, permissions, mappings, pending, onChange }: { category:string; permissions:PermissionRow[]; mappings:Set<string>; pending:boolean; onChange:(role:EditablePermissionRole,permission:PermissionKey,allowed:boolean)=>void }) {

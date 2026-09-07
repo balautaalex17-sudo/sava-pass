@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { REQUEST_LABELS, type AbsenceRequest } from "@/lib/dashboard/attendance";
 import { reviewAbsenceRequest, submitAbsenceRequest } from "@/lib/dashboard/attendance-actions";
 import { formatDateTime } from "@/lib/dashboard/format";
@@ -14,7 +13,6 @@ export function AbsenceRequestControl({ meetingId, request, canSubmit = false, c
   isOwn?: boolean;
 }) {
   const id = useId();
-  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState("");
   const [message, setMessage] = useState("");
@@ -28,7 +26,7 @@ export function AbsenceRequestControl({ meetingId, request, canSubmit = false, c
           ? await reviewAbsenceRequest({ requestId: request.id, decision, note: text })
           : await submitAbsenceRequest({ meetingId, reason: text });
         setMessage(result.message);
-        if (result.ok) { setSaved(true); setExpanded(false); router.refresh(); }
+        if (result.ok) { setSaved(true); setExpanded(false); }
       } catch {
         setMessage("Conexiunea a fost întreruptă. Încearcă din nou.");
       }

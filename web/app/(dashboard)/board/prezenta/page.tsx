@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { requirePagePermission } from "@/lib/dashboard/auth";
 import { formatDateTime } from "@/lib/dashboard/format";
 import { attendanceResult, canReviewAbsences } from "@/lib/dashboard/attendance";
@@ -7,6 +7,7 @@ import { getAttendanceRosterData, getAbsenceInboxData } from "@/lib/dashboard/at
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { AbsenceRequestControl } from "@/components/dashboard/AbsenceRequestControl";
 import { RosterTable } from "./RosterTable";
+import { PortalFilterForm } from "@/components/dashboard/PortalFilterForm";
 
 export const metadata: Metadata = { title: "Tabel de prezență", robots: { index: false, follow: false } };
 
@@ -15,9 +16,14 @@ export default async function AttendanceRosterPage({ searchParams }: { searchPar
   const query = await searchParams;
   const canReview = canReviewAbsences(viewer.profile.role);
   const view = query.view === "requests" && canReview ? "requests" : query.view === "member" ? "member" : "meeting";
-  const pendingCount = canReview
-    ? await supabaseAdmin.from("absence_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
-    : { count: 0, error: null };
+  // The badge and the selected table are independent once access is checked.
+  const [pendingCount, content] = await Promise.all([canReview
+    ? supabaseAdmin.from("absence_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
+    : { count: 0, error: null },
+    view === "requests"
+      ? RequestInbox({ viewerId: viewer.profile.id })
+      : AttendanceView({ query: { ...query, view }, canReview, canCorrect: viewer.permissions.has("correct_attendance"), viewerId: viewer.profile.id }),
+  ]);
   if (pendingCount.error) throw pendingCount.error;
 
   return <div className="dash-page dash-page--wide">
@@ -27,7 +33,7 @@ export default async function AttendanceRosterPage({ searchParams }: { searchPar
       <Link href="/board/prezenta?view=member" aria-current={view === "member" ? "page" : undefined}>Pe persoană</Link>
       {canReview && <Link href="/board/prezenta?view=requests" aria-current={view === "requests" ? "page" : undefined}>Cereri de motivare ({pendingCount.count ?? 0})</Link>}
     </nav>
-    {view === "requests" ? <RequestInbox viewerId={viewer.profile.id} /> : <AttendanceView query={{ ...query, view }} canReview={canReview} canCorrect={viewer.permissions.has("correct_attendance")} viewerId={viewer.profile.id} />}
+    {content}
   </div>;
 }
 
@@ -43,7 +49,7 @@ async function AttendanceView({ query, canReview, canCorrect, viewerId }: {
   const absent = data.rows.filter((row) => row.result === "absent").length;
   const excused = data.rows.filter((row) => row.result === "excused").length;
   return <>
-    <form method="get" className="roster-meeting-select">
+    <PortalFilterForm action="/board/prezenta" className="roster-meeting-select" submitLabel="Afișează">
       <input type="hidden" name="view" value={data.view} />
       <label htmlFor="attendance-selection">{data.view === "member" ? "Persoană" : "Ședință"}
         <select id="attendance-selection" name={data.view === "member" ? "member" : "meeting"} defaultValue={selectedId} key={`${data.view}:${selectedId}`}>
@@ -52,8 +58,7 @@ async function AttendanceView({ query, canReview, canCorrect, viewerId }: {
             : data.meetings.map((meeting) => <option value={meeting.id} key={meeting.id}>{meeting.title} · {formatDateTime(meeting.starts_at)}</option>)}
         </select>
       </label>
-      <button className="dash-button" type="submit">Afișează</button>
-    </form>
+    </PortalFilterForm>
     <div className="dash-card member-summary-grid roster-summary">
       <div><strong>{present}</strong><span>Prezențe</span></div>
       <div><strong>{absent}</strong><span>Absențe nemotivate</span></div>
