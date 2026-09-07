@@ -15,8 +15,21 @@ formularului și selecția pentru interviu nu creează un astfel de profil.
 4. Recrutul ajunge la `/conta/recrut`, cu acces la galerie și biletele proprii.
    Galerie foto permite vizualizare și încărcare după conectarea Drive de către board.
 5. Board → Membri → Editează → Statut în club → Membru activ → Salvează.
-   Promovarea păstrează contul, parola și fotografiile. Accesul la întâlniri,
-   QR și istoricul de prezență se deschide odată cu statutul de membru activ.
+   Promovarea păstrează contul, parola și fotografiile și acordă accesul de bază al membrilor.
+
+## Permisiuni pentru recruți
+
+Super Admin → Roluri și permisiuni include coloana **Recrut**, înainte de Membru.
+Implicit, recruții păstrează galeria și biletele proprii. Super Admin poate activa
+funcții suplimentare fără să schimbe statutul contului; acestea apar în
+„Instrumentele clubului” din pagina recrutului și se verifică la fiecare acces.
+Retragerea unei permisiuni închide accesul pe server, inclusiv dintr-un link salvat.
+Administrarea membrilor, a rolurilor și a permisiunilor nu poate fi delegată recruților.
+
+Grupul `recruit` din `role_permissions` este ales după `membership_status`.
+Nu moștenește regulile `member` sau roluri operaționale vechi. Excepțiile individuale
+sunt respectate, iar conturile suspendate rămân blocate. QR-ul unui recrut poate
+fi scanat numai dacă are permisiunea `display_member_qr`.
 
 Board poate și crea manual un cont cu statutul Recrut sau poate retrimite codul
 din butonul „Cod nou”. Acțiunea este protejată pe server. Recrutul nu se poate

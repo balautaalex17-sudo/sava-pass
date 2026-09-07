@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getDashboardViewer } from "@/lib/dashboard/auth";
 import { RecruitHome } from "./RecruitHome";
+import { getDashboardEntry } from "@/lib/dashboard/permissions";
 
 export const metadata: Metadata = {
   title: "Cont de recrut | SavaPass",
@@ -15,5 +16,5 @@ export default async function RecruitPage() {
   if (viewer.profile.membership_status !== "recruit") {
     redirect(viewer.profile.membership_status === "active" ? "/membru" : "/conta");
   }
-  return <RecruitHome fullName={viewer.profile.full_name} email={viewer.profile.email ?? ""} />;
+  return <RecruitHome fullName={viewer.profile.full_name} email={viewer.profile.email ?? ""} dashboardHref={getDashboardEntry(viewer.permissions)} />;
 }

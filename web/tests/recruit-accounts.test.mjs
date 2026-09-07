@@ -29,14 +29,17 @@ f.from = (table) => {
     neq(k, v) { predicates.push(r => r[k] !== v); return q; }, in(k, values) { predicates.push(r => values.includes(r[k])); return q; },
     update(v) { operation = "update"; input = v; return q; }, insert(v) { operation = "insert"; input = v; return q; },
     upsert(v) { operation = "upsert"; input = v; return q; }, maybeSingle() { single = true; return q; }, single() { single = true; return q; },
+    delete() { operation = "delete"; return q; },
     then(resolve) {
       let rows = f.tables[table].filter(r => predicates.every(p => p(r)));
       if (operation === "insert" || operation === "upsert") {
-        const existing = operation === "upsert" && f.tables[table].find(r => r.id === input.id);
+        const existing = operation === "upsert" && f.tables[table].find(r => table === "role_permissions"
+          ? r.role_key === input.role_key && r.permission_key === input.permission_key : r.id === input.id);
         if (existing) { Object.assign(existing, input); rows = [existing]; }
         else { const created = { id: randomUUID(), ...input }; f.tables[table].push(created); rows = [created]; }
       }
       if (operation === "update") rows.forEach(r => Object.assign(r, input));
+      if (operation === "delete") f.tables[table] = f.tables[table].filter(r => !rows.includes(r));
       resolve({ data: single ? rows[0] ?? null : rows, error: null, count: rows.length });
     },
   };
@@ -83,7 +86,7 @@ const adapters = {
   "next/navigation": "export function redirect(path){throw new Error('REDIRECT:'+path)}",
 };
 const bundle = await build({
-  stdin: { contents: 'export * from "./app/(dashboard)/board/inscrieri/actions"; export * from "./app/(dashboard)/board/membri/actions"; export * from "./lib/dashboard/recruit-account"; export {getDashboardViewer,requirePermission as realRequirePermission,requirePagePermission} from "./lib/dashboard/auth"; export {default as RecruitPage} from "./app/conta/recrut/page";', loader: "ts", resolveDir: root },
+  stdin: { contents: 'export * from "./app/(dashboard)/board/inscrieri/actions"; export * from "./app/(dashboard)/board/membri/actions"; export * from "./app/(dashboard)/board/permisiuni/actions"; export * from "./lib/dashboard/recruit-account"; export {getDashboardViewer,requirePermission as realRequirePermission,requirePagePermission,requireAnyPagePermission} from "./lib/dashboard/auth"; export {default as RecruitPage} from "./app/conta/recrut/page";', loader: "ts", resolveDir: root },
   bundle: true, write: false, platform: "node", format: "cjs", tsconfig: resolve(root, "tsconfig.json"),
   plugins: [{ name: "no-live-access", setup(build) {
     build.onResolve({ filter: /.*/ }, a => {
@@ -202,13 +205,71 @@ test("recruits cannot accept applicants, manage members or enter member-only pag
   assert.equal(f.emails.length, previousEmails);
   const viewer = await actions.getDashboardViewer();
   assert.equal(viewer.permissions.size, 0);
-  await assert.rejects(actions.realRequirePermission("manage_members"), /INACTIVE_MEMBER/);
+  await assert.rejects(actions.realRequirePermission("manage_members"), /UNAUTHORIZED/);
   await assert.rejects(actions.requirePagePermission("view_member_dashboard"), /REDIRECT:\/conta\/recrut/);
   assert.ok(await actions.RecruitPage());
   recruit.membership_status = "active";
   await assert.rejects(actions.RecruitPage(), /REDIRECT:\/membru/);
   f.claims = null;
   await assert.rejects(actions.RecruitPage(), /REDIRECT:\/conta\/login/);
+});
+
+test("Super Admin grants and revokes recruit permissions without changing membership", async () => {
+  await accept(candidate());
+  const recruit = f.tables.profiles[1];
+  const input = { role: "recruit", permission: "view_own_attendance", allowed: true };
+  assert.equal((await actions.setRolePermission(input)).ok, false, "Board cannot edit the matrix");
+  f.board.role = "admin";
+  assert.equal((await actions.setRolePermission(input)).ok, true);
+  f.claims = { sub: recruit.id };
+  assert.deepEqual((await actions.getDashboardViewer()).permissionKeys, ["view_own_attendance"]);
+  assert.equal((await actions.requirePagePermission("view_own_attendance")).profile.id, recruit.id);
+  assert.equal((await actions.requireAnyPagePermission(["view_own_attendance", "manage_members"])).profile.id, recruit.id);
+  assert.equal((await actions.realRequirePermission("view_own_attendance")).profile.id, recruit.id);
+  assert.equal((await actions.RecruitPage()).props.dashboardHref, "/membru/prezenta");
+  assert.equal(recruit.membership_status, "recruit");
+  assert.equal(recruit.role, null);
+  assert.equal((await actions.setRolePermission({ ...input, allowed: false })).ok, true);
+  assert.equal((await actions.getDashboardViewer()).permissions.size, 0);
+  await assert.rejects(actions.requirePagePermission("view_own_attendance"), /REDIRECT:\/conta\/recrut/);
+  assert.equal((await actions.RecruitPage()).props.dashboardHref, undefined);
+});
+
+test("recruits never inherit staff/member privileges and grants do not survive suspension or promotion", async () => {
+  await accept(candidate());
+  const recruit = f.tables.profiles[1]; f.claims = { sub: recruit.id };
+  f.tables.role_permissions.push(
+    { role_key: "recruit", permission_key: "view_scan_audit_log" },
+    { role_key: "recruit", permission_key: "manage_permissions" },
+    { role_key: "member", permission_key: "manage_meetings" },
+    { role_key: "scanner", permission_key: "scan_event_tickets" },
+  );
+  recruit.role = "admin"; // Even stale primary/operational assignments cannot elevate a recruit.
+  f.tables.profile_roles.push({ profile_id: recruit.id, role: "scanner" });
+  f.tables.profile_permission_overrides.push({ profile_id: recruit.id, permission_key: "manage_members", allowed: true });
+  assert.deepEqual((await actions.getDashboardViewer()).permissionKeys, ["view_scan_audit_log"]);
+  assert.equal((await actions.getDashboardViewer()).isAdminEquivalent, false);
+  f.tables.profile_permission_overrides.push({ profile_id: recruit.id, permission_key: "view_scan_audit_log", allowed: false });
+  assert.equal((await actions.getDashboardViewer()).permissions.size, 0);
+  f.tables.profile_permission_overrides = [];
+  recruit.membership_status = "suspended";
+  assert.equal((await actions.getDashboardViewer()).permissions.size, 0);
+  await assert.rejects(actions.realRequirePermission("view_scan_audit_log"), /INACTIVE_MEMBER/);
+  recruit.membership_status = "active"; recruit.role = null; f.tables.profile_roles = [];
+  const member = await actions.getDashboardViewer();
+  assert.equal(member.permissions.has("view_member_dashboard"), true);
+  assert.equal(member.permissions.has("manage_meetings"), true);
+  assert.equal(member.permissions.has("view_scan_audit_log"), false);
+});
+
+test("matrix rejects invalid roles and attempts to delegate role administration", async () => {
+  f.board.role = "admin";
+  for (const permission of ["manage_members", "manage_permissions", "manage_staff_assignments"]) {
+    assert.equal((await actions.setRolePermission({ role: "recruit", permission, allowed: true })).ok, false);
+  }
+  assert.equal((await actions.setRolePermission({ role: "invalid", permission: "view_own_attendance", allowed: true })).ok, false);
+  assert.equal((await actions.setRolePermission({ role: "member", permission: "view_member_dashboard", allowed: false })).ok, false);
+  assert.equal(f.tables.role_permissions.length, 0);
 });
 
 test("duplicate email creation cannot overwrite another profile or grant administrative roles to recruits", async () => {

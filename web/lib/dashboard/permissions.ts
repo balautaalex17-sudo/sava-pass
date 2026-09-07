@@ -25,6 +25,10 @@ export const PERMISSIONS = [
 
 export type PermissionKey = (typeof PERMISSIONS)[number];
 
+export const PERMISSION_ROLES = ["recruit", "member", "board", "scanner", "interviewer", "statistici", "admin"] as const;
+export const EDITABLE_PERMISSION_ROLES = ["recruit", "member", "scanner", "interviewer", "statistici"] as const;
+export type EditablePermissionRole = (typeof EDITABLE_PERMISSION_ROLES)[number];
+
 export const MEMBER_BASELINE_PERMISSIONS = [
   "view_member_dashboard",
   "view_own_attendance",
@@ -69,3 +73,15 @@ export const BOARD_NAV_PERMISSIONS: Partial<Record<PermissionKey, string>> = {
   manage_recruitment_campaigns: "/board/formular-inscrieri",
   manage_public_events: "/board/evenimente",
 };
+
+export function getDashboardEntry(permissions: ReadonlySet<PermissionKey>): string | undefined {
+  const routes: Partial<Record<PermissionKey, string>> = {
+    view_member_dashboard: "/membru",
+    display_member_qr: "/membru/qr",
+    view_own_attendance: "/membru/prezenta",
+    update_own_profile: "/membru/profil",
+    ...BOARD_NAV_PERMISSIONS,
+    manage_meetings: "/board/intalniri",
+  };
+  return Object.entries(routes).find(([permission]) => permissions.has(permission as PermissionKey))?.[1];
+}

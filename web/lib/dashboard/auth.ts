@@ -89,14 +89,20 @@ export const getDashboardViewer = cache(async (): Promise<DashboardViewer | null
   if (!profile) return null;
 
   const roleSet = new Set<StaffRole>();
-  if (profile.role) roleSet.add(profile.role);
-  for (const row of operationalRoleRows ?? []) roleSet.add(row.role);
+  if (profile.membership_status === "active") {
+    if (profile.role) roleSet.add(profile.role);
+    for (const row of operationalRoleRows ?? []) roleSet.add(row.role);
+  }
   const roles = [...roleSet];
   const isAdminEquivalent = roles.includes("admin") || roles.includes("board");
 
   const permissionKeys = new Set<PermissionKey>();
-  if (profile.membership_status === "active") {
-    for (const permission of MEMBER_BASELINE_PERMISSIONS) permissionKeys.add(permission);
+  const isRecruit = profile.membership_status === "recruit";
+  const effectiveRole = isRecruit ? null : profile.role;
+  if (profile.membership_status === "active" || isRecruit) {
+    if (!isRecruit) {
+      for (const permission of MEMBER_BASELINE_PERMISSIONS) permissionKeys.add(permission);
+    }
 
     if (isAdminEquivalent) {
       for (const permission of PERMISSIONS) {
@@ -105,7 +111,7 @@ export const getDashboardViewer = cache(async (): Promise<DashboardViewer | null
         }
       }
     } else {
-      const roleKeys = ["member", ...roles];
+      const roleKeys = isRecruit ? ["recruit"] : ["member", ...roles];
 
       const { data: rolePermissions, error: roleError } = await supabaseAdmin
         .from("role_permissions")
@@ -116,7 +122,7 @@ export const getDashboardViewer = cache(async (): Promise<DashboardViewer | null
       for (const row of rolePermissions ?? []) {
         if (
           isPermissionKey(row.permission_key)
-          && canUseAdministrativePermission(profile.role, row.permission_key)
+          && canUseAdministrativePermission(effectiveRole, row.permission_key)
         ) {
           permissionKeys.add(row.permission_key);
         }
@@ -124,9 +130,9 @@ export const getDashboardViewer = cache(async (): Promise<DashboardViewer | null
 
       for (const override of overrides ?? []) {
         if (!isPermissionKey(override.permission_key)) continue;
-        if (!canUseAdministrativePermission(profile.role, override.permission_key)) continue;
+        if (!canUseAdministrativePermission(effectiveRole, override.permission_key)) continue;
         if (override.allowed) permissionKeys.add(override.permission_key);
-        else if (!MEMBER_BASELINE_PERMISSIONS.includes(override.permission_key as (typeof MEMBER_BASELINE_PERMISSIONS)[number])) permissionKeys.delete(override.permission_key);
+        else if (isRecruit || !MEMBER_BASELINE_PERMISSIONS.includes(override.permission_key as (typeof MEMBER_BASELINE_PERMISSIONS)[number])) permissionKeys.delete(override.permission_key);
       }
     }
   }
@@ -145,7 +151,7 @@ export const getDashboardViewer = cache(async (): Promise<DashboardViewer | null
 export async function requireDashboardViewer(): Promise<DashboardViewer> {
   const viewer = await getDashboardViewer();
   if (!viewer) throw new DashboardAccessError("UNAUTHENTICATED");
-  if (viewer.profile.membership_status !== "active") {
+  if (!["active", "recruit"].includes(viewer.profile.membership_status)) {
     throw new DashboardAccessError("INACTIVE_MEMBER");
   }
   return viewer;
@@ -166,8 +172,8 @@ export async function requirePagePermission(
 ): Promise<DashboardViewer> {
   const viewer = await getDashboardViewer();
   if (!viewer) redirect(`/conta/login?next=${encodeURIComponent("/membru")}`);
-  if (viewer.profile.membership_status === "recruit") redirect("/conta/recrut");
-  if (viewer.profile.membership_status !== "active") {
+  if (viewer.profile.membership_status === "recruit" && !viewer.permissions.has(permission)) redirect("/conta/recrut");
+  if (!["active", "recruit"].includes(viewer.profile.membership_status)) {
     redirect("/conta?acces=membru-inactiv");
   }
   if (!viewer.permissions.has(permission)) {
@@ -181,8 +187,8 @@ export async function requireAnyPagePermission(
 ): Promise<DashboardViewer> {
   const viewer = await getDashboardViewer();
   if (!viewer) redirect(`/conta/login?next=${encodeURIComponent("/membru")}`);
-  if (viewer.profile.membership_status === "recruit") redirect("/conta/recrut");
-  if (viewer.profile.membership_status !== "active") {
+  if (viewer.profile.membership_status === "recruit" && !permissions.some((permission) => viewer.permissions.has(permission))) redirect("/conta/recrut");
+  if (!["active", "recruit"].includes(viewer.profile.membership_status)) {
     redirect("/conta?acces=membru-inactiv");
   }
   if (!permissions.some((permission) => viewer.permissions.has(permission))) {

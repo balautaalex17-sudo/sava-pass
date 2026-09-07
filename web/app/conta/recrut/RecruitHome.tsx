@@ -3,7 +3,7 @@ import { ArrowUpRight, Images, Ticket, UserRoundCheck } from "lucide-react";
 import { SignOutButton } from "../SignOutButton";
 import styles from "./recrut.module.css";
 
-export function RecruitHome({ fullName, email }: { fullName: string; email: string }) {
+export function RecruitHome({ fullName, email, dashboardHref }: { fullName: string; email: string; dashboardHref?: string }) {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
@@ -18,6 +18,12 @@ export function RecruitHome({ fullName, email }: { fullName: string; email: stri
           <span className={styles.email}>{email}</span>
         </section>
         <div className={styles.cards}>
+          {dashboardHref && <Link href={dashboardHref} className={styles.card}>
+            <UserRoundCheck size={28} aria-hidden="true" />
+            <h2>Instrumentele clubului</h2>
+            <p>Accesează funcțiile activate pentru contul tău de recrut.</p>
+            <span>Deschide instrumentele <ArrowUpRight size={18} aria-hidden="true" /></span>
+          </Link>}
           <Link href="/conta/galerie" className={styles.card}>
             <Images size={28} aria-hidden="true" />
             <h2>Galeria comunității</h2>

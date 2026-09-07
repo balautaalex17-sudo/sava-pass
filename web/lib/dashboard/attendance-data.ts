@@ -20,7 +20,7 @@ export async function readAllAttendanceRows<T>(
 export async function getAttendanceRosterData(query: { view?: string; meeting?: string; member?: string }, canReview: boolean) {
   const [meetings, members] = await Promise.all([
     readAllAttendanceRows((from, to) => supabaseAdmin.from("meetings").select("*").order("starts_at", { ascending: false }).order("id").range(from, to)),
-    readAllAttendanceRows((from, to) => supabaseAdmin.from("profiles").select("id, full_name, email, grade").eq("membership_status", "active").order("full_name").order("id").range(from, to)),
+    readAllAttendanceRows((from, to) => supabaseAdmin.from("profiles").select("id, full_name, email, grade").in("membership_status", ["active", "recruit"]).order("full_name").order("id").range(from, to)),
   ]);
   const view: "member" | "meeting" = query.view === "member" ? "member" : "meeting";
   const selectedMeeting = meetings.find((meeting) => meeting.id === query.meeting) ?? meetings[0] ?? null;

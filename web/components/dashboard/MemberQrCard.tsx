@@ -87,7 +87,7 @@ export function MemberQrCard({
 
       <div className="member-qr-identity">
         <div className="dash-initials" aria-hidden="true">{fullName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div>
-        <div><strong>{fullName}</strong><span>{membershipStatus === "active" ? "Membru activ" : membershipStatus}</span></div>
+        <div><strong>{fullName}</strong><span>{membershipStatus === "active" ? "Membru activ" : membershipStatus === "recruit" ? "Recrut" : membershipStatus}</span></div>
         {state.status === "ready" && <button type="button" onClick={() => void loadQr()} aria-label="Reîncarcă codul QR"><RefreshCw size={17} /></button>}
       </div>
       <p className="member-qr-note">Codul se reînnoiește automat și nu conține numele, emailul sau ID-ul contului tău.</p>

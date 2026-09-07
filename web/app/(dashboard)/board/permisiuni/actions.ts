@@ -5,11 +5,11 @@ import { z } from "zod";
 import { logAudit } from "@/lib/audit";
 import { requirePermission } from "@/lib/dashboard/auth";
 import { canUseAdministrativePermission } from "@/lib/dashboard/role-hierarchy";
-import { MEMBER_BASELINE_PERMISSIONS, PERMISSIONS } from "@/lib/dashboard/permissions";
+import { EDITABLE_PERMISSION_ROLES, MEMBER_BASELINE_PERMISSIONS, PERMISSIONS } from "@/lib/dashboard/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const mappingSchema = z.object({
-  role: z.enum(["member", "scanner", "statistici", "interviewer"]),
+  role: z.enum(EDITABLE_PERMISSION_ROLES),
   permission: z.enum(PERMISSIONS),
   allowed: z.boolean(),
 }).strict();
@@ -23,6 +23,9 @@ export async function setRolePermission(input: unknown) {
     const parsed = mappingSchema.safeParse(input);
     if (!parsed.success) return { ok: false as const, message: "Maparea este invalidă." };
     const { role, permission, allowed } = parsed.data;
+    if (allowed && !canUseAdministrativePermission(null, permission)) {
+      return { ok: false as const, message: "Această permisiune este rezervată rolurilor Board sau Super Admin." };
+    }
     if (role === "member" && !allowed && MEMBER_BASELINE_PERMISSIONS.includes(permission as (typeof MEMBER_BASELINE_PERMISSIONS)[number])) {
       return { ok: false as const, message: "Accesul de bază al membrilor activi nu poate fi eliminat." };
     }
@@ -34,6 +37,8 @@ export async function setRolePermission(input: unknown) {
     await logAudit({ actorId: viewer.profile.id, action: "permissions.role_mapping_changed", entityType: "role_permission", entityId: `${role}:${permission}`, metadata: { role, permission, allowed } });
     revalidatePath("/board/permisiuni");
     revalidatePath("/board", "layout");
+    revalidatePath("/membru", "layout");
+    revalidatePath("/conta/recrut");
     return { ok: true as const, message: "Permisiunea a fost actualizată." };
   } catch {
     return { ok: false as const, message: "Permisiunea nu a putut fi actualizată." };

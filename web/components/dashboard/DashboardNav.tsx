@@ -39,12 +39,12 @@ interface NavGroup {
 }
 
 const memberItems: NavItem[] = [
-  { href: "/membru", label: "Prezentare", icon: House },
-  { href: "/membru/qr", label: "Codul meu QR", icon: QrCode },
-  { href: "/membru/intalniri", label: "Întâlniri", icon: CalendarDays },
-  { href: "/membru/prezenta", label: "Prezență", icon: ClipboardList },
+  { href: "/membru", label: "Prezentare", icon: House, permission: "view_member_dashboard" },
+  { href: "/membru/qr", label: "Codul meu QR", icon: QrCode, permission: "display_member_qr" },
+  { href: "/membru/intalniri", label: "Întâlniri", icon: CalendarDays, permission: "view_own_attendance" },
+  { href: "/membru/prezenta", label: "Prezență", icon: ClipboardList, permission: "view_own_attendance" },
   { href: "/conta/galerie", label: "Galerie foto", icon: Images },
-  { href: "/membru/profil", label: "Profil", icon: UserRound },
+  { href: "/membru/profil", label: "Profil", icon: UserRound, permission: "update_own_profile" },
 ];
 
 const boardOverviewItem: NavItem = {
@@ -105,11 +105,13 @@ export function DashboardNav({
   role,
   roles,
   permissionKeys,
+  membershipStatus,
 }: {
   fullName: string;
   role: string | null;
   roles: readonly string[];
   permissionKeys: readonly PermissionKey[];
+  membershipStatus?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -136,7 +138,7 @@ export function DashboardNav({
     : visibleBoardGroups[0]?.items[0]?.href;
   const hasBoardSpace = Boolean(firstBoardHref);
   const isBoardSpace = pathname === "/board" || pathname.startsWith("/board/");
-  const roleLabel = role === "admin"
+  const roleLabel = membershipStatus === "recruit" ? "Recrut" : role === "admin"
     ? "Super administrator și membru"
     : role === "board"
       ? "Board, acces operațional"
@@ -236,7 +238,7 @@ export function DashboardNav({
   ) : (
     <>
       <p className="dash-nav-label">Spațiul meu</p>
-      {memberItems.map((item, index) => (
+      {memberItems.filter((item) => !item.permission || permissions.has(item.permission)).map((item, index) => (
         <NavLink
           key={item.href}
           item={item}
