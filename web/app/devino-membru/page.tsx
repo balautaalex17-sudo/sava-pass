@@ -389,6 +389,7 @@ function ApplyStyles() {
         color: var(--slate-600);
         font-size: 17px;
         line-height: 1.65;
+        white-space: pre-wrap;
       }
 
       .apply-actions {
