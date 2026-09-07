@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { canConnectGalleryDrive, canManageGalleryPhoto, galleryTicketSchema, galleryUploadSchema, matchesPhotoSignature } from "@/lib/gallery";
 import { getGalleryViewer } from "@/lib/gallery-auth";
@@ -10,6 +11,7 @@ import { createDriveUpload, driveFetch, driveFile, galleryKey, getDriveAccess } 
 import { allowPublicAction } from "@/lib/public-rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logServerError } from "@/lib/server-log";
+import { resolveSiteUrl } from "@/lib/site-url";
 
 export type GalleryActionResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -56,7 +58,10 @@ export async function prepareGalleryUpload(input: unknown): Promise<
       return { ok: false, error: "Sunt prea multe încărcări momentan. Reîncearcă mai târziu." };
     }
     const photoId = randomUUID();
-    const { fileId, folderId, sessionUrl } = await createDriveUpload({ ...parsed.data, photoId, userId: viewer.userId });
+    // Next validates the action's Origin against its host before it reaches us.
+    // Keep the actual browser origin so custom domains and preview URLs both work.
+    const origin = new URL((await headers()).get("origin") ?? resolveSiteUrl()).origin;
+    const { fileId, folderId, sessionUrl } = await createDriveUpload({ ...parsed.data, photoId, userId: viewer.userId, origin });
     const ticket = sealGalleryValue({ ...parsed.data, photoId, fileId, folderId, userId: viewer.userId,
       expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }, "gallery-upload", galleryKey());
     return { ok: true, ticket, sessionUrl };

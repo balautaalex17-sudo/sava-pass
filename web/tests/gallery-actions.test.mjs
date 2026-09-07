@@ -12,7 +12,7 @@ const req = createRequire(resolve(root, "package.json"));
 const key = randomBytes(32);
 const fixture = { viewer: null, photos: [], driveCalls: 0, revalidated: [], connection: null, connectionError: false, key };
 globalThis.__galleryFixture = fixture;
-beforeEach(() => { fixture.viewer = null; fixture.photos = []; fixture.driveCalls = 0; fixture.cookie = undefined; fixture.revalidated = []; fixture.connection = null; fixture.connectionError = false; });
+beforeEach(() => { fixture.viewer = null; fixture.photos = []; fixture.driveCalls = 0; fixture.cookie = undefined; fixture.revalidated = []; fixture.connection = null; fixture.connectionError = false; fixture.origin = "https://portal.example"; fixture.uploadInput = null; });
 
 function from(table) {
   if (table === "gallery_drive_connection") {
@@ -55,7 +55,9 @@ const adapters = {
   "@/lib/public-rate-limit": "export async function allowPublicAction(){return true}",
   "@/lib/server-log": "export function logServerError(){}",
   "next/cache": "export function revalidatePath(path){globalThis.__galleryFixture.revalidated.push(path)}",
-  "next/headers": `export async function cookies(){const f=globalThis.__galleryFixture;return {get(){return f.cookie?{value:f.cookie}:undefined},set(name,value,options){f.cookie=value;f.cookieOptions=options}}}`,
+  "next/headers": `export async function cookies(){const f=globalThis.__galleryFixture;return {get(){return f.cookie?{value:f.cookie}:undefined},set(name,value,options){f.cookie=value;f.cookieOptions=options}}}
+    export async function headers(){return new Headers(globalThis.__galleryFixture.origin?{origin:globalThis.__galleryFixture.origin}:{})}`,
+  "@/lib/site-url": "export function resolveSiteUrl(){return 'https://canonical.example'}",
   "next/server": `export const NextResponse={redirect(url,init){return new Response(null,{status:307,headers:{...init?.headers,Location:String(url)}})}}`,
   "@/lib/gallery-drive": `const f=globalThis.__galleryFixture;
     export const galleryKey=()=>f.key;
@@ -64,7 +66,7 @@ const adapters = {
     export const encryptedDriveToken=()=> 'not-used';
     export async function getDriveConnection(){throw new Error('Unexpected connection access in rejection test')}
     export async function exchangeGoogleToken(){throw new Error('Unexpected token exchange in rejection test')}
-    export async function createDriveUpload(){f.driveCalls++;return {fileId:'file_fixture',folderId:'folder_fixture',sessionUrl:'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=fixture'}}
+    export async function createDriveUpload(input){f.driveCalls++;f.uploadInput=input;return {fileId:'file_fixture',folderId:'folder_fixture',sessionUrl:'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=fixture'}}
     export async function getDriveAccess(){return {token:'fixture-only-token',folderId:'folder_fixture'}}
     export async function driveFile(){return f.file}
     export async function driveFetch(path,token,init){f.driveCalls++;if(init?.method==='PATCH')return new Response('{}');return new Response(new Uint8Array([255,216,255,225]),{status:206})}`,
@@ -111,6 +113,15 @@ fixtureModule._compile(bundle.outputFiles[0].text, fixtureModule.filename);
 const actions = fixtureModule.exports;
 const recruit = { userId: "10000000-0000-4000-8000-000000000001", name: "Recruit", role: null, membershipStatus: null };
 const input = { fileName: "large.jpg", mimeType: "image/jpeg", size: 12884901888, caption: "Club photo" };
+
+test("uploads bind Drive CORS to the requesting website, with a canonical fallback", async () => {
+  fixture.viewer = recruit;
+  for (const origin of ["https://portal.example", "https://preview.example", "http://localhost:3000", null]) {
+    fixture.origin = origin;
+    assert.equal((await actions.prepareGalleryUpload(input)).ok, true);
+    assert.equal(fixture.uploadInput.origin, origin ?? "https://canonical.example");
+  }
+});
 
 test("only active board and admins can disconnect Drive, without touching any photos", async () => {
   const connectedAt = "2026-09-07T16:00:00.000+00:00";

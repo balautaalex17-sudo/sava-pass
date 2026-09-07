@@ -80,7 +80,7 @@ export async function driveFile(fileId: string, token: string) {
 }
 
 export async function createDriveUpload(input: {
-  photoId: string; userId: string; fileName: string; mimeType: string; size: number;
+  photoId: string; userId: string; fileName: string; mimeType: string; size: number; origin: string;
 }) {
   const { token, folderId } = await getDriveAccess();
   const ids = await driveFetch("files/generateIds?count=1&space=drive&type=files", token);
@@ -90,6 +90,9 @@ export async function createDriveUpload(input: {
     headers: {
       Authorization: `Bearer ${token}`, "Content-Type": "application/json",
       "X-Upload-Content-Type": input.mimeType, "X-Upload-Content-Length": String(input.size),
+      // Drive needs this at session creation to expose the final upload response
+      // to the browser; intermediate 308 responses work even without it.
+      Origin: input.origin,
     },
     body: JSON.stringify({ id: fileId, name: input.fileName, mimeType: input.mimeType, parents: [folderId],
       appProperties: { savapassPhotoId: input.photoId, savapassUploaderId: input.userId } }),

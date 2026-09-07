@@ -39,6 +39,7 @@ Google Drive API trebuie activat, cu permisiunea `https://www.googleapis.com/aut
 
 - Baza Supabase păstrează evidența pozelor și o singură conexiune Drive. Autorizația Google este criptată cu AES-256-GCM; tabelul conexiunii nu poate fi citit direct de utilizatori.
 - Încărcarea începe pe server, apoi browserul trimite originalul direct la o sesiune Drive limitată la un fișier. Bucățile au 2 MiB; fișierul complet poate fi mai mare. Tokenul Google nu ajunge în browser.
+- Cererea de creare a sesiunii Drive include `Origin` al browserului, verificat de Next.js pentru acțiunea de server. Fără el, Drive acceptă fișierul, dar răspunsul final nu include permisiunea CORS, iar browserul raportează o eroare de conexiune. Se păstrează originea cererii pentru domeniul public, aliasuri și preview.
 - După transfer, serverul verifică autorul, folderul, identificatorul, tipul, mărimea și semnătura fișierului înainte să îl publice în galerie. Cererea de publicare este criptată și legată de utilizator; repetarea ei nu dublează fotografia.
 - **Reîncearcă** continuă din octeții confirmați de Drive, inclusiv după o eroare de rețea. Dacă doar publicarea eșuează, fotografia nu este încărcată din nou. Fișierul selectat și sesiunea de reluare se păstrează cât timp pagina rămâne deschisă. Sesiunile Drive expirate sunt pornite din nou.
 - Previzualizările și originalele sunt servite prin rute autentificate, cu `private, no-store`. Originalele se transmit treptat, fără citirea integrală în memoria serverului. Descărcările rămân supuse duratei maxime a găzduirii și conexiunii, iar ruta acceptă cereri Range.
@@ -53,7 +54,7 @@ Migrările `20260906163015_private_community_gallery.sql` și `20260906164119_ga
 Verificări izolate, fără acces la producție:
 
 ```powershell
-node --import tsx --test tests/gallery.test.ts tests/gallery-actions.test.mjs
+node --import tsx --test tests/gallery.test.ts tests/gallery-actions.test.mjs tests/gallery-drive.test.mjs tests/gallery-routing.test.mjs
 npm run typecheck
 npm run build
 ```
