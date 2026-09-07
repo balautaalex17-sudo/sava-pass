@@ -10,9 +10,9 @@ import { build } from "esbuild";
 const root = process.cwd();
 const req = createRequire(resolve(root, "package.json"));
 const key = randomBytes(32);
-const fixture = { viewer: null, photos: [], driveCalls: 0, key };
+const fixture = { viewer: null, photos: [], driveCalls: 0, revalidated: [], key };
 globalThis.__galleryFixture = fixture;
-beforeEach(() => { fixture.viewer = null; fixture.photos = []; fixture.driveCalls = 0; fixture.cookie = undefined; });
+beforeEach(() => { fixture.viewer = null; fixture.photos = []; fixture.driveCalls = 0; fixture.cookie = undefined; fixture.revalidated = []; });
 
 function from(table) {
   assert.equal(table, "gallery_photos");
@@ -37,7 +37,7 @@ const adapters = {
   "@/lib/supabase/admin": "export const supabaseAdmin={from:(...args)=>globalThis.__galleryFixture.from(...args)}",
   "@/lib/public-rate-limit": "export async function allowPublicAction(){return true}",
   "@/lib/server-log": "export function logServerError(){}",
-  "next/cache": "export function revalidatePath(){}",
+  "next/cache": "export function revalidatePath(path){globalThis.__galleryFixture.revalidated.push(path)}",
   "next/headers": `export async function cookies(){const f=globalThis.__galleryFixture;return {get(){return f.cookie?{value:f.cookie}:undefined},set(name,value,options){f.cookie=value;f.cookieOptions=options}}}`,
   "next/server": `export const NextResponse={redirect(url,init){return new Response(null,{status:307,headers:{...init?.headers,Location:String(url)}})}}`,
   "@/lib/gallery-drive": `const f=globalThis.__galleryFixture;
@@ -86,6 +86,7 @@ test("OAuth starts only for board and binds the callback to the same authenticat
   fixture.viewer = { ...recruit, role: "board", membershipStatus: "active" };
   const cancelled = await actions.driveCallback(new Request(`https://fixture.example/api/gallery/drive/callback?state=${oauth.state}&error=access_denied`));
   assert.equal(new URL(cancelled.headers.get("location")).searchParams.get("drive"), "cancelled");
+  assert.equal(new URL(cancelled.headers.get("location")).pathname, "/board/galerie");
 });
 const fixtureModule = new Module(resolve(root, "tests/gallery-actions.fixture.cjs"));
 fixtureModule.filename = resolve(root, "tests/gallery-actions.fixture.cjs"); fixtureModule.paths = req.resolve.paths(".");
@@ -114,6 +115,7 @@ test("real actions enforce authentication, ownership, Drive metadata and safe re
   assert.equal((await actions.finalizeGalleryUpload(prepared.ticket)).ok, true);
   assert.equal(fixture.photos[0].uploader_id, recruit.userId);
   assert.equal(fixture.photos[0].size_bytes, input.size);
+  assert.deepEqual(fixture.revalidated, ["/conta/galerie", "/membru/galerie", "/board/galerie"]);
   assert.equal((await actions.finalizeGalleryUpload(prepared.ticket)).ok, true);
   assert.equal(fixture.photos.length, 1);
   fixture.viewer = { ...recruit, userId: "10000000-0000-4000-8000-000000000002" };
@@ -121,8 +123,10 @@ test("real actions enforce authentication, ownership, Drive metadata and safe re
   assert.equal((await actions.deleteGalleryPhoto(ticket.photoId)).ok, false);
   assert.equal(fixture.driveCalls, calls);
   fixture.viewer = { ...fixture.viewer, role: "board", membershipStatus: "active" };
+  fixture.revalidated = [];
   assert.equal((await actions.deleteGalleryPhoto(ticket.photoId)).ok, true);
   assert.equal(fixture.photos.length, 0);
+  assert.deepEqual(fixture.revalidated, ["/conta/galerie", "/membru/galerie", "/board/galerie"]);
   const expired = actions.sealGalleryValue({ ...ticket, expiresAt: Date.now() - 1 }, "gallery-upload", key);
   fixture.viewer = recruit;
   assert.equal((await actions.finalizeGalleryUpload(expired)).ok, false);

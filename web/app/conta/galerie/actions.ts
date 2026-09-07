@@ -72,6 +72,8 @@ export async function finalizeGalleryUpload(ticket: string): Promise<GalleryActi
       if (saved.error || !saved.data) throw saved.error ?? error;
     }
     revalidatePath("/conta/galerie");
+    revalidatePath("/membru/galerie");
+    revalidatePath("/board/galerie");
     return { ok: true, message: "Poza a fost adăugată în galerie." };
   } catch (error) {
     logServerError("gallery_upload_finalize_failed", error);
@@ -98,6 +100,8 @@ export async function deleteGalleryPhoto(photoId: string): Promise<GalleryAction
     const deleted = await supabaseAdmin.from("gallery_photos").delete().eq("id", photoId);
     if (deleted.error) throw deleted.error;
     revalidatePath("/conta/galerie");
+    revalidatePath("/membru/galerie");
+    revalidatePath("/board/galerie");
     return { ok: true, message: "Poza a fost eliminată." };
   } catch (error) {
     logServerError("gallery_photo_delete_failed", error);

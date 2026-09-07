@@ -54,7 +54,7 @@ export async function GET(request: Request) {
       }
     }
   } catch (error) { logServerError("gallery_drive_connect_failed", error); }
-  return NextResponse.redirect(new URL(`/conta/galerie?drive=${outcome}`, galleryCallbackUrl()), {
+  return NextResponse.redirect(new URL(`/board/galerie?drive=${outcome}`, galleryCallbackUrl()), {
     headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
   });
 }

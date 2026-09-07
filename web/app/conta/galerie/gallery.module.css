@@ -61,3 +61,21 @@
 @media (max-width: 800px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; } .photoButton { height: 220px; } }
 @media (max-width: 520px) { .page { padding: 24px 16px 56px; } .header { gap: 10px; } .header > svg { display: none; } .back { margin-bottom: 22px; } .header p:not(.eyebrow) { font-size: 14px; } .upload { padding: 20px; } .upload > .primary { width: 100%; } .grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } .photoButton { height: 280px; } .connection { align-items: flex-start; } }
 @media (prefers-reduced-motion: reduce) { .photoImage { transition: none; } }
+
+.page.portal { --im-fg: var(--dash-ink); --im-fg-3: var(--dash-muted); min-height: 0; padding: 0; }
+.portal .header h1 { font-family: var(--font-brand); font-size: clamp(29px, 3vw, 38px); letter-spacing: -.035em; }
+.portal .eyebrow, .portal .header > svg, .portal .status { color: var(--dash-green-dark); }
+.portal .connection, .portal .upload, .portal .card { background: #fff; border-color: var(--dash-line); border-radius: 12px; }
+.portal .secondary, .portal .uploadDetails textarea { background: #fff; border-color: var(--dash-line-strong); }
+.portal .primary { color: #fff; background: var(--dash-green-dark); border-color: var(--dash-green-dark); }
+.portal :is(button, a, textarea):focus-visible { outline-color: var(--dash-green); }
+.portal .uploadDetails label span, .portal .queue span, .portal .cardInfo time, .portal .deleteArea .textLink,
+.portal .empty, .portal .imageFallback { color: var(--dash-muted); }
+.portal .empty h2 { color: var(--dash-ink); }
+.portal .queue li { border-color: var(--dash-line); }
+.portal .queue progress { accent-color: var(--dash-green); }
+.portal .notice { background: var(--dash-green-soft); border-color: var(--brand-cyan-100); }
+.portal .photoButton { background: var(--slate-100); }
+.portal .dialog { background: #fff; color: var(--dash-ink); border-color: var(--dash-line); }
+.portal .dialogInfo p { color: var(--dash-muted); }
+@media (min-width: 901px) and (max-width: 1150px) { .portal .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -9,7 +9,7 @@ import { galleryCallbackUrl, galleryDriveConfigured, galleryKey } from "@/lib/ga
 export async function GET() {
   const viewer = await getGalleryViewer();
   if (!viewer || !canConnectGalleryDrive(viewer.role, viewer.membershipStatus)) return new Response("Acces interzis", { status: 403 });
-  if (!galleryDriveConfigured()) return NextResponse.redirect(new URL("/conta/galerie?drive=setup", galleryCallbackUrl()));
+  if (!galleryDriveConfigured()) return NextResponse.redirect(new URL("/board/galerie?drive=setup", galleryCallbackUrl()));
   const state = randomBytes(32).toString("base64url");
   const verifier = randomBytes(48).toString("base64url");
   const jar = await cookies();

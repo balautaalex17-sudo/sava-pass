@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Download, ImagePlus, Trash2, Upload, X } from "lucide-react";
 import { GALLERY_TYPES, galleryPhotoUrl, type GalleryPhoto } from "@/lib/gallery";
 import { GalleryUploadError, uploadGalleryFile } from "@/lib/gallery-upload";
@@ -18,6 +18,7 @@ const formatDate = (value: string) => new Intl.DateTimeFormat("ro-RO", { dateSty
 
 export function GalleryClient({ photos, connected }: { photos: GalleryPhoto[]; connected: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
   const input = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const controller = useRef<AbortController | null>(null);
@@ -84,7 +85,7 @@ export function GalleryClient({ photos, connected }: { photos: GalleryPhoto[]; c
             ...(error instanceof GalleryUploadError && error.expired ? { ticket: undefined, sessionUrl: undefined, uploaded: false, percent: 0 } : {}) });
         }
       }
-      if (completed) { setMessage(`${completed} ${completed === 1 ? "poză adăugată" : "poze adăugate"} în galerie.`); router.replace("/conta/galerie", { scroll: false }); router.refresh(); }
+      if (completed) { setMessage(`${completed} ${completed === 1 ? "poză adăugată" : "poze adăugate"} în galerie.`); router.replace(pathname, { scroll: false }); router.refresh(); }
     } finally { controller.current = null; setBusy(false); }
   }
 
