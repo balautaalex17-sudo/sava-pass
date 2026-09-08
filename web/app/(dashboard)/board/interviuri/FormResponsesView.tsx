@@ -6,6 +6,7 @@ import {
   type SignupField,
 } from "@/components/dashboard/SignupsTable";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { applicationDisplayAnswers } from "@/lib/dashboard/recruitment";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 import {
@@ -18,6 +19,7 @@ type ApplicationRow = {
   form_id: string | null;
   full_name: string;
   email: string;
+  phone: string;
   grade: string | null;
   answers: Json;
   source_payload: Json;
@@ -27,6 +29,7 @@ type ApplicationRow = {
   missing_required_fields: string[];
   reviewer_id: string | null;
   updated_at: string;
+  created_at: string;
   submitted_at: string | null;
   source: string;
   profiles: { full_name: string } | null;
@@ -92,7 +95,7 @@ export async function FormResponsesView({
       .order("position"),
     supabaseAdmin
       .from("membership_applications")
-      .select("id, form_id, full_name, email, grade, answers, source_payload, status, completion_percentage, is_complete, missing_required_fields, reviewer_id, updated_at, submitted_at, source, profiles!membership_applications_reviewer_id_fkey(full_name)")
+      .select("id, form_id, full_name, email, phone, grade, answers, source_payload, status, completion_percentage, is_complete, missing_required_fields, reviewer_id, updated_at, created_at, submitted_at, source, profiles!membership_applications_reviewer_id_fkey(full_name)")
       .in("form_id", formIds)
       .order("updated_at", { ascending: false }),
     canManage
@@ -135,7 +138,7 @@ export async function FormResponsesView({
     fullName: application.full_name,
     email: application.email,
     grade: application.grade,
-    answers: stringRecord(application.answers),
+    answers: applicationDisplayAnswers(application),
     sourcePayload: stringRecord(application.source_payload),
     status: application.status,
     completionPercentage: application.completion_percentage,

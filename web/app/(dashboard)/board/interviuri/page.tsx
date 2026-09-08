@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { ClipboardList, ClipboardPenLine } from "lucide-react";
 import { requireAnyPagePermission } from "@/lib/dashboard/auth";
+import { applicationDisplayAnswers } from "@/lib/dashboard/recruitment";
 import {
   interviewScoreTotal,
   isValidInterviewCategoryScores,
@@ -150,7 +151,7 @@ export default async function InterviewsWorkspacePage({
   const [applicationsResult, evaluationsResult] = await Promise.all([
     supabaseAdmin
       .from("membership_applications")
-      .select("id, form_id, full_name, email, phone, grade, status, answers, source_payload")
+      .select("id, form_id, full_name, email, phone, grade, status, answers, source_payload, submitted_at, created_at, source")
       .in("id", applicationIds),
     supabaseAdmin
       .from("interview_evaluations")
@@ -176,7 +177,7 @@ export default async function InterviewsWorkspacePage({
   const candidates: InterviewCandidate[] = interviews.flatMap((interview) => {
     const application = applicationMap.get(interview.application_id);
     if (!application) return [];
-    const answers = stringRecord(application.answers);
+    const answers = applicationDisplayAnswers(application);
     const sourcePayload = stringRecord(application.source_payload);
     const applicationFields = (fields ?? []).filter((field) => field.form_id === application.form_id);
     const evaluations = typedEvaluationRows

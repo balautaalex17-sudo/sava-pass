@@ -1,4 +1,4 @@
-import type { Json, RecruitmentField } from "@/lib/supabase/types";
+import type { Json, MembershipApplication, RecruitmentField } from "@/lib/supabase/types";
 
 export interface CompletionResult {
   completionPercentage: number;
@@ -11,6 +11,29 @@ type AnswerMap = Record<string, unknown>;
 function textValue(value: unknown): string {
   if (value == null) return "";
   return typeof value === "string" ? value : String(value);
+}
+
+// Website submissions keep contact details in columns, while imports can also
+// store them in answers. Fill missing keys without replacing imported values.
+export function applicationDisplayAnswers(application: Pick<MembershipApplication,
+  "answers" | "full_name" | "email" | "phone" | "grade" | "submitted_at" | "created_at" | "source"
+>): Record<string, string> {
+  const stored = application.answers;
+  const answers: AnswerMap = stored && !Array.isArray(stored) && typeof stored === "object"
+    ? stored
+    : {};
+  const fallback: AnswerMap = {
+    full_name: application.full_name,
+    email: application.email,
+    phone: application.phone,
+    grade: application.grade,
+    timestamp: application.submitted_at ?? (application.source === "web" ? application.created_at : ""),
+    ...(application.source === "web" ? { respondent_email: application.email } : {}),
+  };
+  return Object.fromEntries(Object.entries({ ...fallback, ...answers }).map(([key, value]) => [
+    key,
+    textValue(value ?? fallback[key]),
+  ]));
 }
 
 function conditionApplies(rules: Json | null, answers: AnswerMap): boolean {
