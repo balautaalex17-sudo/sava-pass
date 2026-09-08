@@ -11,7 +11,7 @@ import styles from "./gallery.module.css";
 
 type PendingPhoto = {
   id: string; file: File; mimeType: string; percent: number;
-  status: "waiting" | "uploading" | "publishing" | "done" | "error";
+  status: "waiting" | "preparing" | "uploading" | "publishing" | "done" | "error";
   error?: string; ticket?: string; sessionUrl?: string; uploaded?: boolean;
 };
 const formatDate = (value: string) => new Intl.DateTimeFormat("ro-RO", { dateStyle: "medium", timeZone: "Europe/Bucharest" }).format(new Date(value));
@@ -62,7 +62,7 @@ export function GalleryClient({ photos, connected }: { photos: GalleryPhoto[]; c
     try {
       for (const entry of queue.filter((item) => item.status !== "done")) {
         if (abort.signal.aborted) break;
-        update(entry.id, { status: "uploading", error: undefined });
+        update(entry.id, { status: "preparing", error: undefined });
         try {
           let { ticket, sessionUrl } = entry;
           if (!ticket || !sessionUrl) {
@@ -71,12 +71,24 @@ export function GalleryClient({ photos, connected }: { photos: GalleryPhoto[]; c
             ({ ticket, sessionUrl } = prepared);
             update(entry.id, { ticket, sessionUrl });
           }
+          abort.signal.throwIfAborted();
+          let saved: Awaited<ReturnType<typeof finalizeGalleryUpload>> | undefined;
           if (!entry.uploaded) {
-            await uploadGalleryFile(entry.file, sessionUrl, (percent) => update(entry.id, { percent }), abort.signal);
+            update(entry.id, { status: "uploading" });
+            try {
+              await uploadGalleryFile(entry.file, sessionUrl, (percent) => update(entry.id, { percent }), abort.signal);
+            } catch (error) {
+              abort.signal.throwIfAborted();
+              // Drive may have saved the original even if its final response was
+              // lost. Verify that same file before offering a fresh upload.
+              update(entry.id, { status: "publishing" });
+              saved = await finalizeGalleryUpload(ticket).catch(() => undefined);
+              if (!saved?.ok) throw error;
+            }
             update(entry.id, { uploaded: true });
           }
           update(entry.id, { status: "publishing" });
-          const saved = await finalizeGalleryUpload(ticket);
+          saved ??= await finalizeGalleryUpload(ticket);
           if (!saved.ok) throw new Error(saved.error);
           update(entry.id, { status: "done", percent: 100 });
           completed++;
@@ -99,7 +111,7 @@ export function GalleryClient({ photos, connected }: { photos: GalleryPhoto[]; c
           <label htmlFor="gallery-caption">Descriere pentru pozele alese <span>(opțional)</span></label>
           <textarea id="gallery-caption" maxLength={300} rows={2} value={caption} onChange={(event) => setCaption(event.target.value)} disabled={busy} placeholder="O zi pe care vrem să o ținem minte…" />
           <ul className={styles.queue}>{queue.map((entry) => <li key={entry.id}>
-            <div><strong>{entry.file.name}</strong><span>{entry.status === "done" ? "Adăugată" : entry.status === "publishing" ? "Se publică…" : entry.error ?? `${entry.percent}%`}</span></div>
+            <div><strong>{entry.file.name}</strong><span role={entry.error ? "alert" : undefined}>{entry.status === "done" ? "Adăugată" : entry.status === "preparing" ? "Se pregătește…" : entry.status === "publishing" ? "Se publică…" : entry.error ?? (entry.status === "waiting" ? "Pregătită pentru încărcare" : `Se încarcă… ${entry.percent}%`)}</span></div>
             {entry.status === "uploading" && <progress max={100} value={entry.percent} aria-label={`Încărcare ${entry.file.name}`} />}
             {!busy && <button type="button" className={styles.iconButton} aria-label={`Elimină ${entry.file.name} din listă`} onClick={() => setQueue((current) => current.filter((item) => item.id !== entry.id))}><X size={17} /></button>}
           </li>)}</ul>

@@ -42,7 +42,10 @@ Google Drive API trebuie activat, cu permisiunea `https://www.googleapis.com/aut
 - Cererea de creare a sesiunii Drive include `Origin` al browserului, verificat de Next.js pentru acțiunea de server. Fără el, Drive acceptă fișierul, dar răspunsul final nu include permisiunea CORS, iar browserul raportează o eroare de conexiune. Se păstrează originea cererii pentru domeniul public, aliasuri și preview.
 - După transfer, serverul verifică autorul, folderul, identificatorul, tipul, mărimea și semnătura fișierului înainte să îl publice în galerie. Cererea de publicare este criptată și legată de utilizator; repetarea ei nu dublează fotografia.
 - **Reîncearcă** continuă din octeții confirmați de Drive, inclusiv după o eroare de rețea. Dacă doar publicarea eșuează, fotografia nu este încărcată din nou. Fișierul selectat și sesiunea de reluare se păstrează cât timp pagina rămâne deschisă. Sesiunile Drive expirate sunt pornite din nou.
+- Dacă transferul raportează o eroare, aplicația verifică mai întâi originalul folosind aceeași cerere de publicare. Drive poate să fi salvat fotografia chiar dacă browserul nu a primit confirmarea. O fotografie completă și validă este publicată fără o nouă încărcare; una incompletă rămâne nepublicată și poate fi reîncercată.
+- Lista afișează separat fotografiile pregătite, pregătirea conexiunii, progresul transferului și publicarea. Procentul reprezintă octeții confirmați de Drive și se actualizează după fiecare bucată, nu continuu în timpul trimiterii ei.
 - Previzualizările și originalele sunt servite prin rute autentificate, cu `private, no-store`. Originalele se transmit treptat, fără citirea integrală în memoria serverului. Descărcările rămân supuse duratei maxime a găzduirii și conexiunii, iar ruta acceptă cereri Range.
+- Dacă previzualizarea Google nu este încă disponibilă sau nu mai funcționează, JPG, PNG, WebP și AVIF se afișează din originalul privat. HEIC și HEIF au în continuare nevoie de conversia Google pentru previzualizare; originalele pot fi descărcate.
 - Fotografiile și datele originale din fișier se păstrează nemodificate. Nu se creează linkuri publice în Drive.
 - O încărcare abandonată după terminarea transferului, dar înainte de publicare, poate lăsa un fișier privat nelistat în folder. Board-ul îl poate elimina din Drive. Nu șterge din Drive originalele publicate dacă dorești să rămână disponibile în aplicație.
 - Reconectarea păstrează folderul și acceptă numai același cont Google. Transferul galeriei într-un alt cont este o operațiune separată, pentru a evita pierderea accesului la pozele existente.
@@ -54,7 +57,7 @@ Migrările `20260906163015_private_community_gallery.sql` și `20260906164119_ga
 Verificări izolate, fără acces la producție:
 
 ```powershell
-node --import tsx --test tests/gallery.test.ts tests/gallery-actions.test.mjs tests/gallery-drive.test.mjs tests/gallery-routing.test.mjs
+node --import tsx --test tests/gallery.test.ts tests/gallery-actions.test.mjs tests/gallery-drive.test.mjs tests/gallery-routing.test.mjs tests/gallery-photo-route.test.mjs
 npm run typecheck
 npm run build
 ```
@@ -63,6 +66,8 @@ npm run build
 
 Verificarea de browser folosește componenta reală, cu răspunsuri Google și acțiuni de server simulate: 12 verificări la 1440 px și 390 px, fișier de 13 MiB, reluarea publicării fără retransmisie, descărcare, ștergere și lipsa conexiunii. Dovezile locale sunt în `active/gallery-verification/`.
 
-Contul Google al clubului nu a fost autorizat în această implementare, conform cerinței ca board-ul să îl conecteze din aplicație. Testul final cu acel cont este: board conectează contul clubului, recrut încarcă o poză, alt cont o vede, iar un vizitator neautentificat primește refuz.
+La 8 septembrie 2026, conexiunea existentă a fost verificată: folderul este disponibil pentru încărcări și are spațiu liber, iar o fotografie selectată de utilizator a fost încărcată cu succes în folder și afișată în galerie. Această verificare a folosit versiunea deja publicată.
+
+Remedierea din branch are 20 de teste izolate pentru acțiuni, transport, acces și previzualizări, plus verificări de browser pentru confirmarea pierdută după salvarea originalului, reîncercarea publicării fără retransmisie, refuzul fișierelor incomplete, fotografii de 13 MiB și interfața la 1440 px și 390 px. Dovezile locale sunt în `active/gallery-upload-fix/`. Testele noii remedieri nu folosesc conturi sau date live.
 
 Documentație: [încărcări reluabile](https://developers.google.com/workspace/drive/api/guides/manage-uploads), [permisiunea Drive pentru fișierele aplicației](https://developers.google.com/workspace/drive/api/guides/api-specific-auth), [OAuth pentru aplicații web](https://developers.google.com/identity/protocols/oauth2/web-server).

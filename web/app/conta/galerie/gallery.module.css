@@ -22,7 +22,7 @@
 .primary { background: #ecc877; color: #211b12; border: 1px solid #ecc877; }
 .secondary { background: #ffffff08; color: inherit; border: 1px solid #ffffff30; }
 .page button:disabled { opacity: .55; cursor: wait; }
-.page :is(button, a, textarea):focus-visible, .dialog :is(button, a):focus-visible { outline: 2px solid #ecc877; outline-offset: 4px; }
+.page :is(button, a, textarea):focus-visible, .dialog :is(button, a):focus-visible { outline: 2px solid #ecc877; outline-offset: 4px; box-shadow: none; }
 .upload { border: 1px dashed #ffffff35; background: #ffffff03; border-radius: 20px; padding: 26px; display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
 .upload > div:first-child { flex: 1 1 340px; }
 .upload h2 { font-size: 19px; margin: 10px 0; letter-spacing: -.02em; }
@@ -31,6 +31,7 @@
 .uploadDetails label { display: block; font-size: 13px; margin: 8px 0; }
 .uploadDetails label span { color: #aaa; }
 .uploadDetails textarea { display: block; width: 100%; box-sizing: border-box; resize: vertical; border-radius: 10px; background: #ffffff07; color: inherit; border: 1px solid #ffffff25; padding: 12px; font: inherit; font-size: 14px; }
+.page .uploadDetails textarea:focus-visible { outline-offset: -1px; }
 .queue { list-style: none; padding: 0; margin: 16px 0; }
 .queue li { position: relative; border-top: 1px solid #ffffff15; padding: 12px 36px 12px 0; }
 .queue li > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
