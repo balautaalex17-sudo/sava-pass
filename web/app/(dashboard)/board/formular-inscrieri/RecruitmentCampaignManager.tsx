@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { ExternalLink, LockKeyhole, Radio, Save } from "lucide-react";
+import { ExternalLink, Save } from "lucide-react";
 import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import {
   RECRUITMENT_QUESTIONS,
@@ -62,11 +62,9 @@ function campaignPreview(
 export function RecruitmentCampaignManager({
   campaigns,
   questionsByCampaign,
-  referenceNow,
 }: {
   campaigns: Campaign[];
   questionsByCampaign: Record<string, RecruitmentQuestion[]>;
-  referenceNow: string;
 }) {
   const [selectedId, setSelectedId] = useState(campaigns[0]?.id ?? "");
   const campaign = useMemo(
@@ -96,22 +94,7 @@ export function RecruitmentCampaignManager({
       )),
     });
   };
-  const now = new Date(referenceNow).getTime();
-  const opensAt = preview.opensAt ? new Date(preview.opensAt).getTime() : null;
-  const closesAt = preview.closesAt ? new Date(preview.closesAt).getTime() : null;
-  const actuallyOpen = preview.status === "open"
-    && (!opensAt || opensAt <= now)
-    && (!closesAt || closesAt >= now);
   const isEnabled = preview.status === "open";
-  const isScheduled = preview.status === "open" && Boolean(opensAt && opensAt > now);
-  const previewHeading = actuallyOpen
-    ? "Înscrierile sunt deschise"
-    : isScheduled
-      ? "Deschidere programată"
-      : preview.status === "draft"
-        ? "Campania este în ciornă"
-        : "Înscrierile sunt închise";
-  const previewState = actuallyOpen ? "Vizibil și activ acum" : isScheduled ? "Va deveni activ automat" : "Închis pentru candidați";
 
   return (
     <div className="recruitment-control-grid" key={campaign.id}>
@@ -185,17 +168,6 @@ export function RecruitmentCampaignManager({
           <Link href="/devino-membru" target="_blank" className="dash-button dash-button--secondary">Vezi pagina <ExternalLink size={16} /></Link>
         </div>
       </form>
-
-      <aside className={`dash-card recruitment-public-preview recruitment-public-preview--${actuallyOpen ? "open" : "closed"}`}>
-        <div className="recruitment-public-preview__topline">
-          <span className="recruitment-public-preview__icon">{actuallyOpen ? <Radio size={22} /> : <LockKeyhole size={22} />}</span>
-          <span className="recruitment-public-preview__state"><span aria-hidden="true" />{previewState}</span>
-        </div>
-        <span className="dash-eyebrow">Previzualizare stare</span>
-        <h2>{previewHeading}</h2>
-        <p>{actuallyOpen ? preview.intro : preview.closedMessage}</p>
-        <small>{actuallyOpen && closesAt ? `Închidere automată: ${new Intl.DateTimeFormat("ro-RO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(closesAt))}` : isScheduled && opensAt ? `Deschidere automată: ${new Intl.DateTimeFormat("ro-RO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(opensAt))}` : "Formularul nu acceptă răspunsuri."}</small>
-      </aside>
     </div>
   );
 }
