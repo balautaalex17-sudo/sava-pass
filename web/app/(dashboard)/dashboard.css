@@ -553,6 +553,7 @@ body:has(.dashboard-shell) {
 .members-toolbar > label { display: flex; align-items: center; gap: 8px; flex: 1; max-width: 420px; min-height: 42px; padding: 0 11px; border: 1px solid var(--dash-line-strong); border-radius: 8px; background: #fff; }
 .members-toolbar input { min-width: 0; flex: 1; border: 0; outline: 0; font: inherit; font-size: 13px; }
 .member-admin-form { margin-bottom: 14px; }
+.member-admin-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
 .members-table table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 12px; }
 .members-table th { padding: 10px 13px; background: var(--slate-50); border-bottom: 1px solid var(--dash-line); color: var(--dash-muted); text-align: left; font-size: 10px; text-transform: uppercase; }
 .members-table td { height: 57px; padding: 9px 13px; border-bottom: 1px solid var(--dash-line); color: var(--slate-600); }

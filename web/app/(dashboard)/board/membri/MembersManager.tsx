@@ -21,8 +21,8 @@ interface MemberRow {
 }
 
 const schema = z.object({
-  fullName: z.string().trim().min(2).max(100),
-  email: z.string().trim().email("Email invalid."),
+  fullName: z.string().trim().min(2, "Introdu numele complet (minimum 2 caractere).").max(100, "Numele poate avea cel mult 100 de caractere."),
+  email: z.string().trim().email("Introdu o adresă de email validă."),
   phone: z.string().max(30),
   grade: z.string().max(30),
   membershipStatus: z.enum(["recruit", "active", "inactive", "suspended", "alumni"]),
@@ -127,17 +127,23 @@ export function MembersManager({
   }
 
   function submit(values: Values) {
+    setMessage(null);
     startTransition(async () => {
-      const result = await saveMember({
-        id: editingId ?? undefined,
-        ...values,
-        role: values.role || null,
-      });
-      setMessage({ tone: result.tone, text: result.message });
-      if (result.ok) {
-        setOpen(false);
-        setEditingId(null);
-        reset();
+      try {
+        const result = await saveMember({
+          id: editingId ?? undefined,
+          ...values,
+          role: values.role || null,
+        });
+        setMessage({ tone: result.tone, text: result.message });
+        if (result.ok) {
+          setOpen(false);
+          setEditingId(null);
+          reset();
+          setSearch("");
+        }
+      } catch {
+        setMessage({ tone: "error", text: "Conexiunea s-a întrerupt. Reîncarcă lista pentru a verifica dacă membrul a fost adăugat înainte să încerci din nou." });
       }
     });
   }
@@ -146,9 +152,14 @@ export function MembersManager({
     setResendingId(member.id);
     setMessage(null);
     startTransition(async () => {
-      const result = await resendMemberInvitation({ id: member.id });
-      setMessage({ tone: result.ok ? "success" : "error", text: result.message });
-      setResendingId(null);
+      try {
+        const result = await resendMemberInvitation({ id: member.id });
+        setMessage({ tone: result.ok ? "success" : "error", text: result.message });
+      } catch {
+        setMessage({ tone: "error", text: "Conexiunea s-a întrerupt. Verifică dacă emailul a ajuns înainte să încerci din nou." });
+      } finally {
+        setResendingId(null);
+      }
     });
   }
 
@@ -165,40 +176,40 @@ export function MembersManager({
           />
         </label>
         {canAddMember && (
-          <button className="dash-button" type="button" onClick={add}>
-            <Plus size={17} /> Membru nou
+          <button className="dash-button" type="button" onClick={add} disabled={pending}>
+            <Plus size={17} /> Adaugă membru
           </button>
         )}
       </div>
 
       {open && (
-        <form className="dash-card dash-form member-admin-form" onSubmit={handleSubmit(submit)} noValidate>
+        <form className="dash-card dash-form member-admin-form" onSubmit={handleSubmit(submit)} noValidate aria-busy={pending}>
           <div className="dash-section-head">
             <div>
               <h2>{editingId ? "Editează membrul" : "Adaugă membru"}</h2>
-              {!editingId && <p>Contul este creat acum, iar persoana primește pe email un cod numeric de activare.</p>}
+              {!editingId && <p>Adaugă numele și emailul. Persoana primește un cod de activare și își alege singură parola. Conturile deja activate își păstrează parola și nu primesc un cod nou.</p>}
             </div>
-            <button type="button" className="meeting-close" onClick={() => setOpen(false)} aria-label="Închide">
+            <button type="button" className="meeting-close" onClick={() => setOpen(false)} disabled={pending} aria-label="Închide">
               <X size={18} />
             </button>
           </div>
 
-          <div className="dash-form-grid">
-            <Field label="Nume complet" error={errors.fullName?.message}>
-              <input {...register("fullName")} />
+          <fieldset className="dash-form-grid member-admin-fields" disabled={pending}>
+            <Field label="Nume complet *" error={errors.fullName?.message}>
+              <input autoComplete="name" required maxLength={100} aria-invalid={Boolean(errors.fullName)} {...register("fullName")} />
             </Field>
-            <Field label="Email" error={errors.email?.message}>
-              <input type="email" autoComplete="email" readOnly={Boolean(editingId)} {...register("email")} />
+            <Field label="Email *" error={errors.email?.message}>
+              <input type="email" autoComplete="email" required aria-invalid={Boolean(errors.email)} readOnly={Boolean(editingId)} {...register("email")} />
             </Field>
-            <Field label="Telefon" error={errors.phone?.message}>
-              <input type="tel" {...register("phone")} />
+            <Field label="Telefon (opțional)" error={errors.phone?.message}>
+              <input type="tel" autoComplete="tel" maxLength={30} {...register("phone")} />
             </Field>
-            <Field label="Clasa" error={errors.grade?.message}>
-              <input {...register("grade")} />
+            <Field label="Clasa (opțional)" error={errors.grade?.message}>
+              <input maxLength={30} {...register("grade")} />
             </Field>
             <Field label="Statut în club">
               <select {...register("membershipStatus")}>
-                {Object.entries(statusLabels).map(([value, label]) => (
+                {Object.entries(statusLabels).filter(([value]) => editingId || ["active", "recruit"].includes(value)).map(([value, label]) => (
                   <option value={value} key={value}>{label}</option>
                 ))}
               </select>
@@ -211,9 +222,10 @@ export function MembersManager({
                 ))}
               </select>
             </Field>
-          </div>
+          </fieldset>
 
           <p className="dash-form-message">
+            Câmpurile marcate cu * sunt obligatorii. {" "}
             După acceptarea finală, candidații primesc statutul Recrut. Pentru promovare, alege „Membru activ” și salvează. {" "}
             Poți administra doar roluri aflate sub rolul tău. Scanner bilete și
             Intervievator se combină din pagina „Roluri operaționale”.
@@ -221,7 +233,8 @@ export function MembersManager({
           {message && <StatusMessage tone={message.tone} text={message.text} />}
           <div>
             <button className="dash-button" disabled={pending}>
-              {pending ? "Se salvează..." : "Salvează membrul"}
+              {!editingId && <Mail size={16} />}
+              {pending ? editingId ? "Se salvează..." : "Se adaugă și se trimite..." : editingId ? "Salvează modificările" : "Adaugă și trimite codul"}
             </button>
           </div>
         </form>
@@ -256,10 +269,10 @@ export function MembersManager({
                     <button
                       type="button"
                       onClick={() => resend(member)}
-                      disabled={pending || !["active", "recruit"].includes(member.membershipStatus) || !member.email}
-                      title={["active", "recruit"].includes(member.membershipStatus) ? "Trimite un cod nou" : "Contul trebuie să fie de recrut sau membru activ"}
+                      disabled={pending || !canManagePrimaryRole(viewerRole, member.role, member.role) || !["active", "recruit"].includes(member.membershipStatus) || !member.email}
+                      title={!canManagePrimaryRole(viewerRole, member.role, member.role) ? "Nu poți administra un rol egal sau mai mare decât al tău" : ["active", "recruit"].includes(member.membershipStatus) ? "Trimite un cod nou. Codul anterior nu va mai funcționa." : "Contul trebuie să fie de recrut sau membru activ"}
                     >
-                      <Mail size={15} /> {resendingId === member.id ? "Se trimite..." : "Cod nou"}
+                      <Mail size={15} /> {resendingId === member.id ? "Se trimite..." : "Retrimite codul"}
                     </button>
                     <button
                       type="button"
