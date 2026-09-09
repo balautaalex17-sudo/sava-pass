@@ -1,7 +1,7 @@
 "use client";
 
 import { PortalLink as Link } from "@/components/dashboard/PortalLink";
-import { useDeferredValue, useMemo, useState, useTransition } from "react";
+import { useDeferredValue, useMemo, useRef, useState, useTransition } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -9,6 +9,7 @@ import {
   Search,
   ShieldCheck,
   UserRoundCheck,
+  X,
 } from "lucide-react";
 import type {
   SignupApplication,
@@ -99,6 +100,9 @@ export function FormResultsWorkspace({
   const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({});
   const [interviewConfirmation, setInterviewConfirmation] = useState(false);
   const [rejectConfirmation, setRejectConfirmation] = useState(false);
+  const [candidateToConfirm, setCandidateToConfirm] = useState<SignupApplication | null>(null);
+  const interviewDialogRef = useRef<HTMLDialogElement>(null);
+  const cancelInterviewRef = useRef<HTMLButtonElement>(null);
   const [pending, startTransition] = useTransition();
   const [bulkPending, startBulkTransition] = useTransition();
   const [localEvaluations, setLocalEvaluations] = useState(evaluations);
@@ -257,6 +261,21 @@ export function FormResultsWorkspace({
   }
 
   function sendToInterview(application: SignupApplication) {
+    if (pending || bulkPending) return;
+    setCandidateToConfirm(application);
+    interviewDialogRef.current?.showModal();
+    cancelInterviewRef.current?.focus();
+  }
+
+  function closeInterviewDialog() {
+    interviewDialogRef.current?.close();
+    setCandidateToConfirm(null);
+  }
+
+  function confirmSendToInterview() {
+    if (!candidateToConfirm || pending || bulkPending) return;
+    const application = candidateToConfirm;
+    closeInterviewDialog();
     setSelectedId(application.id);
     setMessage(null);
     startTransition(async () => {
@@ -757,6 +776,43 @@ export function FormResultsWorkspace({
           Schimbă filtrul sau termenul de căutare.
         </div>
       )}
+      <dialog
+        ref={interviewDialogRef}
+        className="signup-confirm-dialog"
+        aria-labelledby="interview-confirm-title"
+        aria-describedby="interview-confirm-description"
+        onCancel={closeInterviewDialog}
+      >
+        <div className="signup-confirm-content">
+          <div className="signup-confirm-icon" aria-hidden="true">
+            <UserRoundCheck size={21} />
+          </div>
+          <div>
+            <h2 id="interview-confirm-title">
+              {candidateToConfirm && selectedForInterview.has(candidateToConfirm.id)
+                ? "Retrimiți invitația la interviu?"
+                : "Trimiți candidatul la interviu?"}
+            </h2>
+            <p id="interview-confirm-description">
+              <strong>{candidateToConfirm?.fullName}</strong>
+              {candidateToConfirm && selectedForInterview.has(candidateToConfirm.id)
+                ? " este deja selectat(ă). Vei retrimite emailul de invitație la interviu."
+                : " va fi mutat(ă) în etapa de interviu și va primi emailul de invitație."}
+            </p>
+          </div>
+          <button type="button" className="signup-confirm-close" onClick={closeInterviewDialog} aria-label="Închide confirmarea">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="signup-confirm-actions">
+          <button ref={cancelInterviewRef} type="button" className="dash-button dash-button--secondary" onClick={closeInterviewDialog} autoFocus>
+            Anulează
+          </button>
+          <button type="button" className="dash-button" disabled={!candidateToConfirm || pending || bulkPending} onClick={confirmSendToInterview}>
+            Confirmă și trimite
+          </button>
+        </div>
+      </dialog>
     </div>
   );
 }
