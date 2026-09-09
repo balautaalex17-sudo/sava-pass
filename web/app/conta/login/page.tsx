@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { MailCheck } from "lucide-react";
 import { safeLocalPath } from "@/lib/safe-local-path";
 import { requestAccountMagicLink } from "@/app/conta/login/actions";
+import { requestPasswordSetup } from "@/app/login/actions";
 
 type LoginMethod = "password" | "magic";
 
@@ -24,6 +25,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
+  const [passwordSetupMessage, setPasswordSetupMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(hasError ? "Linkul a expirat sau e invalid. Încearcă din nou." : null);
   const [isPending, startTransition] = useTransition();
 
@@ -31,11 +33,30 @@ function LoginForm() {
     setMethod(nextMethod);
     setError(null);
     setSent(false);
+    setPasswordSetupMessage(null);
+  }
+
+  function handlePasswordSetup() {
+    setError(null);
+    setPasswordSetupMessage(null);
+    startTransition(async () => {
+      try {
+        const result = await requestPasswordSetup(email);
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+        setPasswordSetupMessage(result.message);
+      } catch {
+        setError("Nu am putut trimite linkul. Încearcă din nou în câteva minute.");
+      }
+    });
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setPasswordSetupMessage(null);
     startTransition(async () => {
       if (method === "password") {
         const supabase = createClient();
@@ -196,7 +217,11 @@ function LoginForm() {
                   id="conta-email"
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    setPasswordSetupMessage(null);
+                  }}
+                  disabled={isPending}
                   required
                   maxLength={254}
                   autoComplete="email"
@@ -250,7 +275,35 @@ function LoginForm() {
                       boxSizing: "border-box",
                     }}
                   />
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={handlePasswordSetup}
+                    style={{
+                      display: "block",
+                      minHeight: 44,
+                      marginLeft: "auto",
+                      padding: "8px 0",
+                      border: 0,
+                      background: "transparent",
+                      color: "var(--im-cyan-light)",
+                      cursor: isPending ? "wait" : "pointer",
+                      font: "inherit",
+                      fontSize: 13,
+                      fontWeight: 750,
+                      textDecoration: "underline",
+                      textUnderlineOffset: 3,
+                    }}
+                  >
+                    Am uitat parola
+                  </button>
                 </div>
+              )}
+
+              {passwordSetupMessage && (
+                <p role="status" className="anim-fade" style={{ fontSize: 13, color: "#BAE6FD", lineHeight: 1.55, margin: 0 }}>
+                  {passwordSetupMessage}
+                </p>
               )}
 
               {error && (
