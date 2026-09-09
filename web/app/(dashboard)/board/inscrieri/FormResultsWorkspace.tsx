@@ -41,7 +41,7 @@ export interface ApplicationFormEvaluation {
   updatedAt: string;
 }
 
-type FormFilter = "all" | "unrated" | ApplicationRating;
+type FormFilter = "all" | "unrated" | "unrated_by_me" | ApplicationRating;
 
 const reviewStatuses = new Set(["submitted", "under_review"]);
 const interviewStatuses = new Set([
@@ -140,7 +140,13 @@ export function FormResultsWorkspace({
         ? applicationEvaluations.map((item) => item.rating)
         : ownEvaluation ? [ownEvaluation.rating] : [];
       if (filter === "unrated" && ratings.length > 0) return false;
-      if (filter !== "all" && filter !== "unrated" && !ratings.includes(filter)) return false;
+      if (filter === "unrated_by_me" && ownEvaluation) return false;
+      if (
+        filter !== "all"
+        && filter !== "unrated"
+        && filter !== "unrated_by_me"
+        && !ratings.includes(filter)
+      ) return false;
 
       if (!query) return true;
       const searchable = [
@@ -449,7 +455,7 @@ export function FormResultsWorkspace({
             />
           </label>
           <div className="interview-filters form-results-filters" aria-label="Filtrează evaluările formularelor">
-            {(["all", "unrated", "green", "yellow", "red"] as const).map((value) => (
+            {(["all", "unrated", "unrated_by_me", "green", "yellow", "red"] as const).map((value) => (
               <button
                 key={value}
                 type="button"
@@ -457,7 +463,7 @@ export function FormResultsWorkspace({
                 onClick={() => setFilter(value)}
                 aria-label={filterLabel(value)}
               >
-                {value !== "all" && value !== "unrated" && (
+                {value !== "all" && value !== "unrated" && value !== "unrated_by_me" && (
                   <span className={`interview-filter-dot interview-filter-dot--${value}`} />
                 )}
                 {filterShortLabel(value)}
@@ -1183,12 +1189,14 @@ function ratingLabel(rating: ApplicationRating) {
 function filterLabel(filter: FormFilter) {
   if (filter === "all") return "Arată toate formularele";
   if (filter === "unrated") return "Arată formularele neevaluate";
+  if (filter === "unrated_by_me") return "Arată formularele neevaluate de mine";
   return `Filtrează formularele: ${ratingLabel(filter)}`;
 }
 
 function filterShortLabel(filter: FormFilter) {
   if (filter === "all") return "Toate";
   if (filter === "unrated") return "Neevaluate";
+  if (filter === "unrated_by_me") return "Neevaluate de mine";
   if (filter === "green") return "Verde";
   if (filter === "yellow") return "Galben";
   return "Roșu";
