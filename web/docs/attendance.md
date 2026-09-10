@@ -17,7 +17,9 @@ Membrul vede doar propriile motive. Board și Super Admin pot citi și soluțion
 
 Migrarea `supabase/migrations/20260906160416_attendance_absence_requests.sql` este aplicată pe staging (`eetuijxhkpaqggegppek`) și, din 6 septembrie 2026, pe producție (`shzyvrojbtbczqqoilip`). Actualizarea structurii a precedat publicarea codului; datele existente de prezență au fost păstrate.
 
-Corecția din 10 septembrie 2026 adaugă `supabase/migrations/20260910151803_attendance_after_meeting_end.sql`: trimiterea și soluționarea motivărilor folosesc termenul `ends_at + 3 ore`. Este verificată local, fără aplicare pe staging sau producție în această intervenție. Aplică migrarea înainte de publicarea codului care afișează absența după cele 3 ore; aceasta păstrează prezențele, cererile și permisiunile existente.
+Corecția din 10 septembrie 2026 adaugă `supabase/migrations/20260910153059_attendance_after_meeting_end.sql`: trimiterea și soluționarea motivărilor folosesc termenul `ends_at + 3 ore`. Migrarea este aplicată pe producție (`shzyvrojbtbczqqoilip`), înaintea promovării aplicației, și păstrează prezențele, cererile și permisiunile existente. Numele fișierului corespunde versiunii înregistrate de Supabase; pe staging nu a fost aplicată în această intervenție.
+
+Publicat pe `https://www.interactsfsava.com` din commitul `10004fadb6b359c3e2fdc65e4271410edb49dd33`, peste versiunea live care conține filtrul „Neevaluate de mine”. Deployment: `dpl_6zx79LfHyPFSgtKzdtjHrVo8mEfB`; versiunea anterioară pentru revenire: `dpl_DLoccpigUtVLX48vgiC5rryUUAXH`. Build-ul Vercel și TypeScript au trecut. Verificarea în browser, autentificat, după 18:30 a arătat 40 de prezențe și 24 de absențe pentru ședința din 10 septembrie; verificarea logurilor versiunii noi nu a găsit erori. Cele două funcții de motivare au regula de 3 ore și rămân apelabile numai de server.
 
 Fișierul local `active/.env.staging` conține un placeholder pentru cheia serverului. Pentru verificarea completă cu aplicația conectată la staging este necesară o cheie validă furnizată doar în mediul serverului, fără modificarea fișierului de producție.
 
