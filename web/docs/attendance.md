@@ -7,7 +7,7 @@
 
 Tabelul permite căutare fără diacritice, sortare după nume sau data ședinței în ambele sensuri și filtre pentru prezențe, absențe, absențe motivate și cereri în așteptare. CSV-ul folosește aceleași filtre și aceeași sortare; nu exportă motivele private.
 
-O absență apare după închiderea intervalului de prezență sau după încheierea explicită a ședinței. Ședințele anulate și ciornele nu produc absențe. Fiecare membru poate trimite o singură cerere pentru o ședință. Cererea are 10–2000 de caractere; răspunsul board-ului este opțional și are maximum 1000.
+O absență apare la 3 ore după ora de final programată a ședinței (`ends_at + 3 ore`). Până atunci, lipsa confirmării apare ca „Neconfirmat”, inclusiv dacă ședința este marcată „Încheiată” sau intervalul de confirmare s-a închis deja. Un interval de confirmare mai lung nu amână acest termen. De exemplu, finalul la 15:30 produce absențe de la 18:30. Ședințele anulate și ciornele nu produc absențe. Fiecare membru poate trimite o singură cerere pentru o ședință, după același termen de 3 ore. Cererea are 10–2000 de caractere; răspunsul board-ului este opțional și are maximum 1000.
 
 Deciziile sunt definitive pentru acea cerere. O cerere acceptată afișează „Absent motivat” fără să creeze o prezență. Rata de prezență rămâne rata participării efective. Corectarea ulterioară a prezenței are prioritate în afișare; cererea și decizia rămân în istoric.
 
@@ -17,11 +17,14 @@ Membrul vede doar propriile motive. Board și Super Admin pot citi și soluțion
 
 Migrarea `supabase/migrations/20260906160416_attendance_absence_requests.sql` este aplicată pe staging (`eetuijxhkpaqggegppek`) și, din 6 septembrie 2026, pe producție (`shzyvrojbtbczqqoilip`). Actualizarea structurii a precedat publicarea codului; datele existente de prezență au fost păstrate.
 
+Corecția din 10 septembrie 2026 adaugă `supabase/migrations/20260910151803_attendance_after_meeting_end.sql`: trimiterea și soluționarea motivărilor folosesc termenul `ends_at + 3 ore`. Este verificată local, fără aplicare pe staging sau producție în această intervenție. Aplică migrarea înainte de publicarea codului care afișează absența după cele 3 ore; aceasta păstrează prezențele, cererile și permisiunile existente.
+
 Fișierul local `active/.env.staging` conține un placeholder pentru cheia serverului. Pentru verificarea completă cu aplicația conectată la staging este necesară o cheie validă furnizată doar în mediul serverului, fără modificarea fișierului de producție.
 
 ## Verificări
 
 - `node --import tsx --test tests/attendance.test.ts`: reguli de stare, sortare, filtre, validarea cererilor și rolurile de review; fără conexiune la bază.
+- `tests/attendance-database.test.mjs`: cu `PGLITE_MODULE_PATH` către un motor local `@electric-sql/pglite/dist/index.js`, rulează migrarea și toate aserțiunile SQL într-o bază temporară în memorie. Reproduce eroarea cu regula veche și verifică remedierea, inclusiv imediat înainte și exact la `ends_at + 3 ore`, cu confirmări deja închise sau încă deschise. Dependențele pentru permisiunile generale ale portalului sunt simulate; regulile de motivare sunt cele din migrările reale.
 - `tests/attendance-database.sql`: executat manual exclusiv în mediul de test, într-o tranzacție anulată la final. Verifică trimitere, duplicate, aprobare, respingere, blocarea propriei cereri, cereri devenite nevalide, audit, accesul serverului și confidențialitatea între membri. Nu executa în producție.
 - Componentele React au fost verificate în browser cu acțiuni simulate, la 1440px și 390px: validare, erori de conexiune, cerere, decizie, sortare, filtre, parametrii CSV, drepturi și corecții. Aceasta nu înlocuiește verificarea întregii aplicații conectate la staging.
 - Verificările TypeScript, lint pe fișierele schimbate și build-ul aplicației au trecut.
