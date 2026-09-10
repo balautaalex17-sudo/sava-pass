@@ -52,7 +52,7 @@ test("absence requests and reviews wait three hours after meeting end", {
   const assertions = sql("tests/attendance-database.sql");
   await assert.rejects(db.exec(assertions), /Grace period blocks a request/);
   await db.exec("rollback");
-  await db.exec(sql("supabase/migrations/20260910151803_attendance_after_meeting_end.sql"));
+  await db.exec(sql("supabase/migrations/20260910153059_attendance_after_meeting_end.sql"));
   await db.exec(assertions);
   assert.equal((await db.query("select count(*)::int as count from public.absence_requests")).rows[0].count, 0);
 });
