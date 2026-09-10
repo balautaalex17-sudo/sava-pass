@@ -11,6 +11,7 @@ declare
   v_request uuid;
   v_result jsonb;
   v_count integer;
+  v_status text;
 begin
   insert into auth.users(id, email, raw_user_meta_data) values
     (v_member, v_member::text || '@example.com', '{"name":"Attendance test member"}'),
@@ -60,10 +61,11 @@ begin
   assert public.review_absence_request(v_request, v_member, 'approved')->>'result' = 'not_absent', 'Cannot review a cancelled meeting';
   assert public.review_absence_request(v_request, v_other, 'approved')->>'result' = 'unauthorized';
   assert public.submit_absence_request(v_meeting, v_scanner, 'Test ședință anulată')->>'result' = 'not_absent', 'Cancelled meetings cannot be excused';
-  update public.meetings set status = 'attendance_open', attendance_closes_at = now() + interval '1 day' where id = v_meeting;
+  update public.meetings set status = 'attendance_open', ends_at = now() + interval '1 hour',
+    attendance_closes_at = now() + interval '1 day' where id = v_meeting;
   assert public.review_absence_request(v_request, v_member, 'approved')->>'result' = 'not_absent', 'Cannot review a reopened meeting';
   assert public.submit_absence_request(v_meeting, v_scanner, 'Test ședință viitoare')->>'result' = 'not_absent', 'Open meetings cannot be excused';
-  update public.meetings set status = 'finished' where id = v_meeting;
+  update public.meetings set status = 'finished', ends_at = now() - interval '4 hours' where id = v_meeting;
   insert into public.meeting_attendance(meeting_id, member_id, checked_in_by) values(v_meeting, v_board, v_member);
   assert public.review_absence_request(v_request, v_member, 'approved')->>'result' = 'not_absent', 'Cannot review after absence was corrected to presence';
   update public.profiles set role = null where id = v_member;
@@ -92,6 +94,38 @@ begin
   select count(*) into v_count from public.absence_requests where meeting_id = v_meeting;
   assert v_count = 3, 'Board sees all requests';
   reset role;
+
+  -- now() stays fixed in this transaction, so grace-period boundaries are stable.
+  update public.profiles set membership_status = 'active' where id = v_scanner;
+  update public.profiles set role = 'board' where id = v_member;
+  update public.meeting_attendance set status = 'reversed'
+    where meeting_id = v_meeting and member_id in (v_scanner, v_board);
+  select id into v_request from public.absence_requests where meeting_id = v_meeting and member_id = v_board;
+  foreach v_status in array array['upcoming', 'attendance_open', 'finished'] loop
+    update public.meetings set status = v_status, ends_at = now() - interval '3 hours' + interval '1 millisecond',
+      attendance_closes_at = now() - interval '1 day' where id = v_meeting;
+    set local role service_role;
+    assert public.submit_absence_request(v_meeting, v_scanner, 'Motiv înainte de termen')->>'result' = 'not_absent', 'Grace period blocks a request despite finished status or closed confirmations';
+    assert public.review_absence_request(v_request, v_member, 'approved')->>'result' = 'not_absent', 'Grace period blocks review despite finished status or closed confirmations';
+    reset role;
+  end loop;
+
+  update public.meetings set status = 'attendance_open', ends_at = now() - interval '3 hours',
+    attendance_closes_at = now() + interval '3 days' where id = v_meeting;
+  set local role service_role;
+  assert public.submit_absence_request(v_meeting, v_scanner, 'Motiv după finalul ședinței')->>'result' = 'submitted', 'Exactly three hours after meeting end permits a request despite an open confirmation window';
+  reset role;
+  select id into v_request from public.absence_requests where meeting_id = v_meeting and member_id = v_scanner;
+  set local role service_role;
+  assert public.review_absence_request(v_request, v_board, 'approved')->>'result' = 'reviewed', 'Exactly three hours after meeting end permits reviewing the request';
+  reset role;
+
+  select id into v_request from public.absence_requests where meeting_id = v_meeting and member_id = v_board;
+  update public.meetings set status = 'draft' where id = v_meeting;
+  assert public.submit_absence_request(v_meeting, v_scanner, 'Test ciornă încheiată')->>'result' = 'not_absent', 'Draft meetings still cannot be excused';
+  assert public.review_absence_request(v_request, v_member, 'approved')->>'result' = 'not_absent', 'Draft meetings still cannot be reviewed';
+  update public.meetings set status = 'upcoming', ends_at = now() - interval '4 hours' where id = v_meeting;
+  assert public.review_absence_request(v_request, v_member, 'rejected')->>'result' = 'reviewed', 'An elapsed end permits review without a manual finished status';
 end;
 $$;
 rollback;
