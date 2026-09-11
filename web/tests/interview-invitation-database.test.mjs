@@ -38,7 +38,7 @@ test("database enforces Super Admin interview invitations", {
     insert into public.interviews values (1, 2, 'scheduled'), (2, 1, 'cancelled');
     insert into public.notifications values (1, 'interview_invitation', 'failed');
   `);
-  await db.exec(readFileSync(resolve("supabase/migrations/20260909185555_restrict_interview_invitations_to_super_admin.sql"), "utf8"));
+  await db.exec(readFileSync(resolve("supabase/migrations/20260911185035_restrict_interview_invitations_to_super_admin.sql"), "utf8"));
 
   async function asUser(id) {
     await db.exec(`reset role; set role authenticated; set request.jwt.claim.sub = '${id}';`);
