@@ -16,7 +16,7 @@ globalThis.fetch = async () => { throw new Error("Live access is forbidden in re
 beforeEach(() => {
   const board = { id: randomUUID(), full_name: "Board fixture", email: "board@example.com", role: "board", membership_status: "active" };
   Object.assign(f, { board, viewer: { profile: board }, claims: { sub: board.id }, users: [],
-    tables: { profiles: [board], membership_applications: [], interviews: [], application_status_events: [], profile_roles: [], profile_permission_overrides: [], role_permissions: [] },
+    tables: { profiles: [board], membership_applications: [], interviews: [], application_evaluations: [], notifications: [], application_status_events: [], profile_roles: [], profile_permission_overrides: [], role_permissions: [] },
     emails: [], notifications: [], trace: [], deleted: [], failRpc: false, failEmail: false, ambiguousCommit: false,
   });
 });
@@ -130,11 +130,69 @@ test("final acceptance creates a recruit and sends an activation code only after
 test("submission and interview selection do not grant a recruit account", async () => {
   const application = candidate("submitted");
   assert.equal((await accept(application)).ok, false);
+  f.board.role = "admin";
   const selected = await actions.updateApplicationOperations({ applicationId: application.id, status: "selected_for_interview", reviewerId: f.board.id });
   assert.equal(selected.ok, true);
   assert.equal(f.users.length, 0);
   assert.equal(f.emails.length, 0);
   assert.equal(f.trace.length, 0);
+});
+
+test("Board cannot select candidates or send interview invitations, even with an admin operational role", async () => {
+  const application = candidate("submitted");
+  f.viewer.roles = ["board", "admin"];
+  f.viewer.isAdminEquivalent = true;
+  for (const action of ["select_for_interview", "send_interview_email"]) {
+    const result = await actions.runRecruitmentBatchAction({ action, applicationIds: [application.id] });
+    assert.equal(result.ok, false);
+    assert.match(result.message, /Doar Super Admin/);
+    assert.deepEqual(result.processedIds, []);
+  }
+  assert.equal(application.status, "submitted");
+  assert.equal(f.tables.interviews.length, 0);
+  assert.equal(f.notifications.length, 0);
+  assert.equal(f.tables.application_status_events.length, 0);
+});
+
+test("Board cannot bypass interview selection through the advanced status action", async () => {
+  const application = candidate("submitted");
+  for (const status of ["selected_for_interview", "interview_scheduled", "interview_completed"]) {
+    const result = await actions.updateApplicationOperations({ applicationId: application.id, status, reviewerId: f.board.id });
+    assert.equal(result.ok, false);
+    assert.match(result.message, /Doar Super Admin/);
+    assert.equal(application.status, "submitted");
+  }
+  assert.equal(f.tables.interviews.length, 0);
+  assert.equal(f.notifications.length, 0);
+});
+
+test("Board can still review applications and finish an existing interview", async () => {
+  const application = candidate("submitted");
+  let result = await actions.updateApplicationOperations({ applicationId: application.id, status: "under_review", reviewerId: f.board.id });
+  assert.equal(result.ok, true);
+  assert.equal(application.status, "under_review");
+  application.status = "selected_for_interview";
+  result = await actions.updateApplicationOperations({ applicationId: application.id, status: application.status, reviewerId: f.board.id });
+  assert.equal(result.ok, true);
+  result = await actions.updateApplicationOperations({ applicationId: application.id, status: "interview_completed", reviewerId: f.board.id });
+  assert.equal(result.ok, true);
+  assert.equal(application.status, "interview_completed");
+});
+
+test("Super Admin can select candidates and send interview invitations", async () => {
+  f.board.role = "admin";
+  const application = candidate("submitted");
+  f.tables.application_evaluations.push({ application_id: application.id, rating: "green" });
+  const selection = await actions.runRecruitmentBatchAction({ action: "select_for_interview", applicationIds: [application.id] });
+  assert.equal(selection.ok, true);
+  assert.deepEqual(selection.processedIds, [application.id]);
+  assert.equal(application.status, "selected_for_interview");
+  assert.equal(f.tables.interviews.length, 1);
+  const email = await actions.runRecruitmentBatchAction({ action: "send_interview_email", applicationIds: [application.id] });
+  assert.equal(email.ok, true);
+  assert.deepEqual(email.processedIds, [application.id]);
+  assert.equal(f.notifications.length, 1);
+  assert.equal(f.notifications[0].templateKey, "interview_invitation");
 });
 
 test("confirmed accounts are reused and existing member access is preserved", async () => {

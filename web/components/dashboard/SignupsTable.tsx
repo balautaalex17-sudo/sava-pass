@@ -22,6 +22,7 @@ import {
   updateApplicationOperations,
 } from "@/app/(dashboard)/board/inscrieri/actions";
 import { formatDateTime } from "@/lib/dashboard/format";
+import { canSetRecruitmentStatus } from "@/lib/dashboard/recruitment-permissions";
 
 export interface SignupField {
   key: string;
@@ -101,11 +102,13 @@ export function SignupsTable({
   applications,
   reviewers,
   canManage,
+  canSendToInterview,
 }: {
   fields: SignupField[];
   applications: SignupApplication[];
   reviewers: ReviewerOption[];
   canManage: boolean;
+  canSendToInterview: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [completion, setCompletion] = useState<"all" | "complete" | "incomplete">("all");
@@ -615,6 +618,7 @@ export function SignupsTable({
                 key={selected.id}
                 application={selected}
                 reviewers={reviewers}
+                canSendToInterview={canSendToInterview}
               />
             )}
           </>
@@ -627,9 +631,11 @@ export function SignupsTable({
 function ApplicationManagement({
   application,
   reviewers,
+  canSendToInterview,
 }: {
   application: SignupApplication;
   reviewers: ReviewerOption[];
+  canSendToInterview: boolean;
 }) {
   const [status, setStatus] = useState(application.status);
   const [reviewer, setReviewer] = useState(application.reviewerId ?? "");
@@ -651,7 +657,7 @@ function ApplicationManagement({
     <section className="signup-management">
       <h3>Decizie Board</h3>
       <p className="signup-management-note">
-        Orice membru Board poate schimba etapa. Selectarea pentru interviu nu trimite email; invitația se trimite separat din clasament.
+        Doar Super Admin poate trimite candidații la interviu. Board poate gestiona celelalte etape și responsabilul aplicației.
       </p>
       <div className="dash-form-grid">
         <div className="dash-field">
@@ -662,7 +668,11 @@ function ApplicationManagement({
             onChange={(event) => setStatus(event.target.value)}
           >
             {Object.entries(statusLabels).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+              <option
+                key={value}
+                value={value}
+                disabled={!canSetRecruitmentStatus(canSendToInterview ? "admin" : "board", application.status, value)}
+              >{label}</option>
             ))}
           </select>
         </div>
