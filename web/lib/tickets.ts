@@ -50,9 +50,7 @@ export async function issueTicket({ eventId, orderId, ticketTypeId, holderName, 
       holder_name: holderName,
       holder_email: holderEmail.toLowerCase(),
       status: isPaid ? "paid" : "reserved",
-      expires_at: isPaid
-        ? null
-        : new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+      expires_at: null,
       payment_confirmed_at: isPaid ? new Date().toISOString() : null,
     })
     .select("id")

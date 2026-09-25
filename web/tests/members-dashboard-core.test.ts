@@ -31,6 +31,14 @@ test("6. expired attendance QR is rejected", () => {
   assert.deepEqual(verifyMemberAttendanceWithSecret(secret,token,now+31_000),{ok:false,code:"expired_token"});
 });
 
+test("ticket QR stays valid after its former token deadline", () => {
+  const now=Date.now(); const ticketId=randomUUID();
+  const token=signTicketWithSecret(secret,ticketId,1,now);
+  const result=verifyTicketTokenWithSecret(secret,token,now+2_000);
+  assert.equal(result.ok,true);
+  if(result.ok) assert.equal(result.reference,ticketId);
+});
+
 test("7. ticket QR is rejected by attendance validation", () => {
   const token=signTicketWithSecret(secret,randomUUID());
   assert.deepEqual(verifyMemberAttendanceWithSecret(secret,token),{ok:false,code:"wrong_qr_type"});
