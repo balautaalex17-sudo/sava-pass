@@ -585,6 +585,7 @@ export type Database = {
       events: {
         Row: {
           about: string | null
+          charitable_cause: string | null
           accent: string | null
           capacity: number
           created_at: string
@@ -609,6 +610,7 @@ export type Database = {
         }
         Insert: {
           about?: string | null
+          charitable_cause?: string | null
           accent?: string | null
           capacity: number
           created_at?: string
@@ -633,6 +635,7 @@ export type Database = {
         }
         Update: {
           about?: string | null
+          charitable_cause?: string | null
           accent?: string | null
           capacity?: number
           created_at?: string
