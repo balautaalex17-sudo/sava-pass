@@ -44,8 +44,8 @@ try {
   assert(await page.evaluate(()=>window.__navIdentity===document.querySelector('.hnav')));
   await page.goto(base+'/golden-hour-2026',{waitUntil:'networkidle'});
   const map=page.locator('iframe[title^="Hartă"]');
-  assert.equal(await map.getAttribute('src'),null,'Map should not compete with first screen');
-  await map.scrollIntoViewIfNeeded();
+  assert.equal(await map.count(),0,'Map should not compete with first screen');
+  await page.getByRole('region',{name:'Locație',exact:true}).scrollIntoViewIfNeeded();
   await page.waitForFunction(()=>document.querySelector('iframe[title^="Hartă"]')?.getAttribute('src'));
   await page.goto(base+'/golden-hour-2026/checkout',{waitUntil:'networkidle'});
   assert.equal(await page.locator('form').count(),0,'Ended event must not permit reservation');

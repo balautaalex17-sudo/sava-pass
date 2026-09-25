@@ -1,0 +1,76 @@
+.fallback {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 230px;
+  padding: 24px 20px;
+  color: var(--brand-cyan-700);
+  text-align: center;
+}
+
+.fallback strong {
+  color: var(--slate-900);
+  font-size: 16px;
+}
+
+.fallback p {
+  margin: 0;
+  color: var(--slate-500);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fallback .address {
+  color: var(--slate-900);
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.actions a,
+.actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--brand-cyan-700);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.actions a {
+  border-color: var(--brand-cyan-700);
+  background: var(--brand-cyan-700);
+  color: var(--white);
+}
+
+.help {
+  margin: 0;
+  padding: 12px 20px;
+  color: var(--slate-500);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.help a {
+  display: inline-block;
+  padding-block: 12px;
+  color: var(--brand-cyan-700);
+  font-weight: 700;
+}

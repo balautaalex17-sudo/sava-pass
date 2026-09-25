@@ -96,7 +96,7 @@ export default async function EventPage({ params, searchParams }: Props) {
   const perks = Array.isArray(event.perks)
     ? (event.perks as unknown[]).filter((perk): perk is string => typeof perk === "string" && perk.trim().length > 0)
     : [];
-  const mapQuery = event.venue_line?.replace(/\s*[·•]\s*/g, ", ") ?? event.venue;
+  const mapQuery = event.venue_line?.replace(/\s*[·•]\s*/g, ", ").trim() || event.venue;
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   const mapEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
 
@@ -188,10 +188,10 @@ export default async function EventPage({ params, searchParams }: Props) {
                     {event.venue_line ? <span>{event.venue_line}</span> : null}
                     <span className={styles.mapStatus} aria-hidden="true">
                       <span className={styles.mapSignal} />
-                      Hartă interactivă
+                      Google Maps
                     </span>
                   </div>
-                  <a href={mapUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={mapUrl}>
                     Deschide în Maps <ArrowUpRight size={16} strokeWidth={1.75} aria-hidden="true" />
                   </a>
                 </div>
@@ -199,6 +199,8 @@ export default async function EventPage({ params, searchParams }: Props) {
                   <DeferredMap
                     src={mapEmbedUrl}
                     title={`Hartă Google Maps pentru ${event.venue}`}
+                    mapUrl={mapUrl}
+                    address={mapQuery}
                   />
                 </div>
               </div>
