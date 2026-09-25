@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
+  ClipboardCheck,
   ClipboardPenLine,
   ClipboardList,
   History,
@@ -82,6 +83,7 @@ const boardGroups: NavGroup[] = [
     label: "Evenimente",
     items: [
       { href: "/board/evenimente", label: "Evenimente", icon: TicketCheck, permission: "manage_public_events" },
+      { href: "/board/inscrieri-evenimente", label: "Înscrieri", icon: ClipboardCheck, permission: "manage_public_events" },
       { href: "/board/scaneaza-bilete", label: "Scanează bilete", icon: ScanLine, permission: "scan_event_tickets" },
       { href: "/board/istoric-scanari", label: "Istoric scanări", icon: History, permission: "view_scan_audit_log" },
     ],
