@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LockKeyhole } from "lucide-react";
 
+import { recruitmentSteps } from "@/lib/recruitment-copy";
 import { getPublicRecruitmentState } from "@/lib/recruitment-public";
 import { MembershipForm } from "./MembershipForm";
 import { StaffTestEntry } from "./StaffTestEntry";
@@ -15,29 +16,6 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 60;
-
-const STEPS = [
-  {
-    number: "01",
-    title: "Completează formularul",
-    copy: "Ai nevoie de doar câteva minute pentru a răspunde la toate întrebările.",
-  },
-  {
-    number: "02",
-    title: "Confirmare pe email",
-    copy: "În funcție de răspunsurile tale, vei afla prin email dacă ai trecut la etapa interviurilor.",
-  },
-  {
-    number: "03",
-    title: "Interviul",
-    copy: "Vom stabili împreună data interviului, care va avea loc în liceu, după terminarea programului.",
-  },
-  {
-    number: "04",
-    title: "Bun venit în Interact",
-    copy: "Te așteptăm la prima ședință alături de ceilalți recruți.",
-  },
-];
 
 export default async function MembershipPage() {
   const recruitment = await getPublicRecruitmentState();
@@ -106,11 +84,11 @@ export default async function MembershipPage() {
               <h2 id="process-title">Simplu, de la formular la prima ședință.</h2>
             </div>
             <ol className="apply-process__list">
-              {STEPS.map((step) => (
+              {recruitmentSteps(recruitment.closesAt).map((step) => (
                 <li key={step.number} className="anim-rise-fast">
                   <span className="apply-process__number">{step.number}</span>
                   <div>
-                    <h3>{step.title}</h3>
+                    <span className="apply-process__date">{step.date}</span><h3>{step.title}</h3>
                     <p>{step.copy}</p>
                   </div>
                 </li>
@@ -525,6 +503,7 @@ function ApplyStyles() {
         font-weight: 800;
       }
 
+      .apply-process__date { display: block; margin-bottom: 6px; color: var(--brand-cyan-700); font-size: 12px; font-weight: 700; }
       .apply-process h3 {
         margin: 0;
         color: var(--slate-900);

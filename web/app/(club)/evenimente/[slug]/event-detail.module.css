@@ -32,6 +32,7 @@
 }
 
 .copy {
+  white-space: pre-wrap;
   max-width: 66ch;
   margin: 12px 0 0;
   color: #bdcbd5;

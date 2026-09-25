@@ -56,9 +56,9 @@ function splitEventStory(about: string | null) {
   const sentences = about.split(/(?<=[.!?])\s+/).map((sentence) => sentence.trim()).filter(Boolean);
   const cause = sentences.find((sentence) => /\b(fond|fondurile|dona|donațiile|susțin|susține|sprijin|cauz)/i.test(sentence)) ?? null;
   const causeTitle = cause?.match(/[„"]([^”"]+)[”"]/)?.[1] ?? null;
-  const storySentences = cause ? sentences.filter((sentence) => sentence !== cause) : sentences;
+  const story = cause ? about.replace(cause, "").trim() : about;
   return {
-    story: storySentences.length ? storySentences.join(" ") : about,
+    story: story || about,
     cause,
     causeTitle,
   };
