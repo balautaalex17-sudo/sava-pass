@@ -56,7 +56,6 @@ export default async function PublicRecruitmentControlPage() {
       <RecruitmentCampaignManager
         campaigns={campaigns}
         questionsByCampaign={questionsByCampaign}
-        referenceNow={new Date().toISOString()}
       />
     </div>
   );

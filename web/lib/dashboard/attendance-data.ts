@@ -61,7 +61,7 @@ export async function getAttendanceRosterData(query: { view?: string; meeting?: 
 
 export async function getAbsenceInboxData() {
   const requests = await readAllAttendanceRows((from, to) => supabaseAdmin.from("absence_requests")
-    .select("*, meetings(title, starts_at, status, attendance_closes_at), profiles!absence_requests_member_id_fkey(full_name, grade)")
+    .select("*, meetings(title, starts_at, ends_at, status, attendance_closes_at), profiles!absence_requests_member_id_fkey(full_name, grade)")
     .eq("status", "pending").order("created_at").order("id").range(from, to));
   const attendance = requests.length ? await readAllAttendanceRows((from, to) => supabaseAdmin.from("meeting_attendance")
     .select("meeting_id, member_id").eq("status", "present")

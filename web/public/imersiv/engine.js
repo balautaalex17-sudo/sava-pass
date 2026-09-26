@@ -316,7 +316,7 @@ dotEls.forEach(a=>a.addEventListener('click',e=>{const id=dotTargetId(a),t=docum
 
 /* Hydrate only visible decorative videos, keeping hidden/offscreen clips off
    the critical network path. The observer starts them as they enter view. */
-const __videos=[...document.querySelectorAll('.sp-immersive-root video')];
+const __videos=[...document.querySelectorAll('.sp-immersive-root video:not([data-board-ambient])')];
 const __visibleVideos=new Set();
 function playVisibleVideo(v){
   const rect=v.getBoundingClientRect();

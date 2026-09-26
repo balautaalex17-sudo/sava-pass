@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Caveat } from "next/font/google";
 import { isEventEnded } from "@/lib/event-lifecycle";
 import { getFeaturedEvents } from "@/lib/events";
 import { getPublicRecruitmentState } from "@/lib/recruitment-public";
@@ -20,7 +21,15 @@ export const metadata: Metadata = {
 // ISR — the page has no per-request data, only cached public event/content reads.
 export const revalidate = 300;
 
-const LANDING_STYLESHEET = "/landing.css?v=20260906-recruitment-spacing";
+const boardHandwriting = Caveat({
+  subsets: ["latin", "latin-ext"],
+  weight: "700",
+  variable: "--font-board-handwriting",
+  display: "swap",
+  preload: false,
+});
+
+const LANDING_STYLESHEET = "/landing.css?v=20260925-board-swipes-restored";
 const introCssEnd = IMMERSIVE_CSS.indexOf("/* scrolling brand marquee");
 
 if (introCssEnd < 0) {
@@ -160,7 +169,7 @@ function LandingBody({ showcaseEvents, recruitment }: { showcaseEvents: LandingS
       <link rel="preload" as="script" href="/imersiv/vendor/gsap.min.js" media="(min-width: 821px)" />
       <link rel="preload" as="script" href="/imersiv/vendor/ScrollTrigger.min.js" media="(min-width: 821px)" />
       <style dangerouslySetInnerHTML={{ __html: LANDING_CRITICAL_CSS }} />
-      <div className="sp-immersive-root" dangerouslySetInnerHTML={{ __html: markup }} />
+      <div className={`sp-immersive-root ${boardHandwriting.variable}`} dangerouslySetInnerHTML={{ __html: markup }} />
       <ImmersiveRuntime />
     </>
   );

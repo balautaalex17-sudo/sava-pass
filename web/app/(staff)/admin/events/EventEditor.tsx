@@ -376,7 +376,6 @@ export function EventEditor({
       <section style={sectionStyle}>
         <h2 style={sectionTitleStyle}>Vânzare</h2>
         <div style={gridStyle}>
-          <Field label="Preț de rezervă RON" required><input name="price_ron" type="number" min={0} defaultValue={event ? Math.round(event.price_bani / 100) : 45} required className="input" style={inputStyle} /></Field>
           <Field label="Capacitate" required><input name="capacity" type="number" min={1} defaultValue={event?.capacity ?? 120} required className="input" style={inputStyle} /></Field>
         </div>
       </section>
@@ -409,6 +408,14 @@ export function EventEditor({
       <section style={sectionStyle}>
         <div style={sectionHeadingStyle}><h2 style={sectionTitleStyle}>Descriere</h2><span style={optionalSectionStyle}>Opțional</span></div>
         <textarea name="about" defaultValue={event?.about ?? ""} rows={5} className="input" style={{ ...inputStyle, resize: "vertical" }} />
+      </section>
+
+      <section style={sectionStyle}>
+        <div style={sectionHeadingStyle}><h2 style={sectionTitleStyle}>Cauza susținută</h2><span style={optionalSectionStyle}>Opțional</span></div>
+        <Field label="Cum ajută biletul tău">
+          <textarea name="charitable_cause" defaultValue={event?.charitable_cause ?? ""} rows={4} placeholder="Spune pe cine sprijinim și cum vor fi folosite fondurile strânse." className="input" style={{ ...inputStyle, resize: "vertical" }} />
+          <small style={{ color: "var(--im-fg-3)", fontSize: 11 }}>Apare în secțiunea „Impactul biletului tău”. Lasă gol pentru a ascunde secțiunea.</small>
+        </Field>
       </section>
 
       <section style={sectionStyle}>

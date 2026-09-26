@@ -61,7 +61,8 @@ function formatPrice(value: number) {
 
 function availabilityLabel(seatsLeft: number) {
   if (seatsLeft <= 0) return "Epuizat";
-  return "Disponibil";
+  if (seatsLeft <= 4) return `Doar ${seatsLeft} rămase`;
+  return `${seatsLeft} disponibile`;
 }
 
 export function EventPurchaseExperience({
@@ -90,6 +91,9 @@ export function EventPurchaseExperience({
     (lowest, type) => type.seatsLeft > 0 ? Math.min(lowest, type.priceRon) : lowest,
     selected?.priceRon ?? 0,
   );
+  const capacityPercent = event.capacity > 0
+    ? Math.min(100, Math.max(0, Math.round((sold / event.capacity) * 100)))
+    : 0;
 
   const openCheckout = (nextStep: CheckoutStep) => {
     if (!canReserve) return;
@@ -149,6 +153,16 @@ export function EventPurchaseExperience({
               selectedId={selectedId}
               onSelect={setSelectedId}
             />
+
+            <div className={styles.capacityBlock}>
+              <div className={styles.capacityCopy}>
+                <span>Disponibilitate</span>
+                <strong>{seatsLeft} locuri rămase</strong>
+              </div>
+              <div className={styles.capacityTrack} aria-hidden="true">
+                <span style={{ width: `${capacityPercent}%` }} />
+              </div>
+            </div>
 
             <div className={styles.priceSummary} aria-live="polite">
               <div>

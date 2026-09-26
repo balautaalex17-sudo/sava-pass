@@ -57,10 +57,16 @@ export default async function ContaPage({
     return <TicketLookupPage initialError={params.error === "1"} />;
   }
 
+  const email = typeof claims.email === "string"
+    ? claims.email.trim().toLocaleLowerCase("ro")
+    : "";
   const [{ data }, { data: profile }] = await Promise.all([
-    supabase.from("tickets")
-      .select("id, code, qr_token, status, issued_at, events(title, date_label, venue, status, ends_at, manually_ended_at)")
-      .order("issued_at", { ascending: false }),
+    email
+      ? supabase.from("tickets")
+        .select("id, code, qr_token, status, issued_at, events(title, date_label, venue, status, ends_at, manually_ended_at)")
+        .eq("holder_email", email)
+        .order("issued_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
     supabase.from("profiles").select("membership_status").eq("id", claims.sub).maybeSingle(),
   ]);
 

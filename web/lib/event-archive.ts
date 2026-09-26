@@ -72,6 +72,7 @@ export function ticketingEventToArchiveEvent(event: Event, legacy?: EventRecord)
     subtitle: event.subtitle ?? undefined,
     shortDescription: event.subtitle || event.about || legacy?.shortDescription || `${event.date_label} · ${event.venue}`,
     fullDescription: event.about ?? legacy?.fullDescription,
+    charitableCause: event.charitable_cause?.trim() || undefined,
     startDate: starts.date,
     startTime: starts.time,
     endDate: ends.date,

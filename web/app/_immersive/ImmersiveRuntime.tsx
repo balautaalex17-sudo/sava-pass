@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { initializeBoard } from "./board-interactions";
+import { BoardGallerySlider } from "./BoardGallerySlider";
+import { BoardPortraitStack } from "./BoardPortraitStack";
 
 // Loads the v3 immersive engine in strict order after the SSR'd markup exists.
 // Lenis + GSAP + ScrollTrigger must load before engine.js (it reads those
@@ -12,6 +15,9 @@ declare global {
   interface Window {
     Lenis?: unknown;
     __lenis?: {
+      stop?: () => void;
+      start?: () => void;
+      isStopped?: boolean;
       destroy?: () => void;
       scrollTo?: (
         target: HTMLElement | number,
@@ -32,7 +38,7 @@ const VENDOR = {
   scrollTrigger: "/imersiv/vendor/ScrollTrigger.min.js",
 };
 
-const ENGINE_VERSION = "20260905-viewport-video-v15";
+const ENGINE_VERSION = "20260911-board-ambient-v16";
 
 const vendorLoads = new Map<string, Promise<void>>();
 
@@ -108,7 +114,8 @@ function scrollToLocationHash() {
   const target = document.getElementById(id);
   if (!target) return;
 
-  const top = Math.round(target.getBoundingClientRect().top + window.scrollY);
+  const scrollMargin = Number.parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+  const top = Math.max(0, Math.round(target.getBoundingClientRect().top + window.scrollY - scrollMargin));
   if (window.__lenis?.scrollTo) {
     window.__lenis.scrollTo(top, { immediate: true, force: true });
   } else {
@@ -118,6 +125,7 @@ function scrollToLocationHash() {
 
 export function ImmersiveRuntime() {
   useEffect(() => {
+    const cleanupBoard = initializeBoard();
     let cancelled = false;
     const engineRequest = new AbortController();
     let hashFrame = 0;
@@ -170,6 +178,7 @@ export function ImmersiveRuntime() {
     });
 
     return () => {
+      cleanupBoard();
       cancelled = true;
       engineRequest.abort();
       window.removeEventListener("hashchange", alignToHash);
@@ -179,5 +188,5 @@ export function ImmersiveRuntime() {
     };
   }, []);
 
-  return null;
+  return <><BoardGallerySlider /><BoardPortraitStack /></>;
 }

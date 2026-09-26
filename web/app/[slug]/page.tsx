@@ -51,19 +51,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function splitEventStory(about: string | null) {
-  if (!about) return { story: null, cause: null, causeTitle: null };
-  const sentences = about.split(/(?<=[.!?])\s+/).map((sentence) => sentence.trim()).filter(Boolean);
-  const cause = sentences.find((sentence) => /\b(fond|fondurile|dona|donațiile|susțin|susține|sprijin|cauz)/i.test(sentence)) ?? null;
-  const causeTitle = cause?.match(/[„"]([^”"]+)[”"]/)?.[1] ?? null;
-  const storySentences = cause ? sentences.filter((sentence) => sentence !== cause) : sentences;
-  return {
-    story: storySentences.length ? storySentences.join(" ") : about,
-    cause,
-    causeTitle,
-  };
-}
-
 function bucharestTime(value: string) {
   return new Intl.DateTimeFormat("ro-RO", {
     timeZone: "Europe/Bucharest",
@@ -82,7 +69,9 @@ export default async function EventPage({ params, searchParams }: Props) {
   if (!event) notFound();
 
   const availability = getAvailability(event);
-  const { story, cause, causeTitle } = splitEventStory(event.about);
+  const story = event.about;
+  const cause = event.charitable_cause?.trim() || null;
+  const causeTitle = "Cauza susținută";
   const lead = event.subtitle ?? story?.split(/(?<=[.!?])\s+/)[0] ?? `${event.date_long} · ${event.venue}`;
   const program = Array.isArray(event.program)
     ? (event.program as ProgramItem[]).filter((item) => typeof item?.t === "string" && typeof item?.l === "string")

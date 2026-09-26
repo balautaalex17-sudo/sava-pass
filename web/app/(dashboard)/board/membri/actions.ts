@@ -6,10 +6,12 @@ import { logAudit } from "@/lib/audit";
 import { requirePermission } from "@/lib/dashboard/auth";
 import {
   ensureInvitedAuthUser,
+  prepareMemberInvitation,
   sendMemberInvitation,
   type EnsuredAuthUser,
 } from "@/lib/dashboard/member-auth";
 import { logServerError } from "@/lib/server-log";
+import type { SendEmailResult } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   canManagePrimaryRole,
@@ -18,8 +20,8 @@ import {
 
 const memberSchema = z.object({
   id: z.string().uuid().optional(),
-  fullName: z.string().trim().min(2).max(100),
-  email: z.string().trim().email().transform((value) => value.toLocaleLowerCase("ro")),
+  fullName: z.string().trim().min(2, "Introdu numele complet (minimum 2 caractere).").max(100, "Numele poate avea cel mult 100 de caractere."),
+  email: z.string().trim().email("Introdu o adresă de email validă.").transform((value) => value.toLocaleLowerCase("ro")),
   phone: z.string().trim().max(30).optional(),
   grade: z.string().trim().max(30).optional(),
   membershipStatus: z.enum(["recruit", "active", "inactive", "suspended", "alumni"]),
@@ -52,6 +54,9 @@ export async function saveMember(input: unknown) {
     }
 
     const values = parsed.data;
+    if (!values.id && !["active", "recruit"].includes(values.membershipStatus)) {
+      return { ok: false as const, tone: "error" as const, message: "Un cont nou trebuie să fie de recrut sau membru activ pentru a putea fi activat." };
+    }
     if (values.membershipStatus === "recruit" && values.role !== null) {
       return { ok: false as const, tone: "error" as const, message: "Un recrut nu poate primi un rol administrativ. Trece-l mai întâi la membru activ." };
     }
@@ -70,6 +75,9 @@ export async function saveMember(input: unknown) {
         .maybeSingle();
       if (previousResult.error) throw previousResult.error;
       previous = previousResult.data;
+      if (!previous) {
+        return { ok: false as const, tone: "error" as const, message: "Membrul nu mai există. Reîncarcă lista." };
+      }
     }
 
     if (!canManagePrimaryRole(viewer.profile.role, previous?.role ?? null, values.role)) {
@@ -95,10 +103,11 @@ export async function saveMember(input: unknown) {
       ensured = await ensureInvitedAuthUser({
         email: values.email,
         fullName: values.fullName,
+        deferActivation: true,
       });
       userId = ensured.user.id;
       // An email may already belong to a member or Board account. Check that
-      // profile before upsert, just as when editing it from the list.
+      // profile before saving, just as when editing it from the list.
       const existing = await supabaseAdmin.from("profiles")
         .select("role, membership_status, email").eq("id", userId).maybeSingle();
       if (existing.error) throw existing.error;
@@ -132,7 +141,7 @@ export async function saveMember(input: unknown) {
       }
     }
 
-    const { error } = await supabaseAdmin.from("profiles").upsert({
+    const profileValues = {
       id: userId,
       full_name: values.fullName,
       email: values.email,
@@ -140,16 +149,28 @@ export async function saveMember(input: unknown) {
       grade: values.grade || null,
       membership_status: values.membershipStatus,
       role: values.role,
-    }, { onConflict: "id" });
+    };
+    // An add must never overwrite a profile created by another request.
+    const { error } = previous
+      ? await supabaseAdmin.from("profiles").update(profileValues).eq("id", userId)
+      : await supabaseAdmin.from("profiles").insert(profileValues);
 
     if (error) {
       throw error;
     }
     profileSaved = true;
 
-    const invitationDelivery = ensured?.invitation
-      ? await sendMemberInvitation(ensured.invitation, values.role, values.membershipStatus)
-      : null;
+    let invitationDelivery: SendEmailResult | null = null;
+    if (ensured && !ensured.user.confirmed_at) {
+      try {
+        // Validate duplicates and save the profile before replacing any code.
+        ensured.invitation = await prepareMemberInvitation(userId, values.email, values.fullName);
+        invitationDelivery = await sendMemberInvitation(ensured.invitation, values.role, values.membershipStatus);
+      } catch (invitationError) {
+        logServerError("member_invitation_failed", invitationError);
+        invitationDelivery = { ok: false };
+      }
+    }
 
     await logAudit({
       actorId: viewer.profile.id,
@@ -175,7 +196,7 @@ export async function saveMember(input: unknown) {
       return {
         ok: true as const,
         tone: "warning" as const,
-        message: "Contul a fost salvat, dar emailul cu codul nu a putut fi trimis. Îl poți retrimite din listă după configurarea domeniului de email.",
+        message: `Membrul a fost adăugat, dar codul nu a putut fi trimis la ${values.email}. Folosește „Retrimite codul” din listă pentru a încerca din nou.`,
       };
     }
 
@@ -183,7 +204,7 @@ export async function saveMember(input: unknown) {
       ok: true as const,
       tone: "success" as const,
       message: invitationDelivery
-        ? "Contul a fost creat, iar codul de activare a fost trimis pe email."
+        ? `Membrul a fost adăugat, iar codul de activare a fost trimis la ${values.email}.`
         : ensured
           ? "Profilul a fost salvat. Contul existent era deja activat."
         : "Contul a fost salvat.",
@@ -216,6 +237,9 @@ export async function resendMemberInvitation(input: unknown) {
     if (!profile?.email) {
       return { ok: false as const, message: "Membrul nu are un email de autentificare." };
     }
+    if (!canManagePrimaryRole(viewer.profile.role, profile.role, profile.role)) {
+      return { ok: false as const, message: "Nu poți trimite coduri pentru un rol egal ori mai mare decât rolul tău." };
+    }
     if (!["active", "recruit"].includes(profile.membership_status)) {
       return { ok: false as const, message: "Contul trebuie să fie de recrut sau membru activ înainte să trimiți un cod de acces." };
     }
@@ -223,6 +247,7 @@ export async function resendMemberInvitation(input: unknown) {
     const ensured = await ensureInvitedAuthUser({
       email: profile.email,
       fullName: profile.full_name,
+      deferActivation: true,
     });
     if (ensured.user.id !== profile.id) {
       await removeNewAuthUser(ensured);
@@ -232,14 +257,15 @@ export async function resendMemberInvitation(input: unknown) {
       };
     }
 
-    if (!ensured.invitation) {
+    if (ensured.user.confirmed_at) {
       return {
         ok: false as const,
         message: "Contul este deja activat. Membrul poate folosi resetarea parolei din pagina de login.",
       };
     }
 
-    const delivery = await sendMemberInvitation(ensured.invitation, profile.role, profile.membership_status);
+    const invitation = await prepareMemberInvitation(profile.id, profile.email, profile.full_name);
+    const delivery = await sendMemberInvitation(invitation, profile.role, profile.membership_status);
     await logAudit({
       actorId: viewer.profile.id,
       action: "member.invitation_resent",
@@ -253,7 +279,7 @@ export async function resendMemberInvitation(input: unknown) {
 
     return delivery.ok
       ? { ok: true as const, message: `Un cod nou a fost trimis la ${profile.email}.` }
-      : { ok: false as const, message: "Codul a fost creat, dar emailul nu a putut fi trimis. Verifică domeniul Resend." };
+      : { ok: false as const, message: "Emailul cu noul cod nu a putut fi trimis. Încearcă din nou mai târziu." };
   } catch (error) {
     logServerError("member_invitation_resend_failed", error);
     return { ok: false as const, message: "Invitația nu a putut fi retrimisă." };

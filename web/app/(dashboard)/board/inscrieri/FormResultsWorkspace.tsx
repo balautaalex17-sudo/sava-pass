@@ -1,7 +1,7 @@
 "use client";
 
 import { PortalLink as Link } from "@/components/dashboard/PortalLink";
-import { useDeferredValue, useMemo, useState, useTransition } from "react";
+import { useDeferredValue, useMemo, useRef, useState, useTransition } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -9,6 +9,7 @@ import {
   Search,
   ShieldCheck,
   UserRoundCheck,
+  X,
 } from "lucide-react";
 import type {
   SignupApplication,
@@ -99,6 +100,9 @@ export function FormResultsWorkspace({
   const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({});
   const [interviewConfirmation, setInterviewConfirmation] = useState(false);
   const [rejectConfirmation, setRejectConfirmation] = useState(false);
+  const [candidateToConfirm, setCandidateToConfirm] = useState<SignupApplication | null>(null);
+  const interviewDialogRef = useRef<HTMLDialogElement>(null);
+  const cancelInterviewRef = useRef<HTMLButtonElement>(null);
   const [pending, startTransition] = useTransition();
   const [bulkPending, startBulkTransition] = useTransition();
   const [localEvaluations, setLocalEvaluations] = useState(evaluations);
@@ -257,6 +261,21 @@ export function FormResultsWorkspace({
   }
 
   function sendToInterview(application: SignupApplication) {
+    if (pending || bulkPending) return;
+    setCandidateToConfirm(application);
+    interviewDialogRef.current?.showModal();
+    cancelInterviewRef.current?.focus();
+  }
+
+  function closeInterviewDialog() {
+    interviewDialogRef.current?.close();
+    setCandidateToConfirm(null);
+  }
+
+  function confirmSendToInterview() {
+    if (!candidateToConfirm || pending || bulkPending) return;
+    const application = candidateToConfirm;
+    closeInterviewDialog();
     setSelectedId(application.id);
     setMessage(null);
     startTransition(async () => {
@@ -538,7 +557,6 @@ export function FormResultsWorkspace({
                   <th scope="col">Candidat</th>
                   <th scope="col">Evaluatori · punctaj /6</th>
                   <th scope="col">Medie /6</th>
-                  <th scope="col">Decizie / status</th>
                 </tr>
               </thead>
               <tbody>
@@ -602,14 +620,6 @@ export function FormResultsWorkspace({
                         ) : (
                           <span className="form-results-centralizer__empty-score">Neevaluat</span>
                         )}
-                      </td>
-                      <td className="form-results-centralizer__mean">
-                        {row.mean === null ? "—" : `${formatScore(row.mean)}/6`}
-                      </td>
-                      <td className="form-results-centralizer__decision-cell">
-                        <span className={`form-results-decision form-results-decision--${statusDecision(status, row.decision)}`}>
-                          {statusDecisionLabel(status, row.decision)}
-                        </span>
                         {canSelectIndividually && (
                           <button
                             type="button"
@@ -625,6 +635,9 @@ export function FormResultsWorkspace({
                             {isSelectingThisCandidate ? "Se trimite…" : "Trimite la interviu"}
                           </button>
                         )}
+                      </td>
+                      <td className="form-results-centralizer__mean">
+                        {row.mean === null ? "—" : `${formatScore(row.mean)}/6`}
                       </td>
                     </tr>
                   );
@@ -757,6 +770,43 @@ export function FormResultsWorkspace({
           Schimbă filtrul sau termenul de căutare.
         </div>
       )}
+      <dialog
+        ref={interviewDialogRef}
+        className="signup-confirm-dialog"
+        aria-labelledby="interview-confirm-title"
+        aria-describedby="interview-confirm-description"
+        onCancel={closeInterviewDialog}
+      >
+        <div className="signup-confirm-content">
+          <div className="signup-confirm-icon" aria-hidden="true">
+            <UserRoundCheck size={21} />
+          </div>
+          <div>
+            <h2 id="interview-confirm-title">
+              {candidateToConfirm && selectedForInterview.has(candidateToConfirm.id)
+                ? "Retrimiți invitația la interviu?"
+                : "Trimiți candidatul la interviu?"}
+            </h2>
+            <p id="interview-confirm-description">
+              <strong>{candidateToConfirm?.fullName}</strong>
+              {candidateToConfirm && selectedForInterview.has(candidateToConfirm.id)
+                ? " este deja selectat(ă). Vei retrimite emailul de invitație la interviu."
+                : " va fi mutat(ă) în etapa de interviu și va primi emailul de invitație."}
+            </p>
+          </div>
+          <button type="button" className="signup-confirm-close" onClick={closeInterviewDialog} aria-label="Închide confirmarea">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="signup-confirm-actions">
+          <button ref={cancelInterviewRef} type="button" className="dash-button dash-button--secondary" onClick={closeInterviewDialog} autoFocus>
+            Anulează
+          </button>
+          <button type="button" className="dash-button" disabled={!candidateToConfirm || pending || bulkPending} onClick={confirmSendToInterview}>
+            Confirmă și trimite
+          </button>
+        </div>
+      </dialog>
     </div>
   );
 }
@@ -1143,22 +1193,3 @@ function formatScore(score: number | null | undefined) {
   return score.toLocaleString("ro-RO", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
-function statusDecision(status: string, decision: "interview" | "not_selected" | "unrated") {
-  if (interviewStatuses.has(status)) return "interview";
-  if (status === "rejected") return "rejected";
-  if (status === "accepted") return "accepted";
-  if (status === "waiting_list") return "waiting";
-  if (decision === "interview") return "review-interview";
-  if (decision === "not_selected") return "review-rejected";
-  return "review";
-}
-
-function statusDecisionLabel(status: string, decision: "interview" | "not_selected" | "unrated") {
-  if (interviewStatuses.has(status)) return "Trimis la interviu";
-  if (status === "rejected") return "Respins";
-  if (status === "accepted") return "Acceptat";
-  if (status === "waiting_list") return "Listă de așteptare";
-  if (decision === "interview") return "Propus pentru interviu";
-  if (decision === "not_selected") return "Nu avansează";
-  return "Neevaluat";
-}

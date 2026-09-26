@@ -14,7 +14,7 @@ export const REQUEST_LABELS: Record<string, string> = {
 };
 
 export function attendanceResult(
-  meeting: Pick<Meeting, "status" | "attendance_closes_at">,
+  meeting: Pick<Meeting, "status" | "ends_at" | "attendance_closes_at">,
   attendanceStatus: string | null,
   requestStatus: string | null,
   now: number,
@@ -22,7 +22,9 @@ export function attendanceResult(
   if (meeting.status === "cancelled") return "cancelled";
   if (meeting.status === "draft") return "draft";
   if (attendanceStatus === "present") return "present";
-  if (meeting.status === "finished" || Date.parse(meeting.attendance_closes_at) < now) {
+  // Always allow three hours after the scheduled end, regardless of status or scanning window.
+  const absenceStartsAt = Date.parse(meeting.ends_at) + 3 * 60 * 60 * 1000;
+  if (now >= absenceStartsAt) {
     return requestStatus === "approved" ? "excused" : "absent";
   }
   return "upcoming";

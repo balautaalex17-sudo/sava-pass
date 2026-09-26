@@ -194,12 +194,46 @@
   white-space: nowrap;
 }
 
+.capacityBlock {
+  margin-top: 18px;
+}
+
+.capacityCopy,
 .priceSummary,
 .totalRow {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
+}
+
+.capacityCopy span,
+.capacityCopy strong {
+  font-size: 11px;
+}
+
+.capacityCopy span {
+  color: var(--slate-500);
+}
+
+.capacityCopy strong {
+  color: var(--slate-700);
+  font-weight: 700;
+}
+
+.capacityTrack {
+  overflow: hidden;
+  height: 4px;
+  margin-top: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--slate-100);
+}
+
+.capacityTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-cyan);
 }
 
 .priceSummary {

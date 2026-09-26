@@ -1,0 +1,73 @@
+.slider {
+  --slider-height: calc((100cqi - 48px) / 4);
+  --slider-gap: 12px;
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  color: var(--bdr-paper, #f5f5f3);
+}
+
+.viewport {
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+}
+.viewport::-webkit-scrollbar { display: none; }
+.track { position: relative; display: flex; width: max-content; animation: image-auto-scroll var(--slider-duration) linear var(--slider-delay, 0s) infinite paused; }
+.group { display: flex; flex: none; gap: var(--slider-gap); padding-inline-end: var(--slider-gap); }
+.card {
+  position: relative;
+  display: block;
+  flex: none;
+  height: var(--slider-height);
+  overflow: hidden;
+  border: 1px solid var(--bdr-line, #283b4b);
+  border-radius: 10px;
+  background: #0e1b27;
+  cursor: zoom-in;
+}
+.card img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
+@media (hover: hover) and (pointer: fine) { .card:hover img { transform: scale(1.035); } }
+.card:focus-visible { outline: 2px solid var(--bdr-cyan, #00c4e8); outline-offset: -4px; }
+.caption { position: absolute; inset: auto 0 0; padding: 40px 14px 12px; color: #fff; background: linear-gradient(transparent, rgba(2,18,33,.94)); font-size: 13px; line-height: 1.4; font-weight: 600; pointer-events: none; }
+.slider[data-running="true"] .track { animation-play-state: running; }
+.viewport:has(:focus-visible) .track { animation-play-state: paused; }
+.slider[data-mode="manual"] .track { animation: none; }
+.slider[data-mode="manual"] .viewport { overflow-x: auto; scroll-snap-type: x proximity; }
+.slider[data-mode="manual"] .card { scroll-snap-align: start; }
+.controls { display: flex; align-items: center; gap: 12px; padding-top: 16px; }
+.hint { flex: 1; color: var(--bdr-muted, #bac4cf); font-size: 12px; line-height: 1.5; }
+.controls button { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 44px; height: 44px; padding: 0; border: 1px solid var(--bdr-line, #365976); border-radius: 50%; background: transparent; color: var(--bdr-muted, #bac4cf); font: inherit; font-size: 11px; cursor: pointer; touch-action: manipulation; }
+.controls button:hover { color: var(--bdr-cyan, #00c4e8); border-color: var(--bdr-cyan, #00c4e8); }
+.controls .toggle { border-color: transparent; }
+.dots { display: flex; align-items: center; }
+.controls .dot { border: 0; }
+.dot span { width: 6px; height: 6px; border-radius: 50%; background: #54749b; transition: transform .2s ease, background-color .2s ease; }
+.dot[aria-current="true"] span { background: var(--bdr-cyan, #00c4e8); transform: scale(1.4); }
+.controls button:focus-visible { outline: 2px solid var(--bdr-cyan, #00c4e8); outline-offset: -3px; }
+
+@keyframes image-auto-scroll { to { transform: translateX(-50%); } }
+@media (hover: hover) { .viewport:hover .track { animation-play-state: paused; } }
+@media (min-width: 821px) and (max-width: 1100px) { .slider { --slider-height: min(250px, calc((100cqi - 36px) / 3.2)); } }
+@media (max-width: 820px) {
+  .slider { --slider-height: 220px; }
+  .caption { padding-inline: 12px; font-size: 13px; }
+  .card { -webkit-tap-highlight-color: transparent; }
+  .card:active { filter: brightness(.92); }
+}
+@media (max-width: 600px) {
+  .controls { flex-wrap: wrap; gap: 4px; padding-top: 16px; justify-content: space-between; }
+  .hint { flex-basis: 100%; margin-bottom: 4px; }
+}
+@media (max-width: 360px) { .dots { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none !important; }
+  .viewport { overflow-x: auto; scroll-snap-type: x proximity; }
+  .card { scroll-snap-align: start; }
+  .group[aria-hidden="true"], .controls .toggle { display: none; }
+  .card img { transition: none; }
+  .card:hover img { transform: none; }
+}

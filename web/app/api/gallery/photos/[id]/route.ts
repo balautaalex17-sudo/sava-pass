@@ -23,25 +23,36 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { token } = await getDriveAccess();
     const file = await driveFile(photo.drive_file_id, token);
     if (file.trashed) return new Response(null, { status: 404, headers: privateHeaders });
-    let response: Response;
-    if (thumbnail) {
-      if (!file.thumbnailLink || !isGoogleThumbnailUrl(file.thumbnailLink)) return new Response(null, { status: 404, headers: privateHeaders });
+    let response: Response | undefined;
+    let usingThumbnail = false;
+    if (thumbnail && file.thumbnailLink && isGoogleThumbnailUrl(file.thumbnailLink)) {
       response = await fetch(file.thumbnailLink, {
         headers: { Authorization: `Bearer ${token}` }, cache: "no-store", redirect: "error", signal: request.signal,
+      }).catch((error) => {
+        if (request.signal.aborted) throw error;
+        return undefined;
       });
-      if (!response.ok || !/^image\/(jpeg|png|webp|avif)(;|$)/i.test(response.headers.get("content-type") ?? "")) {
-        await response.body?.cancel();
-        return new Response(null, { status: 502, headers: privateHeaders });
+      if (response?.ok && /^image\/(jpeg|png|webp|avif)(;|$)/i.test(response.headers.get("content-type") ?? "")) {
+        usingThumbnail = true;
+      } else {
+        await response?.body?.cancel();
+        response = undefined;
       }
-    } else {
-      const range = request.headers.get("range");
+    }
+    if (!response) {
+      // Drive thumbnails can lag behind a completed upload. Browsers can show
+      // these originals immediately; HEIC/HEIF still need Google's conversion.
+      if (thumbnail && !["image/jpeg", "image/png", "image/webp", "image/avif"].includes(photo.mime_type)) {
+        return new Response(null, { status: 404, headers: privateHeaders });
+      }
+      const range = thumbnail ? null : request.headers.get("range");
       if (range && (!/^bytes=(?:\d+-\d*|-\d+)$/.test(range) || range.length > 70)) return new Response(null, { status: 416, headers: privateHeaders });
       response = await driveFetch(`files/${encodeURIComponent(photo.drive_file_id)}?alt=media`, token, {
         headers: range ? { Range: range } : undefined, signal: request.signal,
       });
     }
     const headers = new Headers(privateHeaders);
-    headers.set("Content-Type", thumbnail ? response.headers.get("content-type")! : photo.mime_type);
+    headers.set("Content-Type", usingThumbnail ? response.headers.get("content-type")! : photo.mime_type);
     headers.set("Content-Security-Policy", "default-src 'none'; sandbox");
     const disposition = !thumbnail && url.searchParams.has("download") ? "attachment" : "inline";
     headers.set("Content-Disposition", `${disposition}; filename="photo"; filename*=UTF-8''${encodeURIComponent(photo.original_name).replace(/'/g, "%27")}`);
