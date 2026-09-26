@@ -104,7 +104,23 @@ normal operations. Browser checks did not make purchases or send messages.
 
 ## Release
 
-Pending deployment verification. Deploy from this branch using the existing
-production environment with `--skip-domain`; verify the immutable candidate
-before promoting its domain aliases. The prior deployment above is the rollback
-target. Do not promote the older partial dates/spacing candidate.
+- Status: **READY, promoted to production** on 26 September 2026.
+- Runtime commit: `7e693048352edd86349854675d26d29fafba78c1`, pushed to
+  `origin/codex/restore-regressions`.
+- Framework: Next.js 16.3.1; remote build duration: 59 seconds.
+- Deployment: `dpl_H7nH9TgWjkVvo7B6rxDLHX381HS7`.
+- Immutable URL: https://sava-pass-1v2x9tksv-nexuswork.vercel.app
+- Main site: https://interactsfsava.com
+- Built with the existing production environment and `--skip-domain`. The public
+  browser verification passed on the immutable candidate before promotion,
+  then passed again on the main domain after promotion. Both runs included phone
+  and desktop widths, held-response navigation and the Instagram fallback.
+- Read-only zero-row queries for the registrations joins, profile departments
+  and department requests returned HTTP 200 against the existing database.
+- Post-release error-log query for this deployment returned no error entries in
+  the ten-minute verification window. Drains and ongoing monitoring configuration
+  were not inspected or changed; this is a release smoke check, not monitoring.
+- Rollback target: `dpl_HVVut4SQ4DgeB2PNykjcY5ibRtVe`, the prior map-fixed release.
+
+The older partial dates/spacing candidate was not promoted. A documentation-only
+commit records these release results after the runtime commit above.
