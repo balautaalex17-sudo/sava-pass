@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import {
   Banknote,
   CalendarDays,
@@ -11,9 +12,9 @@ import {
   MapPin,
   ShieldCheck,
   Ticket,
-  X,
+  ArrowLeft,
 } from "lucide-react";
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { useActionState, useId, useState } from "react";
 import { createCheckout, type CheckoutState } from "@/app/[slug]/checkout/actions";
 import { Button } from "@/components/ui/Button";
 import styles from "./event-purchase.module.css";
@@ -48,7 +49,8 @@ interface EventPurchaseExperienceProps {
   sold: number;
   seatsLeft: number;
   ticketTypes: PurchaseTicketType[];
-  initialCheckout?: boolean;
+  checkoutPage?: boolean;
+  initialTicketId?: string;
 }
 
 type CheckoutStep = "tickets" | "details";
@@ -61,8 +63,7 @@ function formatPrice(value: number) {
 
 function availabilityLabel(seatsLeft: number) {
   if (seatsLeft <= 0) return "Epuizat";
-  if (seatsLeft <= 4) return `Doar ${seatsLeft} rămase`;
-  return `${seatsLeft} disponibile`;
+  return "Disponibil";
 }
 
 export function EventPurchaseExperience({
@@ -72,15 +73,13 @@ export function EventPurchaseExperience({
   sold,
   seatsLeft,
   ticketTypes,
-  initialCheckout = false,
+  checkoutPage = false,
+  initialTicketId,
 }: EventPurchaseExperienceProps) {
   const firstAvailable = ticketTypes.find((type) => type.seatsLeft > 0);
-  const [selectedId, setSelectedId] = useState(firstAvailable?.id ?? ticketTypes[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(ticketTypes.find((type) => type.id === initialTicketId && type.seatsLeft > 0)?.id ?? firstAvailable?.id ?? ticketTypes[0]?.id ?? "");
   const selected = ticketTypes.find((type) => type.id === selectedId) ?? firstAvailable ?? ticketTypes[0];
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const openedFromUrl = useRef(false);
-  const [step, setStep] = useState<CheckoutStep>("tickets");
-  const [isOpen, setIsOpen] = useState(false);
+  const [step, setStep] = useState<CheckoutStep>(initialTicketId ? "details" : "tickets");
   const [actionState, action, pending] = useActionState(createCheckout, initialActionState);
   const [buyer, setBuyer] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const formId = useId();
@@ -91,45 +90,12 @@ export function EventPurchaseExperience({
     (lowest, type) => type.seatsLeft > 0 ? Math.min(lowest, type.priceRon) : lowest,
     selected?.priceRon ?? 0,
   );
-  const capacityPercent = event.capacity > 0
-    ? Math.min(100, Math.max(0, Math.round((sold / event.capacity) * 100)))
-    : 0;
-
-  const openCheckout = (nextStep: CheckoutStep) => {
-    if (!canReserve) return;
-    setStep(nextStep);
-    if (!dialogRef.current?.open) dialogRef.current?.showModal();
-    setIsOpen(true);
-  };
-
-  const closeCheckout = () => {
-    if (pending) return;
-    dialogRef.current?.close();
-    setIsOpen(false);
-  };
-
-  useEffect(() => {
-    if (!initialCheckout || openedFromUrl.current || !canReserve) return;
-    openedFromUrl.current = true;
-    setStep("details");
-    if (!dialogRef.current?.open) dialogRef.current?.showModal();
-    setIsOpen(true);
-  }, [canReserve, initialCheckout]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
 
   const fullName = `${buyer.firstName.trim()} ${buyer.lastName.trim()}`.trim();
 
   return (
     <>
-      <aside
+      {!checkoutPage && <aside
         id="bilete"
         className={`${styles.sidebar} ${purchaseState === "active" ? styles.sidebarActive : ""}`}
         aria-label="Rezervare bilet"
@@ -154,16 +120,6 @@ export function EventPurchaseExperience({
               onSelect={setSelectedId}
             />
 
-            <div className={styles.capacityBlock}>
-              <div className={styles.capacityCopy}>
-                <span>Disponibilitate</span>
-                <strong>{seatsLeft} locuri rămase</strong>
-              </div>
-              <div className={styles.capacityTrack} aria-hidden="true">
-                <span style={{ width: `${capacityPercent}%` }} />
-              </div>
-            </div>
-
             <div className={styles.priceSummary} aria-live="polite">
               <div>
                 <span>Bilet</span>
@@ -176,14 +132,9 @@ export function EventPurchaseExperience({
               <strong>{totalLabel}</strong>
             </div>
 
-            <Button
-              type="button"
-              full
-              icon={<ChevronRight size={18} strokeWidth={1.75} aria-hidden="true" />}
-              onClick={() => openCheckout("details")}
-            >
-              Continuă rezervarea
-            </Button>
+            <Link href={`/${event.slug}/checkout?ticket=${encodeURIComponent(selected.id)}`} className="btn btn--primary pressable hover-dim" style={{ width: "100%" }}>
+              Continuă rezervarea <ChevronRight size={18} aria-hidden="true" />
+            </Link>
             <p className={styles.paymentHint}>
               <Banknote size={14} strokeWidth={1.75} aria-hidden="true" />
               Plată cash · cod QR disponibil imediat
@@ -196,35 +147,23 @@ export function EventPurchaseExperience({
             sold={sold}
           />
         )}
-      </aside>
+      </aside>}
 
-      {purchaseState === "active" && selected ? (
+      {!checkoutPage && purchaseState === "active" && selected ? (
         <>
           <div className={styles.mobileBar}>
             <div>
               <span>{ticketTypes.length > 1 ? "De la" : "Bilet"}</span>
               <strong>{formatPrice(mobileStartingPrice)}</strong>
             </div>
-            <Button type="button" onClick={() => openCheckout("tickets")}>Ia bilet</Button>
+            <Link href={`/${event.slug}/checkout`} className="btn btn--primary pressable hover-dim">Ia bilet</Link>
           </div>
           <div className={styles.mobileSpacer} aria-hidden="true" />
         </>
       ) : null}
 
-      {canReserve && selected ? (
-        <dialog
-          ref={dialogRef}
-          className={`${styles.dialog} ${step === "tickets" ? styles.dialogTickets : styles.dialogDetails}`}
-          aria-labelledby={`${formId}-checkout-title`}
-          onCancel={(event) => {
-            event.preventDefault();
-            closeCheckout();
-          }}
-          onClose={() => setIsOpen(false)}
-          onClick={(clickEvent) => {
-            if (clickEvent.target === clickEvent.currentTarget) closeCheckout();
-          }}
-        >
+      {checkoutPage && canReserve && selected ? (
+        <div className={styles.checkoutPage}>
           <form action={action} className={styles.checkoutForm}>
             <input type="hidden" name="slug" value={event.slug} />
             <input type="hidden" name="request_key" value={requestKey} />
@@ -240,20 +179,14 @@ export function EventPurchaseExperience({
                   )}
                 </div>
                 <div>
-                  <span id={`${formId}-checkout-title`}>Finalizează rezervarea</span>
+                  <h1 id={`${formId}-checkout-title`}>Finalizează rezervarea</h1>
                   <strong>{event.title}</strong>
                   <small>{event.dateLabel} · {event.timeLabel} · {event.venue}</small>
                 </div>
               </div>
-              <button
-                type="button"
-                className={styles.closeButton}
-                onClick={closeCheckout}
-                disabled={pending}
-                aria-label="Închide rezervarea"
-              >
-                <X size={20} strokeWidth={1.75} aria-hidden="true" />
-              </button>
+              <Link href={`/${event.slug}`} className={styles.closeButton} aria-label="Înapoi la eveniment">
+                <ArrowLeft size={20} strokeWidth={1.75} aria-hidden="true" />
+              </Link>
             </header>
 
             <CheckoutProgress step={step} />
@@ -400,8 +333,8 @@ export function EventPurchaseExperience({
               </p>
             </section>
           </form>
-        </dialog>
-      ) : null}
+        </div>
+      ) : checkoutPage ? <EventPurchaseState event={event} state={purchaseState === "active" ? "unavailable" : purchaseState} sold={sold} /> : null}
     </>
   );
 }

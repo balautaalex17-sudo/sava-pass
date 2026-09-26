@@ -5,4 +5,16 @@ import { MembersManager } from "./MembersManager";
 
 export const metadata: Metadata = { title: "Membri și recruți", robots: { index: false, follow: false } };
 
-export default async function MembersPage(){const viewer=await requirePagePermission("manage_members");const{data}=await supabaseAdmin.from("profiles").select("id, full_name, email, phone, grade, membership_status, role, created_at").order("full_name");const members=(data??[]).map((row)=>({id:row.id,fullName:row.full_name,email:row.email,phone:row.phone,grade:row.grade,membershipStatus:row.membership_status,role:row.role,createdAt:row.created_at}));return <div className="dash-page"><header className="dash-page-head"><div><span className="dash-eyebrow">Administrare conturi</span><h1>Membri și recruți</h1><p>Candidații acceptați devin recruți. Board-ul îi poate trece la membru activ și poate administra rolurile aflate sub Board.</p></div></header><MembersManager members={members} viewerRole={viewer.profile.role}/></div>}
+export default async function MembersPage() {
+  const viewer = await requirePagePermission("manage_members");
+  const { data, error } = await supabaseAdmin.from("profiles")
+    .select("id, full_name, email, phone, grade, membership_status, role, created_at, member_department")
+    .order("full_name");
+  if (error) throw error;
+  const members = (data ?? []).map((row) => ({
+    id: row.id, fullName: row.full_name, email: row.email, phone: row.phone,
+    grade: row.grade, membershipStatus: row.membership_status, role: row.role,
+    createdAt: row.created_at, department: row.member_department,
+  }));
+  return <div className="dash-page"><header className="dash-page-head"><div><span className="dash-eyebrow">Administrare conturi</span><h1>Membri și recruți</h1><p>Candidații acceptați devin recruți. Board-ul îi poate trece la membru activ și poate administra rolurile aflate sub Board.</p></div></header><MembersManager members={members} viewerRole={viewer.profile.role}/></div>;
+}

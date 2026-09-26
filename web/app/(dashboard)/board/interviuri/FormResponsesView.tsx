@@ -50,6 +50,7 @@ export async function FormResponsesView({
   viewerName,
   isBoardView,
   canManage,
+  canSendToInterview,
   canImport,
   canEvaluate,
 }: {
@@ -57,6 +58,7 @@ export async function FormResponsesView({
   viewerName: string;
   isBoardView: boolean;
   canManage: boolean;
+  canSendToInterview: boolean;
   canImport: boolean;
   canEvaluate: boolean;
 }) {
@@ -248,6 +250,7 @@ export async function FormResponsesView({
         viewerName={viewerName}
         isBoardView={isBoardView}
         canManage={canManage}
+        canSendToInterview={canSendToInterview}
         canEvaluate={canEvaluate}
       />
 
@@ -265,6 +268,7 @@ export async function FormResponsesView({
             applications={applications}
             reviewers={reviewers}
             canManage={canManage}
+            canSendToInterview={canSendToInterview}
           />
         </div>
       </details>}

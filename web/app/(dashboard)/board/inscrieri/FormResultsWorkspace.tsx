@@ -41,7 +41,7 @@ export interface ApplicationFormEvaluation {
   updatedAt: string;
 }
 
-type FormFilter = "all" | "unrated" | ApplicationRating;
+type FormFilter = "all" | "unrated" | "unrated_by_me" | ApplicationRating;
 
 const reviewStatuses = new Set(["submitted", "under_review"]);
 const interviewStatuses = new Set([
@@ -76,6 +76,7 @@ export function FormResultsWorkspace({
   viewerName,
   isBoardView,
   canManage,
+  canSendToInterview,
   canEvaluate,
 }: {
   applications: SignupApplication[];
@@ -87,6 +88,7 @@ export function FormResultsWorkspace({
   viewerName: string;
   isBoardView: boolean;
   canManage: boolean;
+  canSendToInterview: boolean;
   canEvaluate: boolean;
 }) {
   const [selectedId, setSelectedId] = useState("");
@@ -140,7 +142,13 @@ export function FormResultsWorkspace({
         ? applicationEvaluations.map((item) => item.rating)
         : ownEvaluation ? [ownEvaluation.rating] : [];
       if (filter === "unrated" && ratings.length > 0) return false;
-      if (filter !== "all" && filter !== "unrated" && !ratings.includes(filter)) return false;
+      if (filter === "unrated_by_me" && ownEvaluation) return false;
+      if (
+        filter !== "all"
+        && filter !== "unrated"
+        && filter !== "unrated_by_me"
+        && !ratings.includes(filter)
+      ) return false;
 
       if (!query) return true;
       const searchable = [
@@ -261,7 +269,7 @@ export function FormResultsWorkspace({
   }
 
   function sendToInterview(application: SignupApplication) {
-    if (pending || bulkPending) return;
+    if (!canSendToInterview || pending || bulkPending) return;
     setCandidateToConfirm(application);
     interviewDialogRef.current?.showModal();
     cancelInterviewRef.current?.focus();
@@ -273,7 +281,7 @@ export function FormResultsWorkspace({
   }
 
   function confirmSendToInterview() {
-    if (!candidateToConfirm || pending || bulkPending) return;
+    if (!canSendToInterview || !candidateToConfirm || pending || bulkPending) return;
     const application = candidateToConfirm;
     closeInterviewDialog();
     setSelectedId(application.id);
@@ -324,8 +332,9 @@ export function FormResultsWorkspace({
 
   function isActionable(row: (typeof boardRows)[number]) {
     const status = localStatuses[row.application.id] ?? row.application.status;
-    const canChooseDecision = reviewStatuses.has(status) && row.evaluations.length > 0;
-    const canSendEmail = interviewStatuses.has(status)
+    const canChooseDecision = reviewStatuses.has(status) && row.evaluations.length > 0
+      && (canSendToInterview || row.decision === "not_selected");
+    const canSendEmail = canSendToInterview && interviewStatuses.has(status)
       && selectedForInterview.has(row.application.id)
       && !interviewEmailSent.has(row.application.id);
     return canChooseDecision || canSendEmail;
@@ -351,7 +360,7 @@ export function FormResultsWorkspace({
   }
 
   function requestSendToInterview() {
-    if (!interviewEligible.length || bulkPending) return;
+    if (!canSendToInterview || !interviewEligible.length || bulkPending) return;
     setBulkMessage(null);
     setInterviewConfirmation(true);
     setRejectConfirmation(false);
@@ -363,6 +372,7 @@ export function FormResultsWorkspace({
   }
 
   function sendCheckedToInterview() {
+    if (!canSendToInterview) return;
     const applicationIds = interviewEligible.map((row) => row.application.id);
     const applicationIdsToSelect = selectionEligible.map((row) => row.application.id);
     if (!applicationIds.length) {
@@ -449,7 +459,7 @@ export function FormResultsWorkspace({
             />
           </label>
           <div className="interview-filters form-results-filters" aria-label="Filtrează evaluările formularelor">
-            {(["all", "unrated", "green", "yellow", "red"] as const).map((value) => (
+            {(["all", "unrated", "unrated_by_me", "green", "yellow", "red"] as const).map((value) => (
               <button
                 key={value}
                 type="button"
@@ -457,7 +467,7 @@ export function FormResultsWorkspace({
                 onClick={() => setFilter(value)}
                 aria-label={filterLabel(value)}
               >
-                {value !== "all" && value !== "unrated" && (
+                {value !== "all" && value !== "unrated" && value !== "unrated_by_me" && (
                   <span className={`interview-filter-dot interview-filter-dot--${value}`} />
                 )}
                 {filterShortLabel(value)}
@@ -471,18 +481,20 @@ export function FormResultsWorkspace({
       {isBoardView && canManage && (
         <section className="form-results-actions" aria-label="Decizii în lot">
           <div className="form-results-actions__copy">
-            <strong>{checkedIds.size ? `${checkedIds.size} candidați bifați` : "Selecție manuală Board"}</strong>
-            <span>Bifează candidații, apoi trimite-i la interviu sau anunță-i că nu au avansat.</span>
+            <strong>{checkedIds.size ? `${checkedIds.size} candidați bifați` : "Decizii candidați"}</strong>
+            <span>{canSendToInterview
+              ? "Bifează candidații, apoi trimite-i la interviu sau anunță-i că nu au avansat."
+              : "Bifează candidații respinși pentru a-i anunța că nu au avansat."}</span>
           </div>
           <div className="form-results-actions__controls">
-            <button
+            {canSendToInterview && <button
               type="button"
               className="dash-button"
               disabled={bulkPending || interviewEligible.length === 0}
               onClick={requestSendToInterview}
             >
               {bulkPending ? "Se procesează…" : `Trimite la interviu (${interviewEligible.length})`}
-            </button>
+            </button>}
             <button
               type="button"
               className="dash-button dash-button--secondary"
@@ -492,7 +504,7 @@ export function FormResultsWorkspace({
               {`Anunță candidații respinși (${rejectEligible.length})`}
             </button>
           </div>
-          {interviewConfirmation && (
+          {canSendToInterview && interviewConfirmation && (
             <div className="form-results-actions__confirm" role="group" aria-label="Confirmă trimiterea la interviu">
               <span>Vei muta exact {interviewEligible.length} candidați în etapa de interviu și le vei trimite emailul.</span>
               <button type="button" className="dash-button" disabled={bulkPending} onClick={sendCheckedToInterview}>
@@ -534,7 +546,7 @@ export function FormResultsWorkspace({
               <p>Punctaj descrescător; egalitățile sunt ordonate după numele de familie.</p>
             </div>
             <div className="form-results-centralizer__head-actions">
-              {canManage && (
+              {canManage && canSendToInterview && (
                 <label className="form-results-select-visible">
                   <input
                     type="checkbox"
@@ -562,7 +574,7 @@ export function FormResultsWorkspace({
               <tbody>
                 {visibleBoardRows.map((row, index) => {
                   const status = statusFor(row.application);
-                  const canSelectIndividually = canManage
+                  const canSelectIndividually = canManage && canSendToInterview
                     && reviewStatuses.has(status)
                     && row.evaluations.length > 0
                     && !selectedForInterview.has(row.application.id);
@@ -724,7 +736,7 @@ export function FormResultsWorkspace({
           viewerId={viewerId}
           viewerName={viewerName}
           isBoardView={isBoardView}
-          canManage={canManage}
+          canSendToInterview={canSendToInterview}
           canEvaluate={canEvaluate}
           formDecision={selectedDecision}
           selectedForInterview={selectedForInterview.has(selected.id)}
@@ -750,7 +762,7 @@ export function FormResultsWorkspace({
             viewerId={viewerId}
             viewerName={viewerName}
             isBoardView={isBoardView}
-            canManage={canManage}
+            canSendToInterview={canSendToInterview}
             canEvaluate={canEvaluate}
             formDecision={selectedDecision}
             selectedForInterview={selectedForInterview.has(selected.id)}
@@ -770,7 +782,7 @@ export function FormResultsWorkspace({
           Schimbă filtrul sau termenul de căutare.
         </div>
       )}
-      <dialog
+      {canSendToInterview && <dialog
         ref={interviewDialogRef}
         className="signup-confirm-dialog"
         aria-labelledby="interview-confirm-title"
@@ -806,7 +818,7 @@ export function FormResultsWorkspace({
             Confirmă și trimite
           </button>
         </div>
-      </dialog>
+      </dialog>}
     </div>
   );
 }
@@ -819,7 +831,7 @@ function CandidateFormResult({
   viewerId,
   viewerName,
   isBoardView,
-  canManage,
+  canSendToInterview,
   canEvaluate,
   formDecision,
   selectedForInterview,
@@ -837,7 +849,7 @@ function CandidateFormResult({
   viewerId: string;
   viewerName: string;
   isBoardView: boolean;
-  canManage: boolean;
+  canSendToInterview: boolean;
   canEvaluate: boolean;
   formDecision: FormDecision;
   selectedForInterview: boolean;
@@ -926,12 +938,12 @@ function CandidateFormResult({
           <div className="form-result-next-copy">
             {selectedForInterview ? <CheckCircle2 size={20} /> : <UserRoundCheck size={20} />}
             <div>
-              <span className="dash-eyebrow">Decizia Board-ului</span>
+              <span className="dash-eyebrow">Selecția pentru interviu</span>
               <h3 id="form-next-step-title">
                 {selectedForInterview
                   ? "Candidatul este selectat pentru interviu"
                   : canSelect
-                    ? "Selectează candidatul pentru interviu"
+                    ? canSendToInterview ? "Selectează candidatul pentru interviu" : "Așteaptă decizia Super Admin"
                     : pendingDecisionTitle}
               </h3>
               <p>
@@ -940,14 +952,14 @@ function CandidateFormResult({
                     ? "Invitația a fost trimisă. Candidatul apare și în tabul Interviuri."
                     : "Candidatul este în etapa de interviu, dar emailul trebuie retrimis."
                   : canSelect
-                    ? "Decizia este manuală. Butonul mută candidatul în etapa de interviu și îi trimite emailul."
+                    ? "Doar Super Admin poate muta candidatul în etapa de interviu și îi poate trimite invitația."
                     : pendingDecisionDescription}
               </p>
             </div>
           </div>
 
           <div className="form-result-next-actions">
-            {selectedForInterview && !interviewEmailSent && canManage && (
+            {selectedForInterview && !interviewEmailSent && canSendToInterview && (
               <button type="button" className="dash-button" disabled={pending} onClick={onSendInterviewEmail}>
                 {pending ? "Se trimite…" : "Retrimite emailul de interviu"}
               </button>
@@ -956,7 +968,7 @@ function CandidateFormResult({
               <Link className="dash-button dash-button--secondary" href={`/board/interviuri?view=interviuri&application=${application.id}`}>
                 Deschide tabul Interviuri <ArrowRight size={16} />
               </Link>
-            ) : canSelect && canManage ? (
+            ) : canSelect && canSendToInterview ? (
               <button type="button" className="dash-button" disabled={pending} onClick={onSelectForInterview}>
                 {pending ? "Se trimite…" : "Trimite la interviu"} <ArrowRight size={16} />
               </button>
@@ -1177,12 +1189,14 @@ function ratingLabel(rating: ApplicationRating) {
 function filterLabel(filter: FormFilter) {
   if (filter === "all") return "Arată toate formularele";
   if (filter === "unrated") return "Arată formularele neevaluate";
+  if (filter === "unrated_by_me") return "Arată formularele neevaluate de mine";
   return `Filtrează formularele: ${ratingLabel(filter)}`;
 }
 
 function filterShortLabel(filter: FormFilter) {
   if (filter === "all") return "Toate";
   if (filter === "unrated") return "Neevaluate";
+  if (filter === "unrated_by_me") return "Neevaluate de mine";
   if (filter === "green") return "Verde";
   if (filter === "yellow") return "Galben";
   return "Roșu";

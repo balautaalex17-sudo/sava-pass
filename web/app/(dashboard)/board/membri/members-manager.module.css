@@ -1,0 +1,20 @@
+.toolbar { flex-wrap: wrap; align-items: flex-end; }
+.toolbar > label { min-height: 44px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; }
+.control { display: grid; gap: 5px; min-width: 130px; }
+.control > label { color: var(--dash-muted); font-size: 11px; font-weight: 700; }
+.control select { min-height: 44px; padding: 8px 30px 8px 11px; border: 1px solid var(--dash-line-strong); border-radius: 8px; background: #fff; color: var(--dash-ink); font: inherit; font-size: 13px; cursor: pointer; }
+.control select:focus-visible { outline: 2px solid var(--dash-green); outline-offset: 2px; }
+.results { margin: 0 0 10px; color: var(--dash-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.memberCell { min-width: 220px; }
+.identity { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; margin-bottom: 3px; }
+.identity .badge { display: inline-flex; flex-shrink: 0; align-items: center; min-height: 23px; padding: 3px 7px; border: 1px solid transparent; border-radius: 6px; font-size: 10px; font-weight: 800; line-height: 1.3; letter-spacing: .03em; }
+.identity .hr { color: #176044; background: #e9f5ef; border-color: #c4e6d5; }
+.identity .pr { color: #14547c; background: #eaf4fc; border-color: #c6e1f3; }
+.identity .unassigned { color: var(--dash-muted); background: var(--slate-100); font-weight: 650; }
+@media (max-width: 600px) {
+  .toolbar { align-items: stretch; }
+  .controls { width: 100%; }
+  .control { flex: 1; min-width: 0; }
+  .control select { width: 100%; min-width: 0; font-size: 16px; }
+}

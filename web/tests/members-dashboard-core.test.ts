@@ -31,6 +31,18 @@ test("6. expired attendance QR is rejected", () => {
   assert.deepEqual(verifyMemberAttendanceWithSecret(secret,token,now+31_000),{ok:false,code:"expired_token"});
 });
 
+test("event tickets retain valid signatures after their old deadline while attendance QR expires", () => {
+  const now = Date.UTC(2026, 8, 26);
+  const id = randomUUID();
+  const token = signTicketWithSecret(secret, id, 30, now);
+  const result = verifyTicketTokenWithSecret(secret, token, now + 31_000);
+  assert.equal(result.ok, true);
+  if (result.ok) assert.equal(result.reference, id);
+  const [prefix, payload, signature] = token.split(".");
+  const tampered = `${prefix}.${payload}.${signature[0] === "a" ? "b" : "a"}${signature.slice(1)}`;
+  assert.deepEqual(verifyTicketTokenWithSecret(secret, tampered, now + 31_000), { ok: false, code: "invalid_token" });
+});
+
 test("7. ticket QR is rejected by attendance validation", () => {
   const token=signTicketWithSecret(secret,randomUUID());
   assert.deepEqual(verifyMemberAttendanceWithSecret(secret,token),{ok:false,code:"wrong_qr_type"});
@@ -77,6 +89,6 @@ test("20. leaving the dashboard is deterministic and login does not trap browser
   const staffLogin = projectFile("app/login/page.tsx");
 
   assert.match(dashboardNav, /href="\/"[\s\S]*?replace[\s\S]*?Înapoi la site/);
-  assert.match(staffLogin, /router\.replace\(staffRedirectForRole\(profile\?\.role, next\)\)/);
+  assert.match(staffLogin, /window\.location\.replace\(staffRedirectForRole\(profile\?\.role, next\)\)/);
   assert.doesNotMatch(staffLogin, /router\.push\(staffRedirectForRole/);
 });

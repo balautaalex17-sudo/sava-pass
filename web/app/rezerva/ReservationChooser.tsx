@@ -46,7 +46,7 @@ export function ReservationChooser({ choices }: { choices: ReservationChoice[] }
           {choices.map((event, index) => (
             <li key={event.id}>
               <Link
-                href={`/${event.slug}?checkout=1`}
+                href={`/${event.slug}/checkout`}
                 className={`${styles.eventChoice} pressable`}
                 aria-label={`Rezervă bilet pentru ${event.title}`}
               >

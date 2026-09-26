@@ -65,7 +65,7 @@ export const RECRUITMENT_SCHEDULE = [
   ["1 octombrie 2026", "Comunicarea răspunsurilor pentru formular"],
   ["2–4 octombrie 2026", "Interviuri fizice în sălile CNSS"],
   ["6–7 octombrie 2026", "Comunicarea răspunsurilor după interviu"],
-  ["8 septembrie 2026", "Prima ședință cu recruții"],
+  ["8 octombrie 2026", "Prima ședință cu recruții"],
 ] as const;
 
 export const INTERVIEW_INTRO_QUESTIONS = [

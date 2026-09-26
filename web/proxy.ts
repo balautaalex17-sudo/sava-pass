@@ -44,7 +44,15 @@ export async function proxy(request: NextRequest) {
 
   if (!isStaffRoute && !isBuyerRoute && !isLoginRoute && !isDashboardRoute) return NextResponse.next();
 
-  const response = NextResponse.next({ request });
+  let response = NextResponse.next({ request });
+  const sessionHeaders = new Headers();
+
+  function redirectWithSession(url: URL) {
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    sessionHeaders.forEach((value, name) => redirect.headers.set(name, value));
+    return redirect;
+  }
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,11 +60,16 @@ export async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            response.cookies.set(name, value, options);
-          });
+        setAll(cookiesToSet, headers) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          // NextResponse snapshots request headers. Recreate it after refreshing
+          // cookies so the page receives the same session as the browser.
+          const previousCookies = response.cookies.getAll();
+          response = NextResponse.next({ request });
+          previousCookies.forEach((cookie) => response.cookies.set(cookie));
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          Object.entries(headers).forEach(([name, value]) => sessionHeaders.set(name, value));
+          sessionHeaders.forEach((value, name) => response.headers.set(name, value));
         },
       },
     }
@@ -74,8 +87,8 @@ export async function proxy(request: NextRequest) {
 
   if (!userId) {
     const loginUrl = new URL(isDashboardRoute ? "/conta/login" : "/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
+    return redirectWithSession(loginUrl);
   }
 
   // Dashboard layouts and every action/handler perform the authoritative
@@ -106,10 +119,10 @@ export async function proxy(request: NextRequest) {
 
   if (isLoginRoute) {
     const next = request.nextUrl.searchParams.get("next");
-    return NextResponse.redirect(new URL(staffRedirectForRole(role, next), request.url));
+    return redirectWithSession(new URL(staffRedirectForRole(role, next), request.url));
   }
 
-  if (!role) return NextResponse.redirect(new URL(staffHomeForRole(role), request.url));
+  if (!role) return redirectWithSession(new URL(staffHomeForRole(role), request.url));
 
   if (role === "admin") return response;
 
@@ -117,14 +130,14 @@ export async function proxy(request: NextRequest) {
   if (isStatsRoute && hasStaffRole(role, ["statistici"])) return response;
 
   if (roles.includes("scanner")) {
-    return NextResponse.redirect(new URL("/scanner", request.url));
+    return redirectWithSession(new URL("/scanner", request.url));
   }
 
   if (role === "statistici") {
-    return NextResponse.redirect(new URL("/statistici", request.url));
+    return redirectWithSession(new URL("/statistici", request.url));
   }
 
-  return NextResponse.redirect(new URL("/conta", request.url));
+  return redirectWithSession(new URL("/conta", request.url));
 }
 
 export const config = {

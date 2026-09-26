@@ -159,12 +159,22 @@ export async function createCheckout(_prev: CheckoutState, form: FormData): Prom
     supabaseAdmin.from("orders")
       .update({ buyer_phone: phone })
       .eq("id", reservation.data.order_id),
+    // The reservation RPC still inserts a legacy deadline. Clear it before delivering the ticket.
     supabaseAdmin.from("tickets")
-      .update({ holder_phone: phone })
-      .eq("id", reservation.data.ticket_id),
+      .update({ holder_phone: phone, expires_at: null })
+      .eq("id", reservation.data.ticket_id)
+      .select("id")
+      .single(),
   ]);
-  if (orderContact.error || ticketContact.error) {
-    logServerError("checkout_phone_link_failed", orderContact.error ?? ticketContact.error, {
+  if (ticketContact.error || !ticketContact.data) {
+    logServerError("checkout_reservation_deadline_clear_failed", ticketContact.error, {
+      orderId: reservation.data.order_id,
+      ticketId: reservation.data.ticket_id,
+    });
+    return { errors: { general: "Rezervarea nu a putut fi finalizată. Încearcă din nou." } };
+  }
+  if (orderContact.error) {
+    logServerError("checkout_phone_link_failed", orderContact.error, {
       orderId: reservation.data.order_id,
       ticketId: reservation.data.ticket_id,
     });

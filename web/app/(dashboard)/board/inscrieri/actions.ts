@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logAudit } from "@/lib/audit";
 import { requirePermission } from "@/lib/dashboard/auth";
 import { acceptRecruitAccount } from "@/lib/dashboard/recruit-account";
+import { canSendToInterview, canSetRecruitmentStatus } from "@/lib/dashboard/recruitment-permissions";
 import { resolveSiteUrl } from "@/lib/site-url";
 import {
   classifyFormDecision,
@@ -310,6 +311,10 @@ export async function updateApplicationOperations(input: unknown) {
       return { ok: false as const, message: "Aplicația nu mai există." };
     }
 
+    if (!canSetRecruitmentStatus(viewer.profile.role, application.status, parsed.data.status)) {
+      return { ok: false as const, message: "Doar Super Admin poate trimite candidații la interviu." };
+    }
+
     const result = await transitionApplication(
       application,
       parsed.data.status,
@@ -343,6 +348,17 @@ export async function runRecruitmentBatchAction(input: unknown) {
     const parsed = batchSchema.safeParse(input);
     if (!parsed.success) {
       return { ok: false as const, message: "Selecția este invalidă.", processedIds: [] as string[] };
+    }
+
+    if (
+      ["select_for_interview", "send_interview_email"].includes(parsed.data.action)
+      && !canSendToInterview(viewer.profile.role)
+    ) {
+      return {
+        ok: false as const,
+        message: "Doar Super Admin poate trimite candidații la interviu.",
+        processedIds: [] as string[],
+      };
     }
 
     const ids = [...new Set(parsed.data.applicationIds)];

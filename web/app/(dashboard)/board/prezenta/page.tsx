@@ -49,7 +49,7 @@ async function AttendanceView({ query, canReview, canCorrect, viewerId }: {
   const absent = data.rows.filter((row) => row.result === "absent").length;
   const excused = data.rows.filter((row) => row.result === "excused").length;
   return <>
-    <PortalFilterForm action="/board/prezenta" className="roster-meeting-select" submitLabel="Afișează">
+    <PortalFilterForm action="/board/prezenta" className="roster-meeting-select" submitLabel="Afișează" autoSubmit>
       <input type="hidden" name="view" value={data.view} />
       <label htmlFor="attendance-selection">{data.view === "member" ? "Persoană" : "Ședință"}
         <select id="attendance-selection" name={data.view === "member" ? "member" : "meeting"} defaultValue={selectedId} key={`${data.view}:${selectedId}`}>

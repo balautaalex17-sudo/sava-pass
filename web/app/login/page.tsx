@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/Button";
 import type { Database } from "@/lib/supabase/types";
@@ -15,7 +15,6 @@ function getSupabase() {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next");
 
@@ -39,8 +38,7 @@ function LoginForm() {
           ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
           : { data: null };
 
-        router.replace(staffRedirectForRole(profile?.role, next));
-        router.refresh();
+        window.location.replace(staffRedirectForRole(profile?.role, next));
       }
     });
   }

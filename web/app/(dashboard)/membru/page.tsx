@@ -6,6 +6,7 @@ import { requirePagePermission } from "@/lib/dashboard/auth";
 import { formatDateTime } from "@/lib/dashboard/format";
 import { getMemberDashboardData } from "@/lib/dashboard/member-data";
 import { MEETING_STATUS_LABELS } from "@/lib/dashboard/meeting-constants";
+import { isDepartmentEligible } from "@/lib/dashboard/member-departments";
 
 export const metadata: Metadata = { title: "Dashboard membru", robots: { index: false, follow: false } };
 
@@ -18,6 +19,10 @@ export default async function MemberOverviewPage({ searchParams }: { searchParam
   return (
     <div className="dash-page dash-page--member">
       <header className="dash-page-head"><div><span className="dash-eyebrow">Spațiul membrului</span><h1>Salut, {firstName}.</h1><p>Următoarea întâlnire, codul tău QR și prezența ta, într-un singur loc.</p></div></header>
+
+      {isDepartmentEligible(viewer.profile, viewer.roles) && viewer.profile.member_department && (
+        <p>Departamentul tău: <span className="dash-status dash-status--success">{viewer.profile.member_department.toUpperCase()}</span></p>
+      )}
 
       {query.acces === "refuzat" && (
         <p className="dash-access-notice" role="status">

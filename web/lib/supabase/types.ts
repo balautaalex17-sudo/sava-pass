@@ -1791,6 +1791,7 @@ export type Database = {
           full_name: string
           grade: string | null
           id: string
+          member_department: string | null
           member_ref: string
           membership_status: string
           phone: string | null
@@ -1804,6 +1805,7 @@ export type Database = {
           full_name: string
           grade?: string | null
           id: string
+          member_department?: string | null
           member_ref?: string
           membership_status?: string
           phone?: string | null
@@ -1817,6 +1819,7 @@ export type Database = {
           full_name?: string
           grade?: string | null
           id?: string
+          member_department?: string | null
           member_ref?: string
           membership_status?: string
           phone?: string | null
@@ -2460,6 +2463,60 @@ export type Database = {
           },
         ]
       }
+      member_department_requests: {
+        Row: {
+          created_at: string
+          from_department: string
+          id: string
+          member_id: string
+          reason: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          to_department: string
+        }
+        Insert: {
+          created_at?: string
+          from_department: string
+          id?: string
+          member_id: string
+          reason: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          to_department: string
+        }
+        Update: {
+          created_at?: string
+          from_department?: string
+          id?: string
+          member_id?: string
+          reason?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          to_department?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_department_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_department_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       event_stats: {
@@ -2662,6 +2719,29 @@ export type Database = {
       version_recruitment_questions: {
         Args: { p_campaign_id: string; p_questions: Json }
         Returns: string
+      }
+      get_member_department_balance: { Args: never; Returns: Json }
+      get_member_department_options: {
+        Args: { p_profile_id: string }
+        Returns: Json
+      }
+      review_member_department_request: {
+        Args: {
+          p_accept_imbalance?: boolean
+          p_actor_id: string
+          p_decision: string
+          p_note?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      select_member_department: {
+        Args: { p_department: string; p_profile_id: string }
+        Returns: Json
+      }
+      submit_member_department_request: {
+        Args: { p_member_id: string; p_reason: string }
+        Returns: Json
       }
     }
     Enums: {

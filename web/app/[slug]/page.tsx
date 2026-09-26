@@ -1,7 +1,6 @@
-import { Suspense } from "react";
 import Image from "next/image";
 import { DeferredMap } from "@/components/events/DeferredMap";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -11,29 +10,19 @@ import {
   HeartHandshake,
   MapPin,
 } from "lucide-react";
-import {
-  EventPurchaseExperience,
-  type PurchaseState,
-} from "@/components/events/EventPurchaseExperience";
+import { EventPurchaseExperience } from "@/components/events/EventPurchaseExperience";
 import { Chip } from "@/components/ui/Chip";
 import { formatCompactEventDate } from "@/lib/event-display";
 import { isEventEnded } from "@/lib/event-lifecycle";
-import {
-  getEventBySlug,
-  getEventStats,
-  getEventTicketTypes,
-  getTicketTypeSoldCounts,
-  priceRon,
-  seatsLeft,
-} from "@/lib/events";
+import { getEventBySlug } from "@/lib/events";
+import { getAvailability } from "@/lib/event-availability";
 import type { Metadata } from "next";
 import type { Event } from "@/lib/supabase/types";
-import purchaseStyles from "@/components/events/event-purchase.module.css";
 import styles from "./event-page.module.css";
 
 interface Props {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ checkout?: string }>;
+  searchParams?: Promise<{ checkout?: string; ticket?: string }>;
 }
 
 type ProgramItem = { t: string; l: string };
@@ -61,14 +50,18 @@ function bucharestTime(value: string) {
 }
 
 export default async function EventPage({ params, searchParams }: Props) {
-  const [{ slug }, query]: [{ slug: string }, { checkout?: string }] = await Promise.all([
+  const [{ slug }, query]: [{ slug: string }, { checkout?: string; ticket?: string }] = await Promise.all([
     params,
     searchParams ?? Promise.resolve({}),
   ]);
   const event = await getEventBySlug(slug, { includeDraftForAdmin: true });
   if (!event) notFound();
+  if (query.checkout === "1") {
+    const ticket = query.ticket ? `?ticket=${encodeURIComponent(query.ticket)}` : "";
+    redirect(`/${event.slug}/checkout${ticket}`);
+  }
 
-  const availability = getAvailability(event);
+  const availability = await getAvailability(event);
   const story = event.about;
   const cause = event.charitable_cause?.trim() || null;
   const causeTitle = "Cauza susținută";
@@ -112,9 +105,7 @@ export default async function EventPage({ params, searchParams }: Props) {
 
             <div className={styles.heroCopy}>
               <div className={styles.heroTopline}>
-                <Suspense fallback={<Chip tone="used">Verificăm biletele…</Chip>}>
-                  <AvailabilityStatus availability={availability} />
-                </Suspense>
+                <AvailabilityStatus availability={availability} />
                 <span>Organizat de Interact Sf. Sava</span>
               </div>
               <h1>{event.title}</h1>
@@ -127,9 +118,7 @@ export default async function EventPage({ params, searchParams }: Props) {
               </dl>
 
               <div className={event.status === "active" && !isEventEnded(event) ? styles.availabilitySlot : undefined}>
-                <Suspense fallback={event.status === "active" && !isEventEnded(event) ? <div className={styles.heroAction} aria-busy="true"><span>Se verifică prețul și disponibilitatea…</span></div> : null}>
-                  <AvailabilityPrice availability={availability} />
-                </Suspense>
+                <AvailabilityPrice availability={availability} />
               </div>
             </div>
           </div>
@@ -227,9 +216,7 @@ export default async function EventPage({ params, searchParams }: Props) {
             </section>
           </div>
 
-          <Suspense fallback={<PurchaseFallback event={event} />}>
-            <AvailablePurchase event={event} availability={availability} cause={cause} causeTitle={causeTitle} initialCheckout={query.checkout === "1"} />
-          </Suspense>
+          <AvailablePurchase event={event} availability={availability} cause={cause} causeTitle={causeTitle} />
         </div>
       </main>
     </div>
@@ -246,45 +233,10 @@ function HeroFact({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-// Start fresh availability once; status, price and checkout share the same work.
-async function getAvailability(event: Event) {
-  const [stats, rawTicketTypes, typeSold] = await Promise.all([
-    getEventStats(event.id),
-    getEventTicketTypes(event.id),
-    getTicketTypeSoldCounts(event.id),
-  ]);
+type Availability = Awaited<ReturnType<typeof getAvailability>>;
 
-  const sold = stats?.sold ?? 0;
-  const remaining = seatsLeft(event, sold);
-  const ticketTypes = rawTicketTypes.map((type) => ({
-    id: type.id,
-    name: type.name,
-    description: type.description,
-    priceRon: priceRon(type.price_bani),
-    seatsLeft: Math.min(remaining, Math.max(0, type.capacity - (typeSold[type.id] ?? 0))),
-  }));
-  const ended = isEventEnded(event);
-  const allTypesSoldOut = ticketTypes.length > 0 && ticketTypes.every((type) => type.seatsLeft <= 0);
-  const purchaseState: PurchaseState = event.status === "draft"
-    ? "unavailable"
-    : ended
-      ? "ended"
-      : ticketTypes.length === 0
-        ? "unavailable"
-        : remaining <= 0 || allTypesSoldOut
-          ? "sold_out"
-          : "active";
-  const availableTicketTypes = ticketTypes.filter((type) => type.seatsLeft > 0);
-  const startingPrice = availableTicketTypes.length
-    ? Math.min(...availableTicketTypes.map((type) => type.priceRon))
-    : null;
-  return { sold, remaining, ticketTypes, purchaseState, startingPrice };
-}
-
-type Availability = Promise<Awaited<ReturnType<typeof getAvailability>>>;
-
-async function AvailabilityStatus({ availability }: { availability: Availability }) {
-  const { purchaseState } = await availability;
+function AvailabilityStatus({ availability }: { availability: Availability }) {
+  const { purchaseState } = availability;
   const statusLabel = purchaseState === "active"
     ? "Bilete disponibile"
     : purchaseState === "sold_out"
@@ -297,8 +249,8 @@ async function AvailabilityStatus({ availability }: { availability: Availability
   return <Chip tone={statusTone} dot={purchaseState === "active"}>{statusLabel}</Chip>;
 }
 
-async function AvailabilityPrice({ availability }: { availability: Availability }) {
-  const { purchaseState, startingPrice, ticketTypes } = await availability;
+function AvailabilityPrice({ availability }: { availability: Availability }) {
+  const { purchaseState, startingPrice, ticketTypes } = availability;
   return <>{purchaseState === "active" && startingPrice !== null ? (
                 <div className={styles.heroAction}>
                   <div>
@@ -312,10 +264,10 @@ async function AvailabilityPrice({ availability }: { availability: Availability 
               ) : null}</>;
 }
 
-async function AvailablePurchase({ event, availability, cause, causeTitle, initialCheckout }: {
-  event: Event; availability: Availability; cause: string | null; causeTitle: string | null; initialCheckout: boolean;
+function AvailablePurchase({ event, availability, cause, causeTitle }: {
+  event: Event; availability: Availability; cause: string | null; causeTitle: string | null;
 }) {
-  const { purchaseState, sold, remaining, ticketTypes } = await availability;
+  const { purchaseState, sold, remaining, ticketTypes } = availability;
   return (<EventPurchaseExperience
             event={{
               slug: event.slug,
@@ -334,29 +286,5 @@ async function AvailablePurchase({ event, availability, cause, causeTitle, initi
             sold={sold}
             seatsLeft={remaining}
             ticketTypes={ticketTypes}
-            initialCheckout={initialCheckout}
           />);
-}
-
-function PurchaseFallback({ event }: { event: Event }) {
-  const bookable = event.status === "active" && !isEventEnded(event);
-  return (
-    <>
-    <aside id="bilete" className={`${purchaseStyles.sidebar} ${bookable ? purchaseStyles.sidebarActive : ""}`} aria-busy="true" aria-label="Se încarcă biletele">
-      <div className={purchaseStyles.ticketCard} style={{ minHeight: bookable ? 540 : 240 }}>
-        <div className={purchaseStyles.cardHeading}><div><h2>Bilete</h2><p>{event.title}</p></div></div>
-        <dl className={purchaseStyles.miniFacts}>
-          <div><CalendarDays size={16} /><dt>Data</dt><dd>{event.date_long}</dd></div>
-          <div><Clock3 size={16} /><dt>Ora</dt><dd>{event.doors}</dd></div>
-          <div><MapPin size={16} /><dt>Loc</dt><dd>{event.venue}</dd></div>
-        </dl>
-        <p role="status">Verificăm prețul și disponibilitatea biletelor…</p>
-      </div>
-    </aside>
-    {bookable && <>
-      <div className={purchaseStyles.mobileBar} aria-busy="true"><div><span>Bilete</span><strong>Se verifică…</strong></div><span role="status">Încărcăm disponibilitatea</span></div>
-      <div className={purchaseStyles.mobileSpacer} aria-hidden="true" />
-    </>}
-    </>
-  );
 }

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { resendMemberInvitation, saveMember } from "./actions";
 import type { StaffRole } from "@/lib/roles";
 import { canManagePrimaryRole } from "@/lib/dashboard/role-hierarchy";
+import styles from "./members-manager.module.css";
 
 interface MemberRow {
   id: string;
@@ -18,6 +19,20 @@ interface MemberRow {
   membershipStatus: string;
   role: StaffRole | null;
   createdAt: string;
+  department: string | null;
+}
+
+type DepartmentFilter = "all" | "hr" | "pr" | "unassigned";
+type MemberSort = "name" | "hr" | "pr";
+
+function departmentOf(member: MemberRow) {
+  if (member.role === "board" || member.role === "admin") return null;
+  return member.department === "hr" || member.department === "pr" ? member.department : null;
+}
+
+function hasUnassignedDepartment(member: MemberRow) {
+  return member.membershipStatus === "active"
+    && member.role !== "board" && member.role !== "admin" && !departmentOf(member);
 }
 
 const schema = z.object({
@@ -64,6 +79,8 @@ export function MembersManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
+  const [sort, setSort] = useState<MemberSort>("name");
   const [message, setMessage] = useState<{ tone: MessageTone; text: string } | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -88,13 +105,23 @@ export function MembersManager({
     },
   });
 
-  const filtered = useMemo(
-    () => members.filter((member) =>
-      `${member.fullName} ${member.email ?? ""}`
-        .toLocaleLowerCase("ro")
-        .includes(search.toLocaleLowerCase("ro"))),
-    [members, search],
-  );
+  const filtered = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("ro");
+    return members.filter((member) => {
+      const department = departmentOf(member);
+      const matchesDepartment = departmentFilter === "all"
+        || (departmentFilter === "unassigned" ? hasUnassignedDepartment(member) : department === departmentFilter);
+      return matchesDepartment && `${member.fullName} ${member.email ?? ""} ${department ?? ""}`
+        .toLocaleLowerCase("ro").includes(query);
+    }).sort((a, b) => {
+      if (sort !== "name") {
+        const rank = (member: MemberRow) => departmentOf(member) === sort ? 0 : departmentOf(member) ? 1 : 2;
+        const difference = rank(a) - rank(b);
+        if (difference) return difference;
+      }
+      return a.fullName.localeCompare(b.fullName, "ro", { sensitivity: "base" });
+    });
+  }, [members, search, departmentFilter, sort]);
 
   function add() {
     setEditingId(null);
@@ -165,7 +192,7 @@ export function MembersManager({
 
   return (
     <>
-      <div className="members-toolbar">
+      <div className={`members-toolbar ${styles.toolbar}`}>
         <label>
           <Search size={16} />
           <span className="sr-only">Caută membru</span>
@@ -175,6 +202,25 @@ export function MembersManager({
             placeholder="Caută după nume sau email"
           />
         </label>
+        <div className={styles.controls}>
+          <div className={styles.control}>
+            <label htmlFor="members-department-filter">Departament</label>
+            <select id="members-department-filter" value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value as DepartmentFilter)}>
+              <option value="all">Toate</option>
+              <option value="hr">HR</option>
+              <option value="pr">PR</option>
+              <option value="unassigned">Neales</option>
+            </select>
+          </div>
+          <div className={styles.control}>
+            <label htmlFor="members-sort">Ordonează</label>
+            <select id="members-sort" value={sort} onChange={(event) => setSort(event.target.value as MemberSort)}>
+              <option value="name">Nume (A-Z)</option>
+              <option value="hr">HR mai întâi</option>
+              <option value="pr">PR mai întâi</option>
+            </select>
+          </div>
+        </div>
         {canAddMember && (
           <button className="dash-button" type="button" onClick={add} disabled={pending}>
             <Plus size={17} /> Adaugă membru
@@ -242,6 +288,7 @@ export function MembersManager({
 
       {!open && message && <StatusMessage tone={message.tone} text={message.text} />}
 
+      <p className={styles.results} role="status">{filtered.length} din {members.length} persoane</p>
       <div className="dash-card members-table">
         <table>
           <thead>
@@ -254,9 +301,22 @@ export function MembersManager({
             </tr>
           </thead>
           <tbody>
-            {filtered.map((member) => (
+            {filtered.map((member) => {
+              const department = departmentOf(member);
+              return (
               <tr key={member.id}>
-                <td><strong>{member.fullName}</strong><span>{member.email}</span></td>
+                <td className={styles.memberCell}>
+                  <div className={styles.identity}>
+                    <strong>{member.fullName}</strong>
+                    {department ? <span className={`${styles.badge} ${department === "hr" ? styles.hr : styles.pr}`}
+                      title={department === "hr" ? "Resurse umane" : "Relații publice"}
+                      aria-label={`Departament ${department.toUpperCase()}`}>
+                      {department.toUpperCase()}
+                    </span> : hasUnassignedDepartment(member) ? <span className={`${styles.badge} ${styles.unassigned}`}
+                      title="Membrul va alege HR sau PR când intră în portal" aria-label="Departament neales">Neales</span> : null}
+                  </div>
+                  <span>{member.email}</span>
+                </td>
                 <td>{member.grade ?? "—"}</td>
                 <td>
                   <span className={member.membershipStatus === "active" ? "dash-status dash-status--success" : "dash-status dash-status--warning"}>
@@ -287,10 +347,11 @@ export function MembersManager({
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
-        {!filtered.length && <div className="dash-empty"><strong>Niciun membru</strong>Schimbă termenul de căutare.</div>}
+        {!filtered.length && <div className="dash-empty"><strong>Niciun membru</strong>Schimbă căutarea sau filtrul de departament.</div>}
       </div>
     </>
   );

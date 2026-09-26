@@ -1,0 +1,56 @@
+.filters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.filters label {
+  display: grid;
+  gap: 5px;
+  color: var(--dash-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.filters select {
+  min-width: 180px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--dash-line-strong);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--dash-ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.summary {
+  margin-bottom: 12px;
+  color: var(--dash-muted);
+  font-size: 13px;
+}
+
+.summary strong { color: var(--dash-ink); }
+
+.tableWrap { max-width: 100%; overflow-x: auto; }
+.table { width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 12px; }
+.table th { padding: 12px 14px; border-bottom: 1px solid var(--dash-line); background: var(--slate-50); color: var(--dash-muted); text-align: left; font-size: 11px; text-transform: uppercase; }
+.table td { padding: 12px 14px; border-bottom: 1px solid var(--dash-line); color: var(--slate-600); vertical-align: top; }
+.table tr:last-child td { border-bottom: 0; }
+.table td strong { display: block; color: var(--dash-ink); font-size: 13px; }
+.table td a, .table td span:not(:global(.dash-status)) { display: block; margin-top: 4px; color: var(--dash-muted); font-size: 11px; }
+.table td a { overflow-wrap: anywhere; }
+.table td a:hover { color: var(--dash-green-dark); }
+.table time { white-space: nowrap; }
+
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 16px; color: var(--dash-muted); font-size: 13px; }
+.pagination div { display: flex; gap: 8px; }
+.pagination a { padding: 9px 12px; border: 1px solid var(--dash-line-strong); border-radius: 8px; background: #fff; color: var(--dash-green-dark); font-weight: 700; text-decoration: none; }
+.pagination a:hover { background: var(--dash-green-soft); }
+
+@media (max-width: 650px) {
+  .filters label, .filters select, .filters button { width: 100%; }
+  .pagination { align-items: flex-start; flex-direction: column; }
+}

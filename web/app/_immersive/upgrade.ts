@@ -1,4 +1,5 @@
 import { renderEditorialBoard } from "./board-showcase";
+import { recruitmentSteps } from "@/lib/recruitment-copy";
 export { BOARD_SHOWCASE_CSS } from "./board-styles";
 
 const INTRO_VIDEOS = `  <video class="mhi-ambient" autoplay muted loop playsinline preload="metadata" aria-hidden="true" src="/imersiv/intro-ambient.mp4"></video>
@@ -69,6 +70,7 @@ export type LandingRecruitment = {
   intro: string;
   closedMessage: string;
   isOpen: boolean;
+  closesAt?: string | null;
 };
 
 const BOARD_MEMBERS = [
@@ -269,6 +271,8 @@ function applyRecruitmentContent(markup: string, recruitment: LandingRecruitment
     : '<span class="btn btn-g recruitment-locked" aria-disabled="true">Înscrieri închise</span>';
 
   const updated = section
+    .replace(/<h2 class="h2 rv"[^>]*>[\s\S]*?<\/h2>/, '<h2 class="h2 rv" style="--d:.06s;margin-top:16px;">Fă parte din <em>echipă.</em></h2>')
+    .replace(/<div class="pipe">[\s\S]*?<\/div>\n    <\/div>/, `<ol class="join-timeline" aria-label="Calendarul recrutării 2026">${recruitmentSteps(recruitment.closesAt ?? null).map(step => `<li><span class="join-step-number">${step.number}</span><div><span class="join-step-date">${escapeHtml(step.date)}</span><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.copy)}</p></div></li>`).join("")}</ol>\n    </div>`)
     .replace(/<div class="eyebrow rv">[\s\S]*?<\/div>/, `<div class="eyebrow rv">${eyebrow}</div>`)
     .replace(/<p class="lede rv" style="--d:\.12s">[\s\S]*?<\/p>/, `<p class="lede rv" style="--d:.12s">${copy}</p>`)
     .replace(/<a href="\/devino-membru(?:#aplica)?" class="btn btn-p mag">[\s\S]*?<\/a>/, primary);
@@ -387,6 +391,21 @@ export const LANDING_REFINEMENT_CSS = `
    repeated typography, icon-tile, over-rounding, and cyan-halo treatments that
    make otherwise intentional art direction feel generated. */
 .sp-immersive-root .recruitment-locked{opacity:.68;cursor:not-allowed;pointer-events:none}
+.sp-immersive-root #join .grid { align-items: start; gap: clamp(32px, 6vw, 88px); }
+.sp-immersive-root #join .lede { max-width: 38ch; font-size: clamp(16px, 1.45vw, 19px); line-height: 1.65; color: #536171; }
+.sp-immersive-root #join .h2 { max-width: 11ch; }
+.sp-immersive-root #join .cta { margin-top: 28px; }
+.sp-immersive-root .join-timeline { list-style: none; margin: 0; padding: 0; border-top: 1px solid #d7dfe6; }
+.sp-immersive-root .join-timeline li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 16px; padding: 20px 0; border-bottom: 1px solid #d7dfe6; }
+.sp-immersive-root .join-step-number { padding-top: 2px; color: #007ba5; font-family: var(--f-mono), monospace; font-size: 11px; }
+.sp-immersive-root .join-step-date { color: #007ba5; font-size: 12px; font-weight: 650; }
+.sp-immersive-root .join-timeline h3 { margin: 5px 0 6px; color: #101823; font-size: 18px; line-height: 1.3; letter-spacing: -.02em; }
+.sp-immersive-root .join-timeline p { margin: 0; max-width: 47ch; color: #536171; font-size: 14px; line-height: 1.55; }
+@media (max-width: 760px) {
+  .sp-immersive-root #join .grid { gap: 32px; }
+  .sp-immersive-root .join-timeline li { padding: 18px 0; gap: 12px; }
+  .sp-immersive-root .join-timeline h3 { font-size: 17px; }
+}
 .sp-immersive-root .ev-past--managed{color:inherit;text-decoration:none}
 .sp-immersive-root .ev-past--managed:hover{transform:none;border-color:var(--line-l);box-shadow:none}
 .sp-immersive-root .ev-past--managed:hover .ev-past-poster img{transform:none}

@@ -1,0 +1,17 @@
+.card { display: grid; gap: 18px; padding: 24px; margin-bottom: 20px; min-width: 0; }
+.heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.heading h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.heading p { margin: 6px 0 0; color: var(--dash-muted); font-size: 13px; line-height: 1.6; }
+.heading > span { flex-shrink: 0; }
+.details { border-top: 1px solid var(--dash-line); padding-top: 16px; }
+.details p { margin: 10px 0 0; }
+.form { display: grid; gap: 12px; }
+.help, .meta { margin: 0; color: var(--dash-muted); font-size: 12px; line-height: 1.6; }
+.text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; font-size: 14px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.warning { display: flex; gap: 10px; margin: 0; padding: 13px 15px; border: 1px solid #ebd39b; border-radius: 10px; background: #fff8e8; color: #80570e; font-size: 13px; line-height: 1.6; }
+.warning svg { flex-shrink: 0; margin-top: 2px; }
+.balance { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 20px; color: var(--dash-muted); font-size: 13px; }
+.balance strong { color: var(--dash-ink); }
+.pagination { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; }
+@media (max-width: 520px) { .card { padding: 18px; } .actions > button { flex: 1; } }

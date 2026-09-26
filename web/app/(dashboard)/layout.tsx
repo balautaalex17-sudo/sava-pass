@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
 import { getDashboardViewer } from "@/lib/dashboard/auth";
+import { isDepartmentEligible, needsDepartmentSelection } from "@/lib/dashboard/member-departments";
+import { MemberDepartmentPrompt } from "@/components/dashboard/MemberDepartmentPrompt";
 import "./dashboard.css";
 
 export const dynamic = "force-dynamic";
@@ -25,9 +27,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         role={viewer.profile.role}
         roles={viewer.roles}
         membershipStatus={viewer.profile.membership_status}
+        department={isDepartmentEligible(viewer.profile, viewer.roles) ? viewer.profile.member_department : null}
         permissionKeys={viewer.permissionKeys}
       />
       <main className="dashboard-main">{children}</main>
+      {needsDepartmentSelection(viewer.profile, viewer.roles) && (
+        <MemberDepartmentPrompt profileId={viewer.user.id} />
+      )}
     </div>
   );
 }

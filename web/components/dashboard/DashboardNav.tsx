@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
+  ClipboardCheck,
   ClipboardPenLine,
   ClipboardList,
   History,
@@ -32,6 +33,7 @@ interface NavItem {
   icon: typeof House;
   permission?: PermissionKey;
   anyPermissions?: readonly PermissionKey[];
+  boardOnly?: boolean;
 }
 
 interface NavGroup {
@@ -64,6 +66,7 @@ const boardGroups: NavGroup[] = [
       { href: "/board/prezenta", label: "Evidență prezență", icon: ClipboardList, permission: "view_attendance_roster" },
       { href: "/board/galerie", label: "Galerie foto", icon: Images, permission: "view_board_dashboard" },
       { href: "/board/membri", label: "Membri", icon: UserRound, permission: "manage_members" },
+      { href: "/board/cereri-departament", label: "Cereri HR / PR", icon: ClipboardPenLine, permission: "manage_members", boardOnly: true },
     ],
   },
   {
@@ -82,6 +85,7 @@ const boardGroups: NavGroup[] = [
     label: "Evenimente",
     items: [
       { href: "/board/evenimente", label: "Evenimente", icon: TicketCheck, permission: "manage_public_events" },
+      { href: "/board/inscrieri-evenimente", label: "Înscrieri", icon: ClipboardCheck, permission: "manage_public_events" },
       { href: "/board/scaneaza-bilete", label: "Scanează bilete", icon: ScanLine, permission: "scan_event_tickets" },
       { href: "/board/istoric-scanari", label: "Istoric scanări", icon: History, permission: "view_scan_audit_log" },
     ],
@@ -107,12 +111,14 @@ export function DashboardNav({
   roles,
   permissionKeys,
   membershipStatus,
+  department,
 }: {
   fullName: string;
   role: string | null;
   roles: readonly string[];
   permissionKeys: readonly PermissionKey[];
   membershipStatus?: string;
+  department?: string | null;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -131,6 +137,7 @@ export function DashboardNav({
       items: group.items.filter(
         (item) => (
           (!item.permission || permissions.has(item.permission))
+          && (!item.boardOnly || role === "board" || role === "admin")
           && (!item.anyPermissions || item.anyPermissions.some((permission) => permissions.has(permission)))
         ),
       ),
@@ -316,7 +323,7 @@ export function DashboardNav({
             <div className="dash-account-avatar" aria-hidden="true">
               {fullName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}
             </div>
-            <div><strong>{fullName}</strong><span>{roleLabel}</span></div>
+            <div><strong>{fullName}</strong><span>{roleLabel}{department ? ` · ${department.toUpperCase()}` : ""}</span></div>
             <button type="button" onClick={signOut} disabled={signingOut} aria-busy={signingOut} aria-label={signingOut ? "Se închide sesiunea…" : "Ieși din cont"}>{signingOut ? <LoaderCircle size={17} className="scanner-spin" /> : <LogOut size={17} />}</button>
           </div>
           {signOutError && <p role="alert" className="dash-form-message dash-form-message--error">{signOutError}</p>}

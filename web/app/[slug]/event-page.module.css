@@ -224,6 +224,7 @@
 }
 
 .story {
+  white-space: pre-wrap;
   max-width: 66ch;
   margin: 14px 0 0;
   color: var(--slate-700);
@@ -602,6 +603,7 @@
   }
 
   .story {
+  white-space: pre-wrap;
     font-size: 16px;
     line-height: 1.7;
   }

@@ -4,6 +4,7 @@ import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import { ClipboardList, ClipboardPenLine } from "lucide-react";
 import { requireAnyPagePermission } from "@/lib/dashboard/auth";
 import { applicationDisplayAnswers } from "@/lib/dashboard/recruitment";
+import { canSendToInterview } from "@/lib/dashboard/recruitment-permissions";
 import {
   interviewScoreTotal,
   isValidInterviewCategoryScores,
@@ -110,6 +111,7 @@ export default async function InterviewsWorkspacePage({
             viewerName={viewer.profile.full_name}
             isBoardView={isBoardView}
             canManage={viewer.permissions.has("manage_recruitment_signups")}
+            canSendToInterview={canSendToInterview(viewer.profile.role) && viewer.permissions.has("manage_recruitment_signups")}
             canImport={viewer.permissions.has("import_recruitment_signups")}
             canEvaluate={viewer.permissions.has("evaluate_recruitment_forms")}
           />

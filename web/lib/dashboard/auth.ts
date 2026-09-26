@@ -13,6 +13,7 @@ import {
   type PermissionKey,
 } from "@/lib/dashboard/permissions";
 import { canUseAdministrativePermission } from "@/lib/dashboard/role-hierarchy";
+import { needsDepartmentSelection } from "@/lib/dashboard/member-departments";
 
 export type DashboardProfile = Pick<
   Profile,
@@ -25,6 +26,7 @@ export type DashboardProfile = Pick<
   | "avatar_url"
   | "phone"
   | "grade"
+  | "member_department"
 >;
 
 export interface DashboardViewer {
@@ -41,7 +43,7 @@ export interface DashboardViewer {
 
 export class DashboardAccessError extends Error {
   constructor(
-    public readonly code: "UNAUTHENTICATED" | "UNAUTHORIZED" | "INACTIVE_MEMBER",
+    public readonly code: "UNAUTHENTICATED" | "UNAUTHORIZED" | "INACTIVE_MEMBER" | "DEPARTMENT_REQUIRED",
   ) {
     super(code);
     this.name = "DashboardAccessError";
@@ -69,7 +71,7 @@ export const getDashboardViewer = cache(async (): Promise<DashboardViewer | null
     supabaseAdmin
       .from("profiles")
       .select(
-        "id, full_name, email, role, membership_status, member_ref, avatar_url, phone, grade",
+        "id, full_name, email, role, membership_status, member_ref, avatar_url, phone, grade, member_department",
       )
       .eq("id", user.id)
       .maybeSingle(),
@@ -153,6 +155,9 @@ export async function requireDashboardViewer(): Promise<DashboardViewer> {
   if (!viewer) throw new DashboardAccessError("UNAUTHENTICATED");
   if (!["active", "recruit"].includes(viewer.profile.membership_status)) {
     throw new DashboardAccessError("INACTIVE_MEMBER");
+  }
+  if (needsDepartmentSelection(viewer.profile, viewer.roles)) {
+    throw new DashboardAccessError("DEPARTMENT_REQUIRED");
   }
   return viewer;
 }

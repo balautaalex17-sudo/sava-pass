@@ -1,0 +1,30 @@
+.dialog {
+  position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
+  margin: 0; padding: 26px; overflow-y: auto;
+  border: 1px solid var(--dash-line, #e2e8f0); border-radius: 18px;
+  background: #fff; color: var(--dash-ink, #15233b); font-family: var(--font-sans, sans-serif);
+  box-shadow: 0 24px 80px #0f172a33;
+}
+.dialog::backdrop { background: #0f172a66; backdrop-filter: blur(2px); }
+.eyebrow { color: var(--dash-muted, #475569); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.dialog h2 { margin: 7px 0 8px; font-size: 23px; font-weight: 750; line-height: 1.25; letter-spacing: -.025em; }
+.dialog h2:focus { outline: none; box-shadow: none; }
+.description { margin: 0 0 20px; color: var(--dash-muted, #475569); font-size: 13px; line-height: 1.6; }
+.options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.option { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-height: 100px; padding: 17px;
+  border: 1px solid var(--dash-line-strong, #cbd5e1); border-radius: 12px; background: #f8fafc; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.option strong { font-size: 25px; font-weight: 750; line-height: 1.2; }
+.option span { font-size: 12px; }
+.option small { font-size: 10px; line-height: 1.4; }
+.option:focus-visible { outline: 3px solid var(--dash-green, #009fe3); outline-offset: 3px; }
+.option:active:not(:disabled) { background: #e0f2fe; }
+.option:disabled { cursor: not-allowed; color: #64748b; background: #f1f5f9; border-style: dashed; }
+@media (hover: hover) { .option:hover:not(:disabled) { border-color: var(--dash-green, #009fe3); background: #f0f9ff; } }
+.reason { margin: 14px 0 0; padding: 12px; border-radius: 9px; background: #fffbeb; color: #854d0e; font-size: 12px; line-height: 1.6; }
+.reason button { border: 0; padding: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.message { margin: 12px 0 0; color: #854d0e; font-size: 12px; line-height: 1.5; }
+.message:empty { display: none; }
+.footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; font-size: 11px; line-height: 1.5; color: var(--dash-muted, #475569); }
+.footer a { color: inherit; text-underline-offset: 3px; }
+@media (max-width: 380px) { .dialog { padding: 22px; } .option { padding: 14px; } }

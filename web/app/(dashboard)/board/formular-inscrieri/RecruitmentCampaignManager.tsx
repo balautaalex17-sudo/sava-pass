@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { ExternalLink, Save } from "lucide-react";
+import { recruitmentSteps } from "@/lib/recruitment-copy";
 import { PortalLink as Link } from "@/components/dashboard/PortalLink";
 import {
   RECRUITMENT_QUESTIONS,
@@ -113,7 +114,7 @@ export function RecruitmentCampaignManager({
         </div>
 
         <div className="dash-field"><label htmlFor="campaign-title">Titlu public</label><input id="campaign-title" name="title" defaultValue={campaign.title} minLength={3} maxLength={120} required /></div>
-        <div className="dash-field"><label htmlFor="campaign-intro">Introducere</label><textarea id="campaign-intro" name="intro" value={preview.intro} onChange={(event) => updatePreview({ intro: event.target.value })} minLength={10} maxLength={1000} required /></div>
+        <div className="dash-field"><label htmlFor="campaign-intro">Introducere publică</label><textarea id="campaign-intro" name="intro" value={preview.intro} onChange={(event) => updatePreview({ intro: event.target.value })} minLength={10} maxLength={1000} rows={4} aria-describedby="campaign-intro-help" required /><small id="campaign-intro-help">Două sau trei propoziții despre echipă. Acest text apare pe prima pagină și la „Devino membru”; calendarul este afișat separat.</small></div>
 
         <div className="recruitment-status-control">
           <div>
@@ -168,6 +169,18 @@ export function RecruitmentCampaignManager({
           <Link href="/devino-membru" target="_blank" className="dash-button dash-button--secondary">Vezi pagina <ExternalLink size={16} /></Link>
         </div>
       </form>
+      <aside className="dash-card" aria-labelledby="recruitment-calendar-title">
+        <div className="dash-section-head"><div><h2 id="recruitment-calendar-title">Calendarul afișat pe site</h2><p>Recrutare 2026–2027. Termenul formularului urmează data de închidere de mai sus.</p></div></div>
+        <ol className="m-0 list-none p-0">
+          {recruitmentSteps(campaign.closes_at).map(step => (
+            <li key={step.number} className="border-b border-slate-200 py-4 last:border-0">
+              <span className="text-xs font-semibold text-sky-700">{step.date}</span>
+              <h3 className="mt-1 text-sm font-semibold">{step.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">{step.copy}</p>
+            </li>
+          ))}
+        </ol>
+      </aside>
     </div>
   );
 }

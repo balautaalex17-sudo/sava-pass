@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import { AnimatedNavLink as Link } from "@/app/AnimatedNavLink";
 import { Suspense } from "react";
 import { ArrowDown, ArrowRight, ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import { ClubPage } from "@/components/club/ClubPage";
@@ -33,15 +33,6 @@ function featuredLabel(event: EventRecord) {
   if (event.eventStatus === "past") return "Eveniment încheiat";
   if (event.eventStatus === "ongoing") return "În desfășurare";
   return "Activ";
-}
-
-function ExplorerFallback() {
-  return (
-    <section className={styles.archiveLoading} aria-label="Se pregătesc evenimentele">
-      <div /><div /><div />
-      <p>Se pregătesc filtrele și evenimentele…</p>
-    </section>
-  );
 }
 
 function eventStartTime(event: EventRecord) {
@@ -128,7 +119,7 @@ export default async function EventsPage() {
   return (
     <ClubPage active="evenimente" hero={hero} showWatermark={false}>
       <main className={styles.main} id="continut-principal">
-        <Suspense fallback={<ExplorerFallback />}>
+        <Suspense fallback={null}>
           <EventsExplorer events={events} years={Array.from(new Set(events.map((event) => academicYearForDate(event.startDate)).filter((year): year is string => Boolean(year))))} />
         </Suspense>
 
